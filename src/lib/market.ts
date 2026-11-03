@@ -369,23 +369,48 @@ export async function createWithdrawal(input: { userId: string; amountCop: numbe
 }
 
 export async function confirmWithdrawal(userId: string, withdrawalId: string, signature: string) {
-  await ensureReady();
+  const { settings } = await ensureReady();
   const now = Date.now();
   const [tx] = await db
     .select()
     .from(ledgerTx)
     .where(and(eq(ledgerTx.id, withdrawalId), eq(ledgerTx.userId, userId), eq(ledgerTx.kind, "retiro")));
   if (!tx) throw new MarketError("Retiro no encontrado", 404);
-  if (tx.status === "confirmada") return toTxDTO(tx);
+  if (tx.status === "confirmada" || tx.status === "por_aprobar") return toTxDTO(tx);
   if (tx.status !== "pendiente" || now - tx.createdAt > ORDER_TTL_MS) throw new MarketError("Este retiro expiró", 410);
   const valid = await verifyWalletSignature({ address: tx.walletAddress ?? "", message: tx.message ?? "", signature });
   if (!valid) throw new MarketError("La firma no corresponde a la wallet de destino");
   const pos = await getKwPosition(userId, now);
   const bal = await getBalances(userId, pos.entries, now);
   if (tx.amountCop > bal.balance) throw new MarketError("No tienes saldo suficiente");
+  if (settings.withdrawalApproval) {
+    // Queda esperando al administrador; mientras tanto aparta el saldo.
+    const res = await db
+      .update(ledgerTx)
+      .set({ status: "por_aprobar", signature })
+      .where(and(eq(ledgerTx.id, withdrawalId), eq(ledgerTx.status, "pendiente")))
+      .returning();
+    if (!res.length) throw new MarketError("Este retiro ya se envió", 409);
+    return toTxDTO(res[0]);
+  }
   const txHash = simulatedTxHash();
-  await db.update(ledgerTx).set({ status: "confirmada", signature, txHash, confirmedAt: now }).where(eq(ledgerTx.id, withdrawalId));
-  return toTxDTO({ ...tx, status: "confirmada", signature, txHash, confirmedAt: now });
+  const res = await db
+    .update(ledgerTx)
+    .set({ status: "confirmada", signature, txHash, confirmedAt: now })
+    .where(and(eq(ledgerTx.id, withdrawalId), eq(ledgerTx.status, "pendiente")))
+    .returning();
+  if (!res.length) throw new MarketError("Este retiro ya se envió", 409);
+  return toTxDTO(res[0]);
+}
+
+export async function getWithdrawal(userId: string, withdrawalId: string) {
+  await ensureReady();
+  const [tx] = await db
+    .select()
+    .from(ledgerTx)
+    .where(and(eq(ledgerTx.id, withdrawalId), eq(ledgerTx.userId, userId), eq(ledgerTx.kind, "retiro")));
+  if (!tx) throw new MarketError("Retiro no encontrado", 404);
+  return toTxDTO(tx);
 }
 
 /* ───────────── Wallet vinculada ───────────── */
