@@ -211,14 +211,40 @@ export async function confirmBuyOrder(userId: string, orderId: string, proof: { 
 
   const kw = tx.kw ?? 0;
   const txHash = simulatedTxHash();
+
+  if (!tx.listingId) {
+    const available = PLANT.capacityKwp - (await soldKw());
+    if (kw > available) throw new MarketError("La planta se quedó sin kW disponibles", 409);
+  }
+
+  // Reclamar la orden de forma atómica: si llegan dos confirmaciones a la vez
+  // (doble clic, reintento de red), solo una asigna los kW.
+  const claimed = await db
+    .update(ledgerTx)
+    .set({ status: "confirmada", signature, txHash, confirmedAt: now })
+    .where(and(eq(ledgerTx.id, orderId), eq(ledgerTx.status, "pendiente")))
+    .returning({ id: ledgerTx.id });
+  if (!claimed.length) {
+    const [current] = await db.select().from(ledgerTx).where(eq(ledgerTx.id, orderId));
+    if (current?.status === "confirmada") return { ...toTxDTO(current), alreadyConfirmed: true };
+    throw new MarketError("Esta orden ya no se puede confirmar", 409);
+  }
+
   const ops = [];
   if (tx.listingId) {
-    const [l] = await db.select().from(listing).where(eq(listing.id, tx.listingId));
-    if (!l || l.status !== "activa") throw new MarketError("Esa oferta se vendió mientras firmabas", 409);
+    // La oferta también se reclama de forma atómica.
+    const [l] = await db
+      .update(listing)
+      .set({ status: "vendida", closedAt: now, buyerId: userId })
+      .where(and(eq(listing.id, tx.listingId), eq(listing.status, "activa")))
+      .returning();
+    if (!l) {
+      await db.update(ledgerTx).set({ status: "fallida" }).where(eq(ledgerTx.id, orderId));
+      throw new MarketError("Esa oferta se vendió mientras firmabas", 409);
+    }
     const seller = await getKwPosition(l.sellerId, now);
     const avgCost = seller.kw > 0 ? Math.round(seller.investedCop / seller.kw) : l.pricePerKwCop;
     ops.push(
-      db.update(listing).set({ status: "vendida", closedAt: now, buyerId: userId }).where(eq(listing.id, l.id)),
       db.insert(positionEntry).values({ id: newId("pe-"), userId: l.sellerId, plantId: PLANT.id, kwDelta: -kw, pricePerKwCop: avgCost, ts: now, txId: tx.id }),
       db.insert(ledgerTx).values({
         id: newId("tx-"),
@@ -234,15 +260,8 @@ export async function confirmBuyOrder(userId: string, orderId: string, proof: { 
         confirmedAt: now,
       }),
     );
-  } else {
-    const available = PLANT.capacityKwp - (await soldKw());
-    if (kw > available) throw new MarketError("La planta se quedó sin kW disponibles", 409);
   }
   ops.push(
-    db
-      .update(ledgerTx)
-      .set({ status: "confirmada", signature, txHash, confirmedAt: now })
-      .where(eq(ledgerTx.id, orderId)),
     db.insert(positionEntry).values({
       id: newId("pe-"),
       userId,
