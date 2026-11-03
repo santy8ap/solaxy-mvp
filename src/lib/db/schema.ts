@@ -87,6 +87,13 @@ export const plant = sqliteTable("plant", {
   pricePerKwCop: integer("price_per_kw_cop").notNull(),
   /** ms UTC */
   commissionedAt: integer("commissioned_at").notNull(),
+  /** Configuración editable por el administrador */
+  tariffDayCop: integer("tariff_day_cop").notNull().default(560),
+  tariffPeakCop: integer("tariff_peak_cop").notNull().default(820),
+  /** Comisión de operación y plataforma, en % del ingreso */
+  commissionPct: real("commission_pct").notNull().default(18),
+  withdrawalApproval: integer("withdrawal_approval", { mode: "boolean" }).notNull().default(true),
+  updatedAt: integer("updated_at"),
 });
 
 /** Telemetría agregada cada 15 minutos. Los acumulados son al FINAL del intervalo. */
@@ -129,8 +136,8 @@ export const positionEntry = sqliteTable(
   (t) => [index("position_user_idx").on(t.userId)],
 );
 
-export const TX_KINDS = ["compra", "compra_p2p", "venta_p2p", "venta_inmediata", "retiro", "asignacion_demo"] as const;
-export const TX_STATUSES = ["pendiente", "confirmada", "fallida", "cancelada"] as const;
+export const TX_KINDS = ["compra", "compra_p2p", "venta_p2p", "venta_inmediata", "retiro", "asignacion_demo", "ajuste_admin"] as const;
+export const TX_STATUSES = ["pendiente", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada"] as const;
 export type TxKind = (typeof TX_KINDS)[number];
 export type TxStatus = (typeof TX_STATUSES)[number];
 
@@ -155,6 +162,8 @@ export const ledgerTx = sqliteTable(
     signature: text("signature"),
     txHash: text("tx_hash"),
     listingId: text("listing_id"),
+    /** Motivo de un ajuste del admin o de un rechazo */
+    note: text("note"),
     createdAt: integer("created_at").notNull(),
     confirmedAt: integer("confirmed_at"),
   },
@@ -195,3 +204,23 @@ export const appMeta = sqliteTable("app_meta", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+export const ADMIN_ACTIONS = ["ajuste_kw", "config_planta", "aprobar_retiro", "rechazar_retiro"] as const;
+export type AdminAction = (typeof ADMIN_ACTIONS)[number];
+
+/** Bitácora de todo lo que hace un administrador. */
+export const adminAudit = sqliteTable(
+  "admin_audit",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorName: text("actor_name").notNull(),
+    action: text("action", { enum: ADMIN_ACTIONS }).notNull(),
+    targetUserId: text("target_user_id"),
+    summary: text("summary").notNull(),
+    /** JSON con el valor anterior y el nuevo */
+    detail: text("detail"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("audit_created_idx").on(t.createdAt)],
+);

@@ -15,12 +15,16 @@ export async function migrate(client: Client, { localFile = true } = {}) {
   const done = new Set(rows.map((r) => String(r.id)));
   for (const m of MIGRATIONS) {
     if (done.has(m.id)) continue;
-    await client.batch(
-      [
-        ...m.statements,
-        { sql: "INSERT OR IGNORE INTO __solaxy_migrations (id, applied_at) VALUES (?, ?)", args: [m.id, Date.now()] },
-      ],
-      "write",
-    );
+    // Una sentencia a la vez: si otra instancia ya aplicó parte de la migración
+    // (por ejemplo un ALTER TABLE), se ignora el "ya existe" y se sigue.
+    for (const sql of m.statements) {
+      try {
+        await client.execute(sql);
+      } catch (err) {
+        const msg = String((err as Error)?.message ?? err);
+        if (!/duplicate column name|already exists/i.test(msg)) throw err;
+      }
+    }
+    await client.execute({ sql: "INSERT OR IGNORE INTO __solaxy_migrations (id, applied_at) VALUES (?, ?)", args: [m.id, Date.now()] });
   }
 }

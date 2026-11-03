@@ -24,5 +24,18 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "CREATE INDEX IF NOT EXISTS `verification_identifier_idx` ON `verification` (`identifier`);",
       "CREATE TABLE IF NOT EXISTS `wallet_link` (\n\t`user_id` text PRIMARY KEY NOT NULL,\n\t`address` text NOT NULL,\n\t`wallet_name` text NOT NULL,\n\t`chain_id` integer,\n\t`connected_at` integer NOT NULL,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade\n);"
     ]
+  },
+  {
+    "id": "0001_admin",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `admin_audit` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`actor_user_id` text NOT NULL,\n\t`actor_name` text NOT NULL,\n\t`action` text NOT NULL,\n\t`target_user_id` text,\n\t`summary` text NOT NULL,\n\t`detail` text,\n\t`created_at` integer NOT NULL\n);",
+      "CREATE INDEX IF NOT EXISTS `audit_created_idx` ON `admin_audit` (`created_at`);",
+      "ALTER TABLE `ledger_tx` ADD `note` text;",
+      "ALTER TABLE `plant` ADD `tariff_day_cop` integer DEFAULT 560 NOT NULL;",
+      "ALTER TABLE `plant` ADD `tariff_peak_cop` integer DEFAULT 820 NOT NULL;",
+      "ALTER TABLE `plant` ADD `commission_pct` real DEFAULT 18 NOT NULL;",
+      "ALTER TABLE `plant` ADD `withdrawal_approval` integer DEFAULT true NOT NULL;",
+      "ALTER TABLE `plant` ADD `updated_at` integer;"
+    ]
   }
 ];
