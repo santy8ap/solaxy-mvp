@@ -127,7 +127,7 @@ export function WalletPage() {
           <h2 id="balance-title" className="text-sm text-silver-400">
             Saldo disponible en Solaxy
           </h2>
-          <div className="mt-3 text-[clamp(2rem,4vw,3.2rem)]">
+          <div className="mt-3 text-[clamp(1.6rem,6.4vw,3.2rem)]">
             <Odometer value={liveBalance} decimals={2} prefix={"$ "} className="display text-silver-50" />
           </div>
           <p className="mt-3 text-sm text-silver-400">

@@ -48,7 +48,7 @@ export function Overview() {
             <span className="live-dot" data-tone={earn?.simulated ? "sim" : undefined} />
             {earn?.simulated ? "Ganancias (simulación acelerada)" : "Tus ganancias acumuladas"}
           </div>
-          <div className="mt-4 text-[clamp(2.4rem,5.4vw,4.4rem)]">
+          <div className="mt-4 text-[clamp(1.75rem,7.6vw,4.4rem)]">
             {p ? <Odometer value={earn?.earned ?? p.earnedCop} decimals={2} prefix={"$\u00a0"} className="display text-silver-50" /> : <span className="display text-silver-500">$ —</span>}
           </div>
           <p className="num mt-3 text-silver-400">{usdt != null ? `≈ ${formatNumber(usdt, 6)} USDT` : " "}</p>

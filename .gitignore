@@ -47,3 +47,4 @@ next-env.d.ts
 /data/
 *.db
 *.db-*
+!.env.example

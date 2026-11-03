@@ -100,9 +100,34 @@ export function EnergyFlow({ reading, myKw, ratePerHour }: Props) {
   const bat = reading?.batteryKw ?? 0;
   const delivered = reading?.deliveredKw ?? 0;
   const night = solar < 1;
+  const rows: { label: string; value: string; note: string; tone: Tone }[] = [
+    { label: "Sol", value: `${formatNumber(reading?.irradiance ?? 0)} W/m²`, note: night ? "bajo el horizonte" : "irradiancia", tone: night ? "idle" : "sun" },
+    { label: "Paneles", value: `${formatNumber(solar)} kW`, note: `${formatNumber(reading?.moduleTempC ?? 0, 1)} °C en módulos`, tone: night ? "idle" : "sun" },
+    {
+      label: "Batería",
+      value: `${formatNumber(reading?.socPct ?? 0)} %`,
+      note: bat > 1 ? `entrega ${formatNumber(bat)} kW` : bat < -1 ? `carga ${formatNumber(-bat)} kW` : "en espera",
+      tone: bat > 1 ? "dusk" : bat < -1 ? "sun" : "idle",
+    },
+    { label: "Red y clientes", value: `${formatNumber(delivered)} kW`, note: `tarifa ${formatCop(reading?.tariffCopPerKwh ?? 0)}/kWh`, tone: delivered > 1 ? (night ? "dusk" : "sun") : "idle" },
+    { label: "Tu parte", value: `${formatNumber(myKw, 2)} kW`, note: `${formatCop(ratePerHour)} por hora`, tone: myKw > 0 ? "leaf" : "idle" },
+  ];
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox="0 50 1100 270" className="min-w-[760px]" role="img" aria-label={`Flujo de energía: ${formatNumber(solar)} kW solares, batería ${formatNumber(bat)} kW, ${formatNumber(delivered)} kW entregados`}>
+    <>
+    <ol className="space-y-2 md:hidden">
+      {rows.map((r, i) => (
+        <li key={r.label} className="relative flex items-center justify-between gap-4 rounded-2xl border bg-silicon-950/40 px-4 py-3" style={{ borderColor: r.tone === "idle" ? "#22346a" : `${TONE[r.tone]}66` }}>
+          <div>
+            <div className="text-sm text-silver-400">{r.label}</div>
+            <div className="num text-lg font-semibold text-silver-50">{r.value}</div>
+          </div>
+          <div className="num text-right text-sm text-silver-400">{r.note}</div>
+          {i < rows.length - 1 && <span className="absolute -bottom-2 left-8 z-10 h-2 w-0.5" style={{ background: r.tone === "idle" ? "#22346a" : TONE[r.tone] }} aria-hidden="true" />}
+        </li>
+      ))}
+    </ol>
+    <div className="hidden md:block">
+      <svg viewBox="0 50 1100 270" className="w-full" role="img" aria-label={`Flujo de energía: ${formatNumber(solar)} kW solares, batería ${formatNumber(bat)} kW, ${formatNumber(delivered)} kW entregados`}>
         <style>{`@keyframes flow-dash { to { stroke-dashoffset: -32; } }`}</style>
         <Flow d="M182 110 H 318" kw={solar} tone="sun" reduced={reduced} />
         <Flow d="M482 110 H 618" kw={Math.max(0, solar + Math.min(0, bat))} tone="sun" reduced={reduced} />
@@ -125,5 +150,6 @@ export function EnergyFlow({ reading, myKw, ratePerHour }: Props) {
         <Node x={1000} y={110} title="Tu parte" value={`${formatNumber(myKw, 2)} kW`} note={`${formatCop(ratePerHour)} por hora`} tone={myKw > 0 ? "leaf" : "idle"} icon={I.wallet} />
       </svg>
     </div>
+    </>
   );
 }
