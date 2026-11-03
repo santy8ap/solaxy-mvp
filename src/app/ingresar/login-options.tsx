@@ -1,7 +1,8 @@
 "use client";
-import { useState, useTransition } from "react";
+import { KeyRound, LineChart } from "lucide-react";
+import { useActionState, useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { signInDemo } from "./actions";
+import { prepareGoogleLogin, signInDemo } from "./actions";
 
 function GoogleG() {
   return (
@@ -14,45 +15,124 @@ function GoogleG() {
   );
 }
 
-export function LoginOptions({ googleEnabled }: { googleEnabled: boolean }) {
-  const [pending, startTransition] = useTransition();
+type Role = "user" | "admin";
+
+const ROLES: { id: Role; title: string; note: string; icon: typeof LineChart }[] = [
+  { id: "user", title: "Inversionista", note: "Tus kW, ganancias y telemetría", icon: LineChart },
+  { id: "admin", title: "Administrador", note: "Usuarios, planta y retiros", icon: KeyRound },
+];
+
+export function LoginOptions({ googleEnabled, defaultRole = "user" }: { googleEnabled: boolean; defaultRole?: Role }) {
+  const [role, setRole] = useState<Role>(defaultRole);
+  const [pin, setPin] = useState("");
+  const [state, formAction, pending] = useActionState(signInDemo, undefined);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   const onGoogle = async () => {
+    setNotice(null);
     if (!googleEnabled) {
       setNotice(
-        "El ingreso con Google aún no está configurado en este equipo. Agrega GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env.local (ver README). Mientras tanto, entra con la cuenta demo.",
+        "El ingreso con Google aún no está configurado en este equipo. Agrega GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET (ver README). Mientras tanto, entra con la cuenta demo.",
       );
       return;
     }
+    if (role === "admin" && !pin.trim()) {
+      setNotice("Escribe el PIN de administrador.");
+      return;
+    }
     setGoogleLoading(true);
-    const { error } = await authClient.signIn.social({ provider: "google", callbackURL: "/panel" });
+    const prep = await prepareGoogleLogin(role, pin);
+    if (prep?.error) {
+      setNotice(prep.error);
+      setGoogleLoading(false);
+      return;
+    }
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: role === "admin" ? "/api/admin/activar" : "/panel",
+    });
     if (error) {
       setGoogleLoading(false);
       setNotice(error.message ?? "No se pudo conectar con Google. Intenta de nuevo o usa la cuenta demo.");
     }
   };
 
+  const error = notice ?? state?.error ?? null;
+
   return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={onGoogle}
-        disabled={googleLoading}
-        className="btn w-full !justify-center bg-silver-50 !py-3.5 text-silicon-950 hover:bg-white"
+    <div className="space-y-5">
+      <fieldset>
+        <legend className="mb-2.5 text-sm text-silver-400">Entrar como</legend>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup">
+          {ROLES.map(({ id, title, note, icon: Icon }) => {
+            const active = role === id;
+            return (
+              <label
+                key={id}
+                className={`relative flex cursor-pointer flex-col gap-1.5 rounded-2xl border p-3.5 transition-all duration-200 ${
+                  active
+                    ? id === "admin"
+                      ? "border-dusk-400/80 bg-dusk-400/10 shadow-[0_0_0_1px_rgb(166_139_255/0.35)]"
+                      : "border-sun-400/80 bg-sun-400/10 shadow-[0_0_0_1px_rgb(246_183_60/0.35)]"
+                    : "border-silicon-600/70 hover:border-silicon-500"
+                }`}
+              >
+                <input type="radio" name="role-choice" value={id} checked={active} onChange={() => setRole(id)} className="sr-only" />
+                <Icon size={18} className={active ? (id === "admin" ? "text-dusk-300" : "text-sun-300") : "text-silver-400"} />
+                <span className="font-semibold text-silver-50">{title}</span>
+                <span className="text-xs leading-snug text-silver-400">{note}</span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <div
+        className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+        style={{ gridTemplateRows: role === "admin" ? "1fr" : "0fr", opacity: role === "admin" ? 1 : 0 }}
+        aria-hidden={role !== "admin"}
       >
-        <GoogleG />
-        {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
-      </button>
-      <form action={() => startTransition(() => signInDemo())}>
-        <button type="submit" disabled={pending} className="btn btn-sun w-full !py-3.5">
-          {pending ? "Entrando…" : "Entrar con la cuenta demo"}
+        <div className="overflow-hidden">
+          <label htmlFor="admin-pin" className="text-sm text-silver-400">
+            PIN de administrador
+          </label>
+          <input
+            id="admin-pin"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            tabIndex={role === "admin" ? 0 : -1}
+            placeholder="••••"
+            className="field mt-2 tracking-[0.4em]"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={onGoogle}
+          disabled={googleLoading || pending}
+          className="btn w-full !justify-center bg-silver-50 !py-3.5 text-silicon-950 hover:bg-white"
+        >
+          <GoogleG />
+          {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
         </button>
-      </form>
-      {notice && (
-        <p role="status" className="rounded-xl border border-sun-400/40 bg-sun-400/10 p-3 text-sm leading-relaxed text-sun-200">
-          {notice}
+        <form action={formAction}>
+          <input type="hidden" name="role" value={role} />
+          <input type="hidden" name="pin" value={pin} />
+          <button type="submit" disabled={pending || googleLoading} className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}>
+            {pending ? "Entrando…" : role === "admin" ? "Entrar como administrador (demo)" : "Entrar con la cuenta demo"}
+          </button>
+        </form>
+      </div>
+
+      {error && (
+        <p role="alert" className="rounded-xl border border-sun-400/40 bg-sun-400/10 p-3 text-sm leading-relaxed text-sun-200">
+          {error}
         </p>
       )}
     </div>

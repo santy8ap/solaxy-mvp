@@ -10,13 +10,14 @@ import { LoginOptions } from "./login-options";
 
 export const metadata: Metadata = { title: "Ingresar" };
 
-async function Options() {
+async function Options({ searchParams }: { searchParams: Promise<{ rol?: string }> }) {
   // Se lee al momento de la visita: si agregas las credenciales de Google no hace falta recompilar.
   await connection();
-  return <LoginOptions googleEnabled={googleEnabled} />;
+  const { rol } = await searchParams;
+  return <LoginOptions googleEnabled={googleEnabled} defaultRole={rol === "admin" ? "admin" : "user"} />;
 }
 
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: PageProps<"/ingresar">) {
   return (
     <main className="relative flex min-h-dvh flex-col">
       <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-5 py-5 sm:px-8">
@@ -39,10 +40,10 @@ export default function LoginPage() {
         </div>
         <div className="panel cells mx-auto w-full max-w-[440px] p-7 sm:p-9">
           <h2 className="text-2xl font-semibold text-silver-50">Ingresar a {BRAND.name}</h2>
-          <p className="mt-2 text-silver-400">Usa tu cuenta de Google o entra con la cuenta demo.</p>
+          <p className="mt-2 text-silver-400">Elige cómo quieres entrar y usa tu cuenta de Google o la cuenta demo.</p>
           <div className="mt-8">
-            <Suspense fallback={<div className="h-[116px] animate-pulse rounded-2xl bg-silicon-700/50" />}>
-              <Options />
+            <Suspense fallback={<div className="h-[260px] animate-pulse rounded-2xl bg-silicon-700/50" />}>
+              <Options searchParams={searchParams as Promise<{ rol?: string }>} />
             </Suspense>
           </div>
           <p className="mt-6 text-xs leading-relaxed text-silver-500">

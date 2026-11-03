@@ -150,6 +150,16 @@
   .btn-sun:hover {
     background: linear-gradient(180deg, var(--color-sun-200), var(--color-sun-400));
   }
+  .btn-dusk {
+    background: linear-gradient(180deg, var(--color-dusk-300), var(--color-dusk-500));
+    color: var(--color-silicon-950);
+    box-shadow:
+      0 10px 30px -12px rgb(139 108 240 / 0.7),
+      inset 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+  .btn-dusk:hover {
+    background: linear-gradient(180deg, #ddd2ff, var(--color-dusk-400));
+  }
   .btn-ghost {
     border: 1px solid rgb(142 154 192 / 0.35);
     color: var(--color-silver-100);

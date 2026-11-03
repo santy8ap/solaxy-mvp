@@ -9,6 +9,8 @@ export const env = {
   demoEmail: "demo@solaxy.local",
   demoPassword: process.env.DEMO_PASSWORD || "solaxy-demo-2026",
   demoName: "Inversionista Demo",
+  /** PIN para entrar como administrador. En Vercel configúralo con ADMIN_PIN. */
+  adminPin: process.env.ADMIN_PIN || "2026",
 };
 
 export const googleEnabled = Boolean(env.googleClientId && env.googleClientSecret);
