@@ -53,19 +53,27 @@ export function formatAsset(amount: number, asset: string) {
 
 const dt = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short" });
 const dOnly = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short" });
-const tOnly = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit", hour12: false });
+const tOnly = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit", hour12: true });
 const tSec = new Intl.DateTimeFormat("es-CO", {
   timeZone: "America/Bogota",
-  hour: "2-digit",
+  hour: "numeric",
   minute: "2-digit",
   second: "2-digit",
-  hour12: false,
+  hour12: true,
 });
 
 export const formatDateTime = (ts: number) => dt.format(ts);
 export const formatDay = (ts: number) => dOnly.format(ts);
 export const formatTime = (ts: number) => tOnly.format(ts);
 export const formatClock = (ts: number) => tSec.format(ts);
+
+/** Hora redonda para ejes: "6 a. m.", "12 m.", "3 p. m." */
+export function formatHourLabel(hour: number) {
+  const h = ((hour % 24) + 24) % 24;
+  if (h === 12) return "12 m.";
+  if (h === 0) return "12 a. m.";
+  return h < 12 ? `${h} a. m.` : `${h - 12} p. m.`;
+}
 
 export function shortAddress(addr?: string | null) {
   if (!addr) return "—";

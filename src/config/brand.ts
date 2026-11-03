@@ -4,7 +4,7 @@ export const BRAND = {
   legalName: "Solaxy S.A.S.",
   tagline: "Energía solar que rinde cada segundo",
   description:
-    "Compra kW de una planta solar real, paga con Trust Wallet o cripto y mira crecer tus ganancias en tiempo real.",
+    "Compra kW de una planta solar, paga con Trust Wallet o cripto y mira crecer tus ganancias en tiempo real.",
   country: "Colombia",
-  demoBadge: "Modo demo · telemetría simulada",
+  demoBadge: "Modo demo: la telemetría es simulada",
 } as const;

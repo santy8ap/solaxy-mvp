@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { createClient, type Client } from "@libsql/client";
+import { createClient } from "@libsql/client";
 import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
