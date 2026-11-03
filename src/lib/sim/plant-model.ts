@@ -1,4 +1,4 @@
-import { ECONOMICS } from "@/config/economics";
+import { ECONOMICS, type Economics } from "@/config/economics";
 import type { PlantSpec } from "@/config/plant";
 import { hash01 } from "./hash";
 import { solarPoint } from "./solar";
@@ -11,8 +11,6 @@ import {
   localDayIndex,
   localHour,
 } from "./time";
-
-type Economics = typeof ECONOMICS;
 
 /** Un intervalo de 15 minutos de la planta (lo que se guarda en la base de datos). */
 export interface PlantInterval {
@@ -130,7 +128,7 @@ function computeDayProfile(spec: PlantSpec, day: number, econ: Economics): Plant
 
 /** Los 96 intervalos de 15 minutos de un día local (memorizado). */
 export function dayProfile(spec: PlantSpec, day: number, econ: Economics = ECONOMICS): PlantInterval[] {
-  const key = `${spec.id}:${spec.seed}:${day}:${econ.netFactor}:${econ.tariffDayCopPerKwh}:${econ.tariffPeakCopPerKwh}`;
+  const key = `${spec.id}:${spec.seed}:${spec.capacityKwp}:${day}:${econ.netFactor}:${econ.tariffDayCopPerKwh}:${econ.tariffPeakCopPerKwh}`;
   let profile = profileCache.get(key);
   if (!profile) {
     profile = computeDayProfile(spec, day, econ);

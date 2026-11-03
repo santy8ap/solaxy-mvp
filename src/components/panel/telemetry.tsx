@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { PLANT } from "@/config/plant";
+import { useSettings } from "@/lib/client/use-settings";
 import type { PortfolioDTO } from "@/lib/portfolio";
 import { useJson } from "@/lib/client/use-json";
 import { formatClock, formatCop, formatNumber, formatTime } from "@/lib/format";
@@ -46,11 +46,12 @@ function Metric({ label, value, unit, note, tone }: { label: string; value: stri
 export function Telemetry() {
   const live = useLive();
   const now = useNow(1000);
+  const { spec } = useSettings();
   const { data: p } = useJson<PortfolioDTO>("/api/portfolio", { refreshMs: 60_000 });
   const [scope, setScope] = useState<Scope>("planta");
   const r = live.payload?.reading;
   const today = live.payload?.today;
-  const share = scope === "mia" && p ? p.kw / PLANT.capacityKwp : 1;
+  const share = scope === "mia" && p ? p.kw / spec.capacityKwp : 1;
   const recent = useRecent(r?.ts, r ? r.deliveredKw * share : undefined, r ? r.solarKw * share : undefined);
   const status = r && now ? plantStatus(r, now) : null;
   const k = (v: number | undefined) => (v ?? 0) * share;
@@ -58,7 +59,7 @@ export function Telemetry() {
 
   return (
     <>
-      <Topbar title="Telemetría" subtitle={`${PLANT.name}, ${PLANT.location}`} />
+      <Topbar title="Telemetría" subtitle={`${spec.name}, ${spec.location}`} />
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-full border border-silicon-600/70 bg-silicon-950/50 p-1" role="tablist" aria-label="Ver datos de">
@@ -137,7 +138,7 @@ export function Telemetry() {
       </section>
 
       <section className="mt-5 grid overflow-hidden rounded-[var(--radius-panel)] border border-silicon-600/50 bg-silicon-600/50 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: 1 }} aria-label="Mediciones">
-        <Metric label="Producción solar" value={formatNumber(k(r?.solarKw), decimals)} unit="kW" note={`de ${formatNumber(PLANT.acCapacityKw * share, decimals)} kW de capacidad AC`} tone="text-sun-300" />
+        <Metric label="Producción solar" value={formatNumber(k(r?.solarKw), decimals)} unit="kW" note={`de ${formatNumber(spec.acCapacityKw * share, decimals)} kW de capacidad AC`} tone="text-sun-300" />
         <Metric label="Irradiancia" value={formatNumber(r?.irradiance ?? 0)} unit="W/m²" note="sobre el plano de los paneles" />
         <Metric label="Temperatura de módulos" value={formatNumber(r?.moduleTempC ?? 0, 1)} unit="°C" note={`ambiente ${formatNumber(r?.ambientTempC ?? 0, 1)} °C`} />
         <Metric
@@ -168,10 +169,10 @@ export function Telemetry() {
           <h2 id="inv-title" className="text-lg font-semibold text-silver-50">
             Inversores
           </h2>
-          <p className="mb-4 mt-1 text-sm text-silver-400">{PLANT.inverterCount} equipos de {formatNumber(PLANT.acCapacityKw / PLANT.inverterCount)} kW</p>
+          <p className="mb-4 mt-1 text-sm text-silver-400">{spec.inverterCount} equipos de {formatNumber(spec.acCapacityKw / spec.inverterCount)} kW</p>
           <ul className="space-y-2.5">
             {(r?.inverters ?? []).map((inv) => {
-              const max = PLANT.acCapacityKw / PLANT.inverterCount;
+              const max = spec.acCapacityKw / spec.inverterCount;
               return (
                 <li key={inv.id} className="grid grid-cols-[64px_1fr_76px] items-center gap-3 text-sm">
                   <span className="num text-silver-300">{inv.id}</span>

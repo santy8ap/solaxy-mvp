@@ -1,7 +1,8 @@
 "use client";
 import { useMemo } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { PLANT } from "@/config/plant";
+import type { PlantSpec } from "@/config/plant";
+import { useSettings } from "@/lib/client/use-settings";
 import { formatHourLabel, formatNumber, formatTime } from "@/lib/format";
 import { useNow } from "@/lib/live/hooks";
 import { HOUR_MS, dayStartMs, localDayIndex } from "@/lib/sim";
@@ -17,18 +18,19 @@ interface Point {
 
 export function useTodaySeries(now: number | null): Point[] {
   const minuteKey = now ? Math.floor(now / 60_000) : 0;
+  const { spec, econ } = useSettings();
   return useMemo(() => {
     if (!now) return [];
-    return todayCurve(PLANT, now).map((p) => ({
+    return todayCurve(spec, now, econ).map((p) => ({
       ts: p.ts,
       solar: p.solarKw,
       // Solo cuando la batería entrega energía (evita una línea plana en cero).
       battery: p.batteryKw != null && p.batteryKw > 0.5 ? p.batteryKw : null,
       expected: p.expectedKw,
     }));
-    // se recalcula una vez por minuto
+    // se recalcula una vez por minuto o si cambia la configuración
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minuteKey]);
+  }, [minuteKey, spec, econ]);
 }
 
 export function TodayChart({ now, height = 300 }: { now: number | null; height?: number }) {
@@ -106,22 +108,26 @@ export function TodayChart({ now, height = 300 }: { now: number | null; height?:
   );
 }
 
-const SPECS = [
-  ["Capacidad instalada", `${formatNumber(PLANT.capacityKwp)} kWp`],
-  ["Paneles", `${formatNumber(PLANT.moduleCount)} de ${PLANT.moduleWatt} W`],
-  ["Inversores", `${PLANT.inverterCount} conectados a la red`],
-  ["Batería", `${formatNumber(PLANT.battery.capacityKwh / 1000)} MWh, ${PLANT.battery.powerKw} kW`],
-  ["Ubicación", PLANT.location],
-] as const;
+function specRows(spec: PlantSpec) {
+  return [
+    ["Capacidad instalada", `${formatNumber(spec.capacityKwp)} kWp`],
+    ["Paneles", `${formatNumber(spec.moduleCount)} de ${spec.moduleWatt} W`],
+    ["Inversores", `${spec.inverterCount} conectados a la red`],
+    ["Batería", `${formatNumber(spec.battery.capacityKwh / 1000)} MWh, ${spec.battery.powerKw} kW`],
+    ["Ubicación", spec.location],
+  ] as const;
+}
 
 export function PlantToday() {
   const now = useNow(30_000);
+  const { spec } = useSettings();
+  const SPECS = specRows(spec);
   return (
     <section id="planta" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 py-20 sm:px-8" aria-labelledby="planta-title">
       <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
         <div>
           <h2 id="planta-title" className="display text-[clamp(2rem,3.6vw,3rem)] text-silver-50">
-            {PLANT.name}, hoy
+            {spec.name}, hoy
           </h2>
           <p className="mt-4 max-w-[40ch] text-silver-300">
             La curva dorada es lo que la planta produjo hoy. La línea punteada es lo que produciría con el cielo

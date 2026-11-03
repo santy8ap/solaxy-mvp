@@ -1,7 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
-import { ECONOMICS } from "@/config/economics";
-import { PLANT } from "@/config/plant";
+import type { Economics } from "@/config/economics";
+import type { PlantSpec } from "@/config/plant";
+import { useSettings } from "@/lib/client/use-settings";
 import { formatCop, formatCopCompact, formatNumber, formatPct } from "@/lib/format";
 import { dayProfile, localDayIndex } from "@/lib/sim";
 
@@ -9,22 +10,23 @@ import { dayProfile, localDayIndex } from "@/lib/sim";
 const REFERENCE_LAST_DAY = localDayIndex(Date.UTC(2026, 10, 1, 17));
 
 /** Ingreso neto anual por kWp según 120 días del modelo de la planta. */
-function useYearlyNetPerKwp() {
+function useYearlyNetPerKwp(spec: PlantSpec, econ: Economics) {
   return useMemo(() => {
     let net = 0;
-    for (let d = 0; d < 120; d++) net += dayProfile(PLANT, REFERENCE_LAST_DAY - d).reduce((s, i) => s + i.netCop, 0);
-    return ((net / 120) * 365) / PLANT.capacityKwp;
-  }, []);
+    for (let d = 0; d < 120; d++) net += dayProfile(spec, REFERENCE_LAST_DAY - d, econ).reduce((s, i) => s + i.netCop, 0);
+    return ((net / 120) * 365) / spec.capacityKwp;
+  }, [spec, econ]);
 }
 
 export function Simulator() {
   const [kw, setKw] = useState(2);
-  const perKwp = useYearlyNetPerKwp();
-  const invest = kw * ECONOMICS.pricePerKwCop;
+  const { spec, econ } = useSettings();
+  const perKwp = useYearlyNetPerKwp(spec, econ);
+  const invest = kw * econ.pricePerKwCop;
   const yearly = kw * perKwp;
   const years = [1, 2, 3, 4, 5].map((y) => ({ y, total: yearly * y }));
   const max = years.at(-1)!.total;
-  const yieldEa = perKwp / ECONOMICS.pricePerKwCop;
+  const yieldEa = perKwp / econ.pricePerKwCop;
 
   return (
     <section id="simulador" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 py-20 sm:px-8" aria-labelledby="sim-title">
@@ -75,7 +77,7 @@ export function Simulator() {
             </div>
             <div>
               <dt className="text-sm text-silver-400">Recuperas la inversión en</dt>
-              <dd className="num mt-1 text-2xl font-semibold text-silver-50">{formatNumber(ECONOMICS.pricePerKwCop / perKwp, 1)} años</dd>
+              <dd className="num mt-1 text-2xl font-semibold text-silver-50">{formatNumber(econ.pricePerKwCop / perKwp, 1)} años</dd>
             </div>
           </dl>
           <div className="mt-8">

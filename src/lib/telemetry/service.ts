@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, lte, min, sql } from "drizzle-orm";
+import { ECONOMICS, type Economics } from "@/config/economics";
 import type { PlantSpec } from "@/config/plant";
 import type { Db } from "@/lib/db/client";
 import { telemetry } from "@/lib/db/schema";
@@ -23,20 +24,26 @@ function lastCompleteStart(now: number) {
  * en marcha hasta el último intervalo completo. No necesita cron: se llama al
  * consultar datos. Devuelve cuántas filas insertó.
  */
-export async function ensureTelemetry(db: Db, spec: PlantSpec, commissionedAt: number, now: number): Promise<number> {
+export async function ensureTelemetry(
+  db: Db,
+  spec: PlantSpec,
+  commissionedAt: number,
+  now: number,
+  econ: Economics = ECONOMICS,
+): Promise<number> {
   const target = lastCompleteStart(now);
   if (lastEnsured >= target) return 0;
   if (inflight) {
     await inflight;
     if (lastEnsured >= target) return 0;
   }
-  inflight = fill(db, spec, commissionedAt, target).finally(() => {
+  inflight = fill(db, spec, econ, commissionedAt, target).finally(() => {
     inflight = null;
   });
   return inflight;
 }
 
-async function fill(db: Db, spec: PlantSpec, commissionedAt: number, target: number): Promise<number> {
+async function fill(db: Db, spec: PlantSpec, econ: Economics, commissionedAt: number, target: number): Promise<number> {
   const [last] = await db
     .select({ ts: telemetry.ts, cumKwh: telemetry.cumKwh, cumNetPerKwp: telemetry.cumNetPerKwp })
     .from(telemetry)
@@ -49,7 +56,7 @@ async function fill(db: Db, spec: PlantSpec, commissionedAt: number, target: num
   let cumNet = last?.cumNetPerKwp ?? 0;
   const rows: (typeof telemetry.$inferInsert)[] = [];
   for (; ts <= target; ts += INTERVAL_MS) {
-    const i = intervalAt(spec, ts);
+    const i = intervalAt(spec, ts, econ);
     cumKwh += i.deliveredKwh;
     cumNet += i.netCop / spec.capacityKwp;
     rows.push({
@@ -89,7 +96,13 @@ export interface Curves {
  * Construye las curvas acumuladas C(t) para los instantes indicados (se consultan
  * de una vez en la base de datos). Consultar un instante no declarado es un error.
  */
-export async function buildCurves(db: Db, spec: PlantSpec, timestamps: readonly number[], now: number): Promise<Curves> {
+export async function buildCurves(
+  db: Db,
+  spec: PlantSpec,
+  timestamps: readonly number[],
+  now: number,
+  econ: Economics = ECONOMICS,
+): Promise<Curves> {
   const target = lastCompleteStart(now);
   const starts = [...new Set(timestamps.map(intervalStart).filter((s) => s <= target))];
   const cols = {
@@ -133,8 +146,8 @@ export async function buildCurves(db: Db, spec: PlantSpec, timestamps: readonly 
         if (s > last.ts) {
           // Intervalo en curso (aún no guardado): se completa con el modelo.
           let cum = cumEnd(last);
-          for (let x = last.ts + INTERVAL_MS; x < s; x += INTERVAL_MS) cum += per(intervalAt(spec, x));
-          return cum + per(intervalAt(spec, s)) * frac;
+          for (let x = last.ts + INTERVAL_MS; x < s; x += INTERVAL_MS) cum += per(intervalAt(spec, x, econ));
+          return cum + per(intervalAt(spec, s, econ)) * frac;
         }
         if (!declared.has(s)) throw new Error(`Instante no declarado en buildCurves: ${new Date(t).toISOString()}`);
         return 0;

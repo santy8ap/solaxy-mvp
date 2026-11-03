@@ -1,5 +1,20 @@
 /** Parámetros económicos del modelo de negocio (COP). */
-export const ECONOMICS = {
+export interface Economics {
+  pricePerKwCop: number;
+  minPurchaseKw: number;
+  maxPurchaseKw: number;
+  tariffDayCopPerKwh: number;
+  tariffPeakCopPerKwh: number;
+  peakWindow: readonly [number, number];
+  netFactor: number;
+  instantSellFactor: number;
+  co2KgPerKwh: number;
+  homeKwhPerMonth: number;
+  treeCo2KgPerYear: number;
+}
+
+/** Valores iniciales. El administrador puede cambiar precio, tarifas y comisión desde /admin. */
+export const ECONOMICS: Economics = {
   /** Precio de 1 kW de la planta */
   pricePerKwCop: 4_800_000,
   minPurchaseKw: 0.1,
@@ -9,7 +24,7 @@ export const ECONOMICS = {
   /** Tarifa en hora pico (descarga de batería) */
   tariffPeakCopPerKwh: 820,
   /** Horas locales [inicio, fin) de la hora pico */
-  peakWindow: [18, 22] as const,
+  peakWindow: [18, 22],
   /** Fracción del ingreso que llega al inversionista (18 % O&M + plataforma) */
   netFactor: 0.82,
   /** Venta inmediata a la plataforma: % del precio actual */
@@ -20,7 +35,7 @@ export const ECONOMICS = {
   homeKwhPerMonth: 160,
   /** CO₂ que absorbe un árbol al año (kg) */
   treeCo2KgPerYear: 22,
-} as const;
+};
 
 export const PACKAGES = [
   { id: "semilla", name: "Semilla", kw: 0.5, blurb: "Tu primer paso en energía solar" },

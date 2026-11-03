@@ -1,6 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { PLANT } from "@/config/plant";
+import { readConfig } from "@/lib/settings";
 import { ensureTelemetry } from "@/lib/telemetry/service";
 import { client, db, isLocalFileDb } from "./index";
 import { migrate } from "./migrate";
@@ -20,8 +21,9 @@ export async function ensureReady(now = Date.now()) {
     throw err;
   });
   const { commissionedAt } = await ready;
-  await ensureTelemetry(db, PLANT, commissionedAt, now);
-  return { commissionedAt };
+  const config = await readConfig();
+  await ensureTelemetry(db, config.spec, commissionedAt, now, config.econ);
+  return { commissionedAt, ...config };
 }
 
 async function initialize() {

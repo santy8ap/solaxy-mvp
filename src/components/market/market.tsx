@@ -99,7 +99,7 @@ function BuyPlant({ m, kw, setKw, pay, setPayId, onBuy }: { m?: MarketDTO; kw: n
   const wallet = useWallet();
   const { data: portfolio } = useJson<PortfolioDTO>("/api/portfolio");
   const price = m?.plant.pricePerKwCop ?? ECONOMICS.pricePerKwCop;
-  const yearlyPerKwp = (portfolio?.yieldEa ?? 0.158) * ECONOMICS.pricePerKwCop;
+  const yearlyPerKwp = (portfolio?.yieldEa ?? 0.158) * price;
   const total = kw * price;
   const assetAmount = m ? total / (m.rates.prices[pay.asset]?.cop ?? 1) : null;
   const max = Math.min(ECONOMICS.maxPurchaseKw, m?.plant.availableKw ?? ECONOMICS.maxPurchaseKw);

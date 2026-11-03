@@ -1,9 +1,15 @@
 import { connection } from "next/server";
-import { PLANT } from "@/config/plant";
+import { handleError } from "@/lib/api";
+import { ensureReady } from "@/lib/db/init";
 import { livePayload, todayCurve } from "@/lib/telemetry/live";
 
 export async function GET() {
-  await connection();
-  const now = Date.now();
-  return Response.json({ now, curve: todayCurve(PLANT, now), live: livePayload(PLANT, now) });
+  try {
+    await connection();
+    const { spec, econ } = await ensureReady();
+    const now = Date.now();
+    return Response.json({ now, curve: todayCurve(spec, now, econ), live: livePayload(spec, now, econ) });
+  } catch (e) {
+    return handleError(e);
+  }
 }

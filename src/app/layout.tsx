@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo } from "next/font/google";
 import { BRAND } from "@/config/brand";
+import { LiveConfigSync } from "@/components/live/live-config-sync";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -24,7 +25,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es-CO" className={`${archivo.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <LiveConfigSync />
+      </body>
     </html>
   );
 }

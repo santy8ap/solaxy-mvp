@@ -1,6 +1,5 @@
 import "server-only";
 import { and, desc, eq, gt, sql } from "drizzle-orm";
-import { ECONOMICS } from "@/config/economics";
 import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
@@ -42,7 +41,7 @@ export async function soldKw() {
 }
 
 export async function platformStats() {
-  await ensureReady();
+  const { spec, econ, settings } = await ensureReady();
   const sold = await soldKw();
   const [inv] = await db.select({ n: sql<number>`count(*)` }).from(
     db
@@ -64,12 +63,16 @@ export async function platformStats() {
     .orderBy(desc(ledgerTx.createdAt))
     .limit(8);
   return {
-    capacityKwp: PLANT.capacityKwp,
+    capacityKwp: spec.capacityKwp,
     soldKw: sold,
-    availableKw: round1(PLANT.capacityKwp - sold),
+    availableKw: round1(spec.capacityKwp - sold),
     investors: inv.n,
     capitalCop: cap.cop,
-    pricePerKwCop: ECONOMICS.pricePerKwCop,
+    pricePerKwCop: econ.pricePerKwCop,
+    commissionPct: settings.commissionPct,
+    tariffDayCop: settings.tariffDayCop,
+    tariffPeakCop: settings.tariffPeakCop,
+    plantName: settings.name,
     recent: recent.map((r) => ({ ...r, name: anonymize(r.name) })),
   };
 }
@@ -80,7 +83,7 @@ function anonymize(name: string) {
 }
 
 export async function marketSnapshot(userId: string) {
-  await ensureReady();
+  const { spec, econ } = await ensureReady();
   const sold = await soldKw();
   const rows = await db
     .select({
@@ -98,16 +101,16 @@ export async function marketSnapshot(userId: string) {
   const pos = await getKwPosition(userId);
   return {
     plant: {
-      id: PLANT.id,
-      name: PLANT.name,
-      location: PLANT.location,
-      capacityKwp: PLANT.capacityKwp,
+      id: spec.id,
+      name: spec.name,
+      location: spec.location,
+      capacityKwp: spec.capacityKwp,
       soldKw: sold,
-      availableKw: round1(PLANT.capacityKwp - sold),
-      pricePerKwCop: ECONOMICS.pricePerKwCop,
-      minKw: ECONOMICS.minPurchaseKw,
-      maxKw: ECONOMICS.maxPurchaseKw,
-      instantSellFactor: ECONOMICS.instantSellFactor,
+      availableKw: round1(spec.capacityKwp - sold),
+      pricePerKwCop: econ.pricePerKwCop,
+      minKw: econ.minPurchaseKw,
+      maxKw: econ.maxPurchaseKw,
+      instantSellFactor: econ.instantSellFactor,
     },
     listings: rows
       .filter((r) => r.sellerId !== userId)
@@ -133,10 +136,10 @@ export interface BuyInput {
 }
 
 export async function createBuyOrder(input: BuyInput) {
-  await ensureReady();
+  const { spec, econ } = await ensureReady();
   const now = Date.now();
   let kw: number;
-  let pricePerKw: number = ECONOMICS.pricePerKwCop;
+  let pricePerKw: number = econ.pricePerKwCop;
 
   if (input.listingId) {
     const [l] = await db.select().from(listing).where(eq(listing.id, input.listingId));
@@ -146,10 +149,10 @@ export async function createBuyOrder(input: BuyInput) {
     pricePerKw = l.pricePerKwCop;
   } else {
     kw = round1(input.kw ?? 0);
-    if (kw < ECONOMICS.minPurchaseKw || kw > ECONOMICS.maxPurchaseKw) {
-      throw new MarketError(`Puedes comprar entre ${ECONOMICS.minPurchaseKw} y ${ECONOMICS.maxPurchaseKw} kW`);
+    if (kw < econ.minPurchaseKw || kw > econ.maxPurchaseKw) {
+      throw new MarketError(`Puedes comprar entre ${econ.minPurchaseKw} y ${econ.maxPurchaseKw} kW`);
     }
-    const available = PLANT.capacityKwp - (await soldKw());
+    const available = spec.capacityKwp - (await soldKw());
     if (kw > available) throw new MarketError("La planta no tiene tantos kW disponibles", 409);
   }
 
@@ -188,7 +191,7 @@ export async function createBuyOrder(input: BuyInput) {
 }
 
 export async function confirmBuyOrder(userId: string, orderId: string, proof: { signature?: string; simulated?: boolean }) {
-  await ensureReady();
+  const { spec } = await ensureReady();
   const now = Date.now();
   const [tx] = await db
     .select()
@@ -213,7 +216,7 @@ export async function confirmBuyOrder(userId: string, orderId: string, proof: { 
   const txHash = simulatedTxHash();
 
   if (!tx.listingId) {
-    const available = PLANT.capacityKwp - (await soldKw());
+    const available = spec.capacityKwp - (await soldKw());
     if (kw > available) throw new MarketError("La planta se quedó sin kW disponibles", 409);
   }
 
@@ -279,14 +282,14 @@ export async function confirmBuyOrder(userId: string, orderId: string, proof: { 
 /* ───────────── Ventas ───────────── */
 
 export async function instantSell(userId: string, kwInput: number) {
-  await ensureReady();
+  const { econ } = await ensureReady();
   const now = Date.now();
   const kw = round1(kwInput);
   const pos = await getKwPosition(userId, now);
   if (kw < 0.1) throw new MarketError("Vende al menos 0,1 kW");
   if (kw > pos.availableKw) throw new MarketError(`Solo tienes ${pos.availableKw} kW disponibles para vender`);
   const avgCost = Math.round(pos.investedCop / pos.kw);
-  const amountCop = Math.round(kw * ECONOMICS.pricePerKwCop * ECONOMICS.instantSellFactor);
+  const amountCop = Math.round(kw * econ.pricePerKwCop * econ.instantSellFactor);
   const txId = newId("tx-");
   await db.batch([
     db.insert(ledgerTx).values({
@@ -308,13 +311,13 @@ export async function instantSell(userId: string, kwInput: number) {
 }
 
 export async function createListing(userId: string, kwInput: number, pricePerKwCop: number) {
-  await ensureReady();
+  const { econ } = await ensureReady();
   const kw = round1(kwInput);
   const pos = await getKwPosition(userId);
   if (kw < 0.1) throw new MarketError("Publica al menos 0,1 kW");
   if (kw > pos.availableKw) throw new MarketError(`Solo tienes ${pos.availableKw} kW disponibles`);
-  const min = Math.round(ECONOMICS.pricePerKwCop * 0.8);
-  const max = Math.round(ECONOMICS.pricePerKwCop * 1.25);
+  const min = Math.round(econ.pricePerKwCop * 0.8);
+  const max = Math.round(econ.pricePerKwCop * 1.25);
   if (pricePerKwCop < min || pricePerKwCop > max) throw new MarketError("El precio debe estar entre −20 % y +25 % del precio de la planta");
   const id = newId("lst-");
   await db.insert(listing).values({ id, sellerId: userId, plantId: PLANT.id, kw, pricePerKwCop: Math.round(pricePerKwCop), status: "activa", createdAt: Date.now() });

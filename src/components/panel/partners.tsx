@@ -1,5 +1,4 @@
 "use client";
-import { ECONOMICS } from "@/config/economics";
 import { PLANT } from "@/config/plant";
 import { useJson } from "@/lib/client/use-json";
 import { formatCop, formatCopCompact, formatDateTime, formatKwh, formatNumber, formatPct } from "@/lib/format";
@@ -16,6 +15,9 @@ interface PlatformDTO {
   lifetimeKwh: number;
   co2AvoidedKg: number;
   lifetimeNetPerKwp: number;
+  commissionPct: number;
+  tariffDayCop: number;
+  tariffPeakCop: number;
   recent: { name: string; kw: number | null; asset: string | null; walletName: string | null; at: number }[];
 }
 
@@ -26,7 +28,8 @@ export function Partners() {
   const today = live.payload?.today;
   const sold = d ? d.soldKw / d.capacityKwp : 0;
   const lifetimeRevenueNet = d ? d.lifetimeNetPerKwp * d.capacityKwp : 0;
-  const lifetimeGross = lifetimeRevenueNet / ECONOMICS.netFactor;
+  const netFactor = 1 - (d?.commissionPct ?? 18) / 100;
+  const lifetimeGross = lifetimeRevenueNet / netFactor;
   const platformShare = lifetimeGross - lifetimeRevenueNet;
 
   return (
@@ -60,11 +63,11 @@ export function Partners() {
               <dd className="num text-xl font-semibold text-silver-50">{formatCop(lifetimeGross)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-silver-300">Repartido a inversionistas ({formatPct(ECONOMICS.netFactor, 0)})</dt>
+              <dt className="text-silver-300">Repartido a inversionistas ({formatPct(netFactor, 0)})</dt>
               <dd className="num text-xl font-semibold text-leaf-300">{formatCop(lifetimeRevenueNet)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-silver-300">Operación y plataforma ({formatPct(1 - ECONOMICS.netFactor, 0)})</dt>
+              <dt className="text-silver-300">Operación y plataforma ({formatPct(1 - netFactor, 0)})</dt>
               <dd className="num text-xl font-semibold text-sun-300">{formatCop(platformShare)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4 border-t border-silicon-600/50 pt-4">
@@ -73,7 +76,7 @@ export function Partners() {
             </div>
           </dl>
           <p className="mt-6 text-xs text-silver-500">
-            Modelo: la energía se vende a {formatCop(ECONOMICS.tariffDayCopPerKwh)}/kWh en el día y a {formatCop(ECONOMICS.tariffPeakCopPerKwh)}/kWh en la hora pico con la batería. Cifras simuladas para la demo.
+            Modelo: la energía se vende a {formatCop(d?.tariffDayCop ?? 0)}/kWh en el día y a {formatCop(d?.tariffPeakCop ?? 0)}/kWh en la hora pico con la batería. Cifras simuladas para la demo.
           </p>
         </section>
 

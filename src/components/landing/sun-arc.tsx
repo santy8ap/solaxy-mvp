@@ -29,6 +29,8 @@ interface Props {
   reading: PlantReading | null;
   /** Para el panel: menos detalle y sin estrellas */
   compact?: boolean;
+  /** Capacidad AC de la planta (para iluminar los paneles en proporción) */
+  acCapacityKw?: number;
 }
 
 /**
@@ -36,7 +38,7 @@ interface Props {
  * el sol en su posición actual y los paneles iluminados según la potencia.
  * De noche el sol baja del horizonte y la batería toma el relevo.
  */
-export function SunArc({ now, reading, compact = false }: Props) {
+export function SunArc({ now, reading, compact = false, acCapacityKw = PLANT.acCapacityKw }: Props) {
   const reduced = useReducedMotion();
   const day = useMemo(() => (now ? sunDay(PLANT, now) : null), [now]);
   const span = day ? day.sunset - day.sunrise : 1;
@@ -82,7 +84,7 @@ export function SunArc({ now, reading, compact = false }: Props) {
 
   const sunT = day ? day.sunrise + span * progress : 0;
   const sun = isDay ? point(sunT) : { x: now && day && now > day.sunset ? RIGHT - 40 : LEFT + 40, y: HORIZON + 70 };
-  const solarFactor = reading ? Math.min(1, reading.solarKw / (PLANT.acCapacityKw * 0.85)) : 0;
+  const solarFactor = reading ? Math.min(1, reading.solarKw / (acCapacityKw * 0.85)) : 0;
   const battery = reading ? Math.max(0, reading.batteryKw) : 0;
   const soc = reading ? reading.socPct / 100 : 0.1;
   const discharging = battery > 1;

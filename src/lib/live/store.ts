@@ -5,7 +5,8 @@
  * - o, en Modo presentación, el mismo motor calculado en el navegador a una
  *   hora simulada y con velocidad ajustable. Nada de esto se guarda en la BD.
  */
-import { PLANT } from "@/config/plant";
+import { ECONOMICS, type Economics } from "@/config/economics";
+import { PLANT, type PlantSpec } from "@/config/plant";
 import { livePayload, type LivePayload } from "@/lib/telemetry/live";
 
 export type LiveStatus = "connecting" | "live" | "offline" | "simulated";
@@ -40,6 +41,9 @@ function loadPresentation(): Presentation {
   }
 }
 
+let liveSpec: PlantSpec = PLANT;
+let liveEcon: Economics = ECONOMICS;
+
 let state: LiveState = { payload: null, status: "connecting", presentation: loadPresentation() };
 const listeners = new Set<() => void>();
 let source: EventSource | null = null;
@@ -66,7 +70,7 @@ function stopAll() {
 }
 
 function startSimulation() {
-  const tick = () => emit({ payload: livePayload(PLANT, currentTime()), status: "simulated" });
+  const tick = () => emit({ payload: livePayload(liveSpec, currentTime(), liveEcon), status: "simulated" });
   tick();
   simTimer = setInterval(tick, 250);
 }
@@ -74,7 +78,7 @@ function startSimulation() {
 function startStream() {
   // Mientras conecta (o si falla), el navegador calcula con el mismo modelo:
   // la pantalla nunca se queda vacía.
-  if (!state.payload) emit({ payload: livePayload(PLANT, Date.now()) });
+  if (!state.payload) emit({ payload: livePayload(liveSpec, Date.now(), liveEcon) });
   source = new EventSource("/api/telemetry/stream");
   source.onmessage = (ev) => {
     if (offlineTimer) clearTimeout(offlineTimer);
@@ -86,7 +90,7 @@ function startStream() {
     }
   };
   source.onerror = () => {
-    emit({ status: "offline", payload: livePayload(PLANT, Date.now()) });
+    emit({ status: "offline", payload: livePayload(liveSpec, Date.now(), liveEcon) });
   };
 }
 
@@ -129,6 +133,13 @@ export function setPresentation(next: { active: boolean; at?: number; speed?: nu
   } catch {
     /* almacenamiento no disponible: solo dura esta vista */
   }
-  emit({ presentation: p, payload: p.active ? livePayload(PLANT, currentTime(p)) : state.payload });
+  emit({ presentation: p, payload: p.active ? livePayload(liveSpec, currentTime(p), liveEcon) : state.payload });
   restart();
+}
+
+/** La configuración de la planta cambió (la edita el administrador). */
+export function setLiveConfig(spec: PlantSpec, econ: Economics) {
+  liveSpec = spec;
+  liveEcon = econ;
+  if (state.presentation.active) emit({ payload: livePayload(liveSpec, currentTime(), liveEcon) });
 }

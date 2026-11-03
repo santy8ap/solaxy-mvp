@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { PLANT } from "@/config/plant";
+import { useSettings } from "@/lib/client/use-settings";
 import { formatNumber, formatTime } from "@/lib/format";
 import { useLive, useNow } from "@/lib/live/hooks";
 import type { PlantReading } from "@/lib/sim";
@@ -33,6 +34,7 @@ export function plantStatus(r: PlantReading, now: number) {
 }
 
 export function Hero() {
+  const { spec } = useSettings();
   const live = useLive();
   const now = useNow(1000);
   const reading = live.payload?.reading ?? null;
@@ -62,7 +64,7 @@ export function Hero() {
         <div className="panel cells p-6 lg:mb-2" aria-live="off">
           <div className="flex items-center gap-2 text-sm text-silver-400">
             <span className="live-dot" data-tone={live.status === "simulated" ? "sim" : live.status === "live" ? undefined : "off"} />
-            {live.status === "simulated" ? "Simulación de presentación" : `${PLANT.name}, en vivo`}
+            {live.status === "simulated" ? "Simulación de presentación" : `${spec.name}, en vivo`}
           </div>
           <div className="mt-4 flex items-baseline gap-3">
             <Odometer
@@ -89,7 +91,7 @@ export function Hero() {
       </div>
 
       <div className="mx-auto mt-6 max-w-[1320px] px-2 sm:px-6">
-        <SunArc now={now} reading={reading} />
+        <SunArc now={now} reading={reading} acCapacityKw={spec.acCapacityKw} />
       </div>
     </section>
   );

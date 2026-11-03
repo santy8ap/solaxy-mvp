@@ -1,3 +1,4 @@
+import { ECONOMICS, type Economics } from "@/config/economics";
 import type { PlantSpec } from "@/config/plant";
 import {
   INTERVAL_MS,
@@ -21,9 +22,9 @@ export interface LivePayload {
 }
 
 /** Lectura en vivo + acumulados del día (mismo modelo en servidor y navegador). */
-export function livePayload(spec: PlantSpec, now: number): LivePayload {
+export function livePayload(spec: PlantSpec, now: number, econ: Economics = ECONOMICS): LivePayload {
   const day = localDayIndex(now);
-  const profile = dayProfile(spec, day);
+  const profile = dayProfile(spec, day, econ);
   const today: LiveToday = { deliveredKwh: 0, solarKwh: 0, netCop: 0, peakKw: 0 };
   for (const i of profile) {
     if (i.ts >= now) break;
@@ -33,7 +34,7 @@ export function livePayload(spec: PlantSpec, now: number): LivePayload {
     today.netCop += i.netCop * frac;
     today.peakKw = Math.max(today.peakKw, i.solarKw);
   }
-  return { reading: instantReading(spec, now), today };
+  return { reading: instantReading(spec, now, econ), today };
 }
 
 export interface TodayPoint {
@@ -46,9 +47,9 @@ export interface TodayPoint {
 }
 
 /** Curva del día: real hasta ahora + esperada con cielo despejado para todo el día. */
-export function todayCurve(spec: PlantSpec, now: number): TodayPoint[] {
+export function todayCurve(spec: PlantSpec, now: number, econ: Economics = ECONOMICS): TodayPoint[] {
   const day = localDayIndex(now);
-  return dayProfile(spec, day).map((i) => {
+  return dayProfile(spec, day, econ).map((i) => {
     const done = i.ts + INTERVAL_MS <= now;
     const current = i.ts <= now && !done;
     const show = done || current;

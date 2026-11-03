@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { BRAND } from "@/config/brand";
-import { ECONOMICS } from "@/config/economics";
-import { formatCop } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
 
 export function LandingNav() {
@@ -32,7 +30,7 @@ const STEPS = [
   },
   {
     title: "Compra kW con tu wallet",
-    body: `Desde 0,1 kW (${formatCop(ECONOMICS.pricePerKwCop * 0.1)}). Pagas con Trust Wallet, MetaMask o cualquier wallet compatible, en USDT, BNB, ETH o BTC.`,
+    body: "Desde 0,1 kW. Pagas con Trust Wallet, MetaMask o cualquier wallet compatible, en USDT, BNB, ETH o BTC.",
   },
   {
     title: "Gana con cada kWh que se entrega",

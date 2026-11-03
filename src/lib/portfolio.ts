@@ -9,6 +9,7 @@ import { env } from "@/lib/env";
 import { newId } from "@/lib/ids";
 import { dailyEarnings, earningsAt, kwOwnedAt, type KwEntry } from "@/lib/portfolio-math";
 import { DAY_MS, dayStartMs, instantReading, localDayIndex } from "@/lib/sim";
+import type { Config } from "@/lib/settings";
 import { buildCurves } from "@/lib/telemetry/service";
 
 export interface TxDTO {
@@ -23,6 +24,7 @@ export interface TxDTO {
   walletAddress: string | null;
   walletName: string | null;
   txHash: string | null;
+  note: string | null;
   createdAt: number;
   confirmedAt: number | null;
 }
@@ -38,6 +40,8 @@ export interface PortfolioDTO {
   earnedTodayCop: number;
   saleProceedsCop: number;
   withdrawnCop: number;
+  /** Retiros esperando aprobación del administrador */
+  reservedCop: number;
   balanceCop: number;
   yieldEa: number;
   energyKwh: number;
@@ -65,7 +69,7 @@ async function loadEntries(userId: string) {
 }
 
 /** Las cuentas nuevas reciben una posición demo (configurable con DEMO_STARTER_KW). */
-async function grantStarterIfNeeded(userId: string, commissionedAt: number, now: number) {
+async function grantStarterIfNeeded(userId: string, commissionedAt: number, now: number, pricePerKwCop: number) {
   if (env.starterKw <= 0) return false;
   const [had] = await db
     .select({ n: sql<number>`count(*)` })
@@ -74,7 +78,7 @@ async function grantStarterIfNeeded(userId: string, commissionedAt: number, now:
   if (had.n > 0) return false;
   const ts = Math.max(commissionedAt + DAY_MS, now - 30 * DAY_MS);
   const txId = newId("tx-");
-  const amountCop = Math.round(env.starterKw * ECONOMICS.pricePerKwCop);
+  const amountCop = Math.round(env.starterKw * pricePerKwCop);
   await db.batch([
     db.insert(ledgerTx).values({
       id: txId,
@@ -93,7 +97,7 @@ async function grantStarterIfNeeded(userId: string, commissionedAt: number, now:
       userId,
       plantId: PLANT.id,
       kwDelta: env.starterKw,
-      pricePerKwCop: ECONOMICS.pricePerKwCop,
+      pricePerKwCop,
       ts,
       txId,
     }),
@@ -112,8 +116,9 @@ export async function getKwPosition(userId: string, now = Date.now()) {
   return { entries, kw, listedKw: listed.kw, availableKw: Math.max(0, round1(kw - listed.kw)), investedCop: invested };
 }
 
-export async function getBalances(userId: string, entries: KwEntry[], now: number) {
-  const { net } = await buildCurves(db, PLANT, [now, ...entries.map((e) => e.ts)], now);
+export async function getBalances(userId: string, entries: KwEntry[], now: number, cfg?: Pick<Config, "spec" | "econ">) {
+  const { spec, econ } = cfg ?? (await ensureReady(now));
+  const { net } = await buildCurves(db, spec, [now, ...entries.map((e) => e.ts)], now, econ);
   const earned = earningsAt(entries, net, now);
   const sums = await db
     .select({ kind: ledgerTx.kind, total: sql<number>`coalesce(sum(${ledgerTx.amountCop}), 0)` })
@@ -123,12 +128,18 @@ export async function getBalances(userId: string, entries: KwEntry[], now: numbe
   const byKind = Object.fromEntries(sums.map((s) => [s.kind, s.total])) as Record<string, number>;
   const saleProceeds = (byKind.venta_inmediata ?? 0) + (byKind.venta_p2p ?? 0);
   const withdrawn = byKind.retiro ?? 0;
-  return { earned, saleProceeds, withdrawn, balance: Math.max(0, earned + saleProceeds - withdrawn) };
+  // Retiros esperando aprobación: apartan saldo hasta que el admin decida.
+  const [held] = await db
+    .select({ total: sql<number>`coalesce(sum(${ledgerTx.amountCop}), 0)` })
+    .from(ledgerTx)
+    .where(and(eq(ledgerTx.userId, userId), eq(ledgerTx.kind, "retiro"), eq(ledgerTx.status, "por_aprobar")));
+  const reserved = held.total;
+  return { earned, saleProceeds, withdrawn, reserved, balance: Math.max(0, earned + saleProceeds - withdrawn - reserved) };
 }
 
 export async function getPortfolio(userId: string, now = Date.now()): Promise<PortfolioDTO> {
-  const { commissionedAt } = await ensureReady(now);
-  await grantStarterIfNeeded(userId, commissionedAt, now);
+  const { commissionedAt, spec, econ } = await ensureReady(now);
+  await grantStarterIfNeeded(userId, commissionedAt, now, econ.pricePerKwCop);
   const pos = await getKwPosition(userId, now);
   const entries = pos.entries;
 
@@ -143,7 +154,7 @@ export async function getPortfolio(userId: string, now = Date.now()): Promise<Po
     ...growthDays.map(dayStartMs),
     ...growthDays.map(dayEnd),
   ];
-  const { net, energy } = await buildCurves(db, PLANT, stamps, now);
+  const { net, energy } = await buildCurves(db, spec, stamps, now, econ);
 
   const earned = earningsAt(entries, net, now);
   const daily = dailyEarnings(entries, net, dailyDays, now).map((d) => ({ ...d, date: isoDay(d.day) }));
@@ -153,13 +164,13 @@ export async function getPortfolio(userId: string, now = Date.now()): Promise<Po
     return { day: d, date: isoDay(d), investedCop: Math.round(invested), earningsCop: earningsAt(entries, net, end) };
   });
 
-  const balances = await getBalances(userId, entries, now);
+  const balances = await getBalances(userId, entries, now, { spec, econ });
   const energyKwh = earningsAt(entries, energy, now);
   const co2Kg = energyKwh * ECONOMICS.co2KgPerKwh;
   const perKwpYear = ((net.at(now) - net.at(now - 30 * DAY_MS)) * 365) / 30;
-  const reading = instantReading(PLANT, now);
+  const reading = instantReading(spec, now, econ);
   const ratePerSecondCop =
-    (reading.deliveredKw * (pos.kw / PLANT.capacityKwp) * reading.tariffCopPerKwh * ECONOMICS.netFactor) / 3600;
+    (reading.deliveredKw * (pos.kw / spec.capacityKwp) * reading.tariffCopPerKwh * econ.netFactor) / 3600;
   const kwhPerKwpDay = ((energy.at(now) - energy.at(now - 30 * DAY_MS)) / 30) || 0;
 
   const txs = await db
@@ -174,22 +185,23 @@ export async function getPortfolio(userId: string, now = Date.now()): Promise<Po
     kw: pos.kw,
     listedKw: pos.listedKw,
     availableKw: pos.availableKw,
-    sharePct: (pos.kw / PLANT.capacityKwp) * 100,
+    sharePct: (pos.kw / spec.capacityKwp) * 100,
     investedCop: Math.round(pos.investedCop),
     earnedCop: earned,
     earnedTodayCop: daily.at(-1)?.earnedCop ?? 0,
     saleProceedsCop: balances.saleProceeds,
     withdrawnCop: balances.withdrawn,
+    reservedCop: balances.reserved,
     balanceCop: balances.balance,
-    yieldEa: perKwpYear / ECONOMICS.pricePerKwCop,
+    yieldEa: perKwpYear / econ.pricePerKwCop,
     energyKwh,
     co2Kg,
     trees: co2Kg / ECONOMICS.treeCo2KgPerYear,
     homes: (pos.kw * kwhPerKwpDay * 30) / ECONOMICS.homeKwhPerMonth,
     ratePerSecondCop,
-    capacityKwp: PLANT.capacityKwp,
-    netFactor: ECONOMICS.netFactor,
-    pricePerKwCop: ECONOMICS.pricePerKwCop,
+    capacityKwp: spec.capacityKwp,
+    netFactor: econ.netFactor,
+    pricePerKwCop: econ.pricePerKwCop,
     daily,
     growth,
     transactions: txs.map(toTxDTO),
@@ -209,6 +221,7 @@ export function toTxDTO(t: typeof ledgerTx.$inferSelect): TxDTO {
     walletAddress: t.walletAddress,
     walletName: t.walletName,
     txHash: t.txHash,
+    note: t.note ?? null,
     createdAt: t.createdAt,
     confirmedAt: t.confirmedAt,
   };
