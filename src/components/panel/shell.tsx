@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeftRight, Gauge, LayoutDashboard, LogOut, MonitorPlay, Users, Wallet } from "lucide-react";
+import { ArrowLeftRight, Gauge, LayoutDashboard, LogOut, MonitorPlay, ShieldCheck, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
@@ -50,6 +50,10 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col gap-1">
+        <Link href="/admin" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
+          <ShieldCheck size={18} className="text-dusk-300" />
+          Administración
+        </Link>
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event("solaxy:presenter"))}

@@ -1,6 +1,6 @@
 "use client";
 import { Check, Copy, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PortfolioDTO } from "@/lib/portfolio";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { formatCop, formatDateTime, formatNumber, shortAddress } from "@/lib/format";
@@ -31,8 +31,33 @@ function CopyHash({ hash }: { hash: string }) {
 function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void; max: number }) {
   const wallet = useWallet();
   const [amount, setAmount] = useState(100_000);
-  const [phase, setPhase] = useState<"form" | "signing" | "sending" | "done">("form");
+  const [phase, setPhase] = useState<"form" | "signing" | "sending" | "waiting" | "done" | "rejected">("form");
   const [hash, setHash] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [rejection, setRejection] = useState<string | null>(null);
+
+  // Mientras el administrador decide, se consulta el estado cada 2,5 s.
+  useEffect(() => {
+    if (phase !== "waiting" || !pendingId) return;
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/withdrawals/${pendingId}`, { cache: "no-store" });
+        const tx = (await res.json()) as { status: string; txHash: string | null; note: string | null };
+        if (tx.status === "confirmada") {
+          setHash(tx.txHash);
+          setPhase("done");
+          void refetch("/api/portfolio");
+        } else if (tx.status === "rechazada") {
+          setRejection(tx.note);
+          setPhase("rejected");
+          void refetch("/api/portfolio");
+        }
+      } catch {
+        /* se reintenta en el siguiente ciclo */
+      }
+    }, 2500);
+    return () => clearInterval(id);
+  }, [phase, pendingId]);
 
   const submit = async () => {
     if (!wallet.address) return;
@@ -46,11 +71,16 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
       });
       const signature = await wallet.signMessage(w.message);
       setPhase("sending");
-      const res = await postJson<{ txHash: string }>(`/api/withdrawals/${w.withdrawalId}/confirm`, { signature });
-      await new Promise((r) => setTimeout(r, 1400));
+      const res = await postJson<{ txHash: string | null; status: string }>(`/api/withdrawals/${w.withdrawalId}/confirm`, { signature });
+      await new Promise((r) => setTimeout(r, 900));
+      void refetch("/api/portfolio");
+      if (res.status === "por_aprobar") {
+        setPendingId(w.withdrawalId);
+        setPhase("waiting");
+        return;
+      }
       setHash(res.txHash);
       setPhase("done");
-      void refetch("/api/portfolio");
     } catch (e) {
       toast((e as Error).message, "error");
       setPhase("form");
@@ -61,12 +91,39 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
     if (phase === "signing" || phase === "sending") return;
     setPhase("form");
     setHash(null);
+    setPendingId(null);
+    setRejection(null);
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={close} title={phase === "done" ? "Retiro enviado" : "Retirar a tu wallet"}>
-      {phase === "done" ? (
+    <Modal
+      open={open}
+      onClose={close}
+      title={phase === "done" ? "Retiro enviado" : phase === "waiting" ? "Esperando aprobación" : phase === "rejected" ? "Retiro rechazado" : "Retirar a tu wallet"}
+    >
+      {phase === "waiting" ? (
+        <div>
+          <div className="flex items-center gap-3 rounded-2xl border border-dusk-400/40 bg-dusk-400/10 p-4">
+            <Loader2 size={20} className="shrink-0 animate-spin text-dusk-300" />
+            <p className="text-sm text-silver-200">
+              Tu firma quedó verificada. El administrador está revisando el retiro de <span className="num font-semibold">{formatCop(amount)}</span>. Esta ventana se actualiza sola.
+            </p>
+          </div>
+          <p className="mt-4 text-xs text-silver-500">Mientras tanto, ese monto queda apartado de tu saldo. Puedes cerrar esta ventana: el estado también aparece en tu historial.</p>
+          <button type="button" className="btn btn-ghost mt-6 w-full" onClick={close}>
+            Cerrar
+          </button>
+        </div>
+      ) : phase === "rejected" ? (
+        <div>
+          <p className="text-silver-300">El administrador rechazó el retiro. El saldo volvió a estar disponible.</p>
+          <p className="mt-3 rounded-xl border border-silicon-600/60 bg-silicon-950/40 p-3 text-sm text-silver-200">Motivo: {rejection ?? "sin motivo"}</p>
+          <button type="button" className="btn btn-sun mt-6 w-full" onClick={close}>
+            Entendido
+          </button>
+        </div>
+      ) : phase === "done" ? (
         <div>
           <p className="text-silver-300">
             Enviamos <span className="num font-semibold text-leaf-300">{formatCop(amount)}</span> en USDT a {wallet.name} ({shortAddress(wallet.address)}).
@@ -132,6 +189,7 @@ export function WalletPage() {
           </div>
           <p className="mt-3 text-sm text-silver-400">
             Ganancias {p ? formatCop(earn?.earned ?? p.earnedCop) : "—"} + ventas {p ? formatCop(p.saleProceedsCop) : "—"} − retiros {p ? formatCop(p.withdrawnCop) : "—"}
+            {p && p.reservedCop > 0 ? ` − en aprobación ${formatCop(p.reservedCop)}` : ""}
           </p>
           <button
             type="button"
@@ -205,7 +263,17 @@ export function WalletPage() {
                     </td>
                     <td className="num py-3.5 text-silver-300">{formatDateTime(t.createdAt)}</td>
                     <td className="py-3.5">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${t.status === "confirmada" ? "bg-leaf-400/12 text-leaf-300" : "bg-silicon-700 text-silver-300"}`}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${
+                          t.status === "confirmada"
+                            ? "bg-leaf-400/12 text-leaf-300"
+                            : t.status === "por_aprobar"
+                              ? "bg-dusk-400/15 text-dusk-300"
+                              : t.status === "rechazada"
+                                ? "bg-alert-400/12 text-alert-400"
+                                : "bg-silicon-700 text-silver-300"
+                        }`}
+                      >
                         {t.status === "confirmada" && <Check size={12} />}
                         {STATUS_LABEL[t.status] ?? t.status}
                       </span>
