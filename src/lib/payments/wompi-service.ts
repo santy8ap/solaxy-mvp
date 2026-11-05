@@ -28,6 +28,7 @@ export async function createWompiOrder(input: { userId: string; email: string; k
     amountCop: p.amountCop,
     asset: "COP",
     walletName: "Wompi",
+    network: cfg.sandbox ? "Wompi (sandbox)" : "Wompi",
     listingId: p.listingId,
     createdAt: now,
     method: "wompi",

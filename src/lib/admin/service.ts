@@ -4,6 +4,7 @@ import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
 import { account, adminAudit, investorProfile, ledgerTx, listing, plant, positionEntry, user, type AdminAction } from "@/lib/db/schema";
+import { isDemoMode } from "@/lib/env";
 import { formatCop, formatKw } from "@/lib/format";
 import { newId, simulatedTxHash } from "@/lib/ids";
 import { MarketError, soldKw } from "@/lib/market";
@@ -20,7 +21,7 @@ export interface Actor {
   name: string;
 }
 
-async function audit(actor: Actor, action: AdminAction, summary: string, detail?: unknown, targetUserId?: string) {
+export async function audit(actor: Actor, action: AdminAction, summary: string, detail?: unknown, targetUserId?: string) {
   await db.insert(adminAudit).values({
     id: newId("aud-"),
     actorUserId: actor.id,
@@ -182,7 +183,11 @@ export async function listWithdrawals() {
   return rows.map((r) => ({ ...toTxDTO(r.tx), userId: r.tx.userId, userName: r.userName, signed: !!r.tx.signature }));
 }
 
-export async function decideWithdrawal(actor: Actor, txId: string, decision: "aprobar" | "rechazar", reason = "") {
+/**
+ * Aprueba o rechaza un retiro. Con dinero real, aprobar exige la referencia del envío que hizo el admin
+ * (hash de la transacción o número del comprobante bancario); en modo demo se genera un hash simulado.
+ */
+export async function decideWithdrawal(actor: Actor, txId: string, decision: "aprobar" | "rechazar", reason = "", reference = "") {
   await ensureReady();
   const now = Date.now();
   const [tx] = await db.select().from(ledgerTx).where(and(eq(ledgerTx.id, txId), eq(ledgerTx.kind, "retiro")));
@@ -192,14 +197,18 @@ export async function decideWithdrawal(actor: Actor, txId: string, decision: "ap
 
   if (decision === "aprobar") {
     // El saldo ya quedó apartado cuando el usuario pidió el retiro.
-    const txHash = simulatedTxHash();
+    const ref = reference.trim().slice(0, 120);
+    if (!isDemoMode() && ref.length < 6) {
+      throw new MarketError("Escribe la referencia del envío: el hash de la transacción o el número del comprobante bancario.");
+    }
+    const txHash = ref || simulatedTxHash();
     const res = await db
       .update(ledgerTx)
       .set({ status: "confirmada", txHash, confirmedAt: now })
       .where(and(eq(ledgerTx.id, txId), eq(ledgerTx.status, "por_aprobar")))
       .returning();
     if (!res.length) throw new MarketError("Este retiro ya fue revisado", 409);
-    await audit(actor, "aprobar_retiro", `Aprobó el retiro de ${formatCop(tx.amountCop)} de ${who?.name ?? "un usuario"}`, { txId }, tx.userId);
+    await audit(actor, "aprobar_retiro", `Aprobó el retiro de ${formatCop(tx.amountCop)} de ${who?.name ?? "un usuario"}`, { txId, referencia: txHash }, tx.userId);
     return toTxDTO(res[0]);
   }
 
@@ -222,6 +231,9 @@ export async function updatePlantSettings(actor: Actor, next: PlantSettings) {
   const sold = await soldKw();
   const problem = validateSettings(next, { soldKw: sold });
   if (problem) throw new MarketError(problem);
+  if (!isDemoMode() && !next.withdrawalApproval) {
+    throw new MarketError("Con dinero real los retiros siempre pasan por la aprobación del administrador.");
+  }
   const now = Date.now();
   await db
     .update(plant)

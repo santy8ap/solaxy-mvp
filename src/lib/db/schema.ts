@@ -244,7 +244,7 @@ export const appMeta = sqliteTable("app_meta", {
   value: text("value").notNull(),
 });
 
-export const ADMIN_ACTIONS = ["ajuste_kw", "config_planta", "aprobar_retiro", "rechazar_retiro"] as const;
+export const ADMIN_ACTIONS = ["ajuste_kw", "config_planta", "aprobar_retiro", "rechazar_retiro", "reverificar_pago", "registrar_hash", "marcar_reembolso", "borrar_datos_demo"] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
 /** Bitácora de todo lo que hace un administrador. */

@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeftCircle, Banknote, Factory, History, LayoutGrid, LogOut, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeftCircle, Banknote, CreditCard, Factory, History, LayoutGrid, LogOut, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useActionState, useTransition } from "react";
@@ -13,6 +13,7 @@ export const ADMIN_NAV = [
   { href: "/admin", label: "Resumen", icon: LayoutGrid },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/retiros", label: "Retiros", icon: Banknote },
+  { href: "/admin/pagos", label: "Pagos", icon: CreditCard },
   { href: "/admin/planta", label: "Planta", icon: Factory },
   { href: "/admin/actividad", label: "Actividad", icon: History },
 ] as const;
@@ -93,7 +94,7 @@ export function AdminBottomNav() {
   const pending = usePending();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-dusk-500/30 bg-silicon-950/90 backdrop-blur-md lg:hidden" aria-label="Administración">
-      <ul className="mx-auto grid max-w-[560px] grid-cols-5">
+      <ul className="mx-auto grid max-w-[620px] grid-cols-6">
         {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(path, href);
           return (
