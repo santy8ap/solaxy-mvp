@@ -1,0 +1,182 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { getAddress } from "viem";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ChainReader } from "@/lib/payments/chain";
+import { TRANSFER_TOPIC, type ChainReceipt, type ChainTx } from "@/lib/payments/crypto";
+
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-crypto-")), "test.db")}`;
+const TREASURY = "0x2222222222222222222222222222222222222222";
+const USDT = "0x55d398326f99059fF775485246999027B3197955";
+vi.stubEnv("CRYPTO_TREASURY_ADDRESS", TREASURY);
+vi.stubEnv("CRYPTO_NETWORK", "bsc");
+vi.stubEnv("CRYPTO_CONFIRMATIONS", "5");
+
+let svc: typeof import("@/lib/payments/crypto-service");
+let prices: typeof import("@/lib/payments/prices");
+let profile: typeof import("@/lib/profile");
+let dbMod: typeof import("@/lib/db");
+let schema: typeof import("@/lib/db/schema");
+let drizzle: typeof import("drizzle-orm");
+
+/** CoinGecko falso: 1 USDT = 4.000 COP, 1 BNB = 2.800.000 COP. */
+let priceDown = false;
+const fakePrices = (async () => {
+  if (priceDown) throw new Error("sin red");
+  return new Response(JSON.stringify({ tether: { cop: 4000 }, binancecoin: { cop: 2_800_000 } }), { status: 200 });
+}) as unknown as typeof fetch;
+
+/** Cadena falsa en memoria. */
+const chain = {
+  latest: 1000n,
+  txs: new Map<string, ChainTx>(),
+  receipts: new Map<string, ChainReceipt>(),
+  times: new Map<bigint, number>(),
+};
+const reader: ChainReader = {
+  getChainId: async () => 56,
+  getTransaction: async (h) => chain.txs.get(h.toLowerCase()) ?? null,
+  getReceipt: async (h) => chain.receipts.get(h.toLowerCase()) ?? null,
+  getBlockNumber: async () => chain.latest,
+  getBlockTimestamp: async (n) => chain.times.get(n) ?? Math.floor(Date.now() / 1000),
+};
+let hashSeq = 0;
+const newHash = () => `0x${(++hashSeq).toString(16).padStart(64, "0")}` as `0x${string}`;
+const pad = (a: string) => `0x${"0".repeat(24)}${a.slice(2).toLowerCase()}` as `0x${string}`;
+
+/** "Mina" un pago en la cadena falsa. */
+function mine(opts: { from: string; asset: "BNB" | "USDT"; amount: bigint; to?: string; block?: bigint }) {
+  const hash = newHash();
+  const block = opts.block ?? chain.latest;
+  const to = opts.to ?? TREASURY;
+  chain.txs.set(hash, { hash, from: opts.from, to: opts.asset === "BNB" ? to : USDT, value: opts.asset === "BNB" ? opts.amount : 0n });
+  chain.receipts.set(hash, {
+    status: "success",
+    blockNumber: block,
+    logs:
+      opts.asset === "USDT"
+        ? [{ address: USDT, topics: [TRANSFER_TOPIC, pad(opts.from), pad(to)], data: `0x${opts.amount.toString(16).padStart(64, "0")}` }]
+        : [],
+  });
+  chain.times.set(block, Math.floor(Date.now() / 1000));
+  return hash;
+}
+
+const PROFILE = { fullName: "Laura Gómez", docType: "CC", docNumber: "1036123456", phone: "3001234567", city: "Medellín", acceptTerms: true };
+const deps = { fetch: fakePrices, reader };
+const wallet = (n: number) => `0x${String(n).padStart(40, "a")}` as `0x${string}`;
+
+async function entriesOf(orderId: string) {
+  return dbMod.db.select().from(schema.positionEntry).where(drizzle.eq(schema.positionEntry.txId, orderId));
+}
+async function orderRow(orderId: string) {
+  const [row] = await dbMod.db.select().from(schema.ledgerTx).where(drizzle.eq(schema.ledgerTx.id, orderId));
+  return row;
+}
+
+beforeAll(async () => {
+  svc = await import("@/lib/payments/crypto-service");
+  prices = await import("@/lib/payments/prices");
+  profile = await import("@/lib/profile");
+  dbMod = await import("@/lib/db");
+  schema = await import("@/lib/db/schema");
+  drizzle = await import("drizzle-orm");
+  const { ensureReady } = await import("@/lib/db/init");
+  await ensureReady();
+  for (let i = 50; i <= 60; i++) await profile.saveProfile(`inv-0${i}`, PROFILE);
+}, 120_000);
+
+beforeEach(() => {
+  priceDown = false;
+  prices.resetPriceCache();
+});
+
+describe("cotización cripto", () => {
+  it("sin precio en vivo no se cotiza ni se crea la orden", async () => {
+    priceDown = true;
+    await expect(svc.createCryptoQuote({ userId: "inv-050", kw: 1, asset: "BNB", payer: wallet(50), walletName: "MetaMask" }, deps)).rejects.toMatchObject({ status: 503 });
+    const rows = await dbMod.db.select().from(schema.ledgerTx).where(drizzle.and(drizzle.eq(schema.ledgerTx.userId, "inv-050"), drizzle.eq(schema.ledgerTx.method, "crypto")));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("sin datos de inversionista no se cotiza", async () => {
+    await expect(svc.createCryptoQuote({ userId: "inv-070", kw: 1, asset: "BNB", payer: wallet(70), walletName: "MetaMask" }, deps)).rejects.toMatchObject({ status: 412 });
+  });
+
+  it("crea la orden con el monto exacto, la billetera destino y 20 minutos de vigencia", async () => {
+    const before = Date.now();
+    const q = await svc.createCryptoQuote({ userId: "inv-051", kw: 1, asset: "USDT", payer: wallet(51), walletName: "Trust Wallet" }, deps);
+    const row = await orderRow(q.orderId);
+    expect(q).toMatchObject({ asset: "USDT", to: TREASURY, tokenContract: USDT, chainId: 56 });
+    expect(BigInt(q.amountBaseUnits) * 4000n).toBeGreaterThanOrEqual(BigInt(row.amountCop) * 10n ** 18n);
+    expect(row).toMatchObject({ method: "crypto", status: "pendiente", expectedAmount: q.amountBaseUnits, walletAddress: getAddress(wallet(51)) });
+    expect(row.expiresAt! - before).toBeGreaterThanOrEqual(20 * 60_000 - 1000);
+  });
+});
+
+describe("verificación en la cadena", () => {
+  it("espera las confirmaciones y asigna los kW una sola vez", async () => {
+    const q = await svc.createCryptoQuote({ userId: "inv-052", kw: 1, asset: "BNB", payer: wallet(52), walletName: "MetaMask" }, deps);
+    const hash = mine({ from: wallet(52), asset: "BNB", amount: BigInt(q.amountBaseUnits), block: chain.latest - 1n });
+    const first = await svc.submitCryptoPayment({ userId: "inv-052", orderId: q.orderId, txHash: hash }, deps);
+    expect(first).toMatchObject({ state: "esperando", confirmations: 2, needed: 5 });
+    expect((await orderRow(q.orderId)).status).toBe("verificando");
+    chain.latest += 3n;
+    await Promise.all([svc.verifyCryptoOrder(q.orderId, deps), svc.verifyCryptoOrder(q.orderId, deps), svc.verifyCryptoOrder(q.orderId, deps)]);
+    expect((await orderRow(q.orderId)).status).toBe("confirmada");
+    expect(await entriesOf(q.orderId)).toHaveLength(1);
+  });
+
+  it("un hash ya usado no sirve para otra orden", async () => {
+    const a = await svc.createCryptoQuote({ userId: "inv-053", kw: 0.5, asset: "BNB", payer: wallet(53), walletName: "MetaMask" }, deps);
+    const hash = mine({ from: wallet(53), asset: "BNB", amount: BigInt(a.amountBaseUnits), block: chain.latest - 10n });
+    await svc.submitCryptoPayment({ userId: "inv-053", orderId: a.orderId, txHash: hash }, deps);
+    expect((await orderRow(a.orderId)).status).toBe("confirmada");
+    const b = await svc.createCryptoQuote({ userId: "inv-053", kw: 0.5, asset: "BNB", payer: wallet(53), walletName: "MetaMask" }, deps);
+    await expect(svc.submitCryptoPayment({ userId: "inv-053", orderId: b.orderId, txHash: hash }, deps)).rejects.toMatchObject({ status: 409 });
+    expect(await entriesOf(b.orderId)).toHaveLength(0);
+  });
+
+  it("si alguien registra el hash de otra persona, falla y el hash queda libre para su dueño", async () => {
+    const victim = await svc.createCryptoQuote({ userId: "inv-054", kw: 0.5, asset: "BNB", payer: wallet(54), walletName: "MetaMask" }, deps);
+    const thief = await svc.createCryptoQuote({ userId: "inv-055", kw: 0.5, asset: "BNB", payer: wallet(55), walletName: "MetaMask" }, deps);
+    const hash = mine({ from: wallet(54), asset: "BNB", amount: BigInt(victim.amountBaseUnits), block: chain.latest - 10n });
+    const stolen = await svc.submitCryptoPayment({ userId: "inv-055", orderId: thief.orderId, txHash: hash }, deps);
+    expect(stolen.state).toBe("fallida");
+    const ok = await svc.submitCryptoPayment({ userId: "inv-054", orderId: victim.orderId, txHash: hash }, deps);
+    expect(ok.state).toBe("confirmada");
+  });
+
+  it("un pago incompleto queda por reembolsar sin asignar kW", async () => {
+    const q = await svc.createCryptoQuote({ userId: "inv-056", kw: 1, asset: "USDT", payer: wallet(56), walletName: "Trust Wallet" }, deps);
+    const hash = mine({ from: wallet(56), asset: "USDT", amount: BigInt(q.amountBaseUnits) / 2n, block: chain.latest - 10n });
+    const r = await svc.submitCryptoPayment({ userId: "inv-056", orderId: q.orderId, txHash: hash }, deps);
+    expect(r.state).toBe("por_reembolsar");
+    expect(r.order.note).toMatch(/incompleto/i);
+    expect(await entriesOf(q.orderId)).toHaveLength(0);
+  });
+
+  it("solo el dueño de la orden puede registrar el pago", async () => {
+    const q = await svc.createCryptoQuote({ userId: "inv-057", kw: 0.5, asset: "BNB", payer: wallet(57), walletName: "MetaMask" }, deps);
+    await expect(svc.submitCryptoPayment({ userId: "inv-058", orderId: q.orderId, txHash: newHash() }, deps)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("si el nodo está en otra red, no verifica nada", async () => {
+    const q = await svc.createCryptoQuote({ userId: "inv-059", kw: 0.5, asset: "BNB", payer: wallet(59), walletName: "MetaMask" }, deps);
+    const hash = mine({ from: wallet(59), asset: "BNB", amount: BigInt(q.amountBaseUnits), block: chain.latest - 10n });
+    // Un nodo mal configurado (testnet) aunque la app espera BNB Chain.
+    const wrongNode: ChainReader = { ...reader, getChainId: async () => 97 };
+    await expect(svc.submitCryptoPayment({ userId: "inv-059", orderId: q.orderId, txHash: hash }, { ...deps, reader: wrongNode })).rejects.toMatchObject({ status: 503 });
+    expect(await entriesOf(q.orderId)).toHaveLength(0);
+  });
+
+  it("al abrir el panel se reintentan los pagos que quedaron verificando", async () => {
+    const q = await svc.createCryptoQuote({ userId: "inv-060", kw: 0.5, asset: "BNB", payer: wallet(60), walletName: "MetaMask" }, deps);
+    const hash = mine({ from: wallet(60), asset: "BNB", amount: BigInt(q.amountBaseUnits), block: chain.latest });
+    expect((await svc.submitCryptoPayment({ userId: "inv-060", orderId: q.orderId, txHash: hash }, deps)).state).toBe("esperando");
+    chain.latest += 10n;
+    await svc.retryUserCryptoOrders("inv-060", deps);
+    expect((await orderRow(q.orderId)).status).toBe("confirmada");
+  });
+});
