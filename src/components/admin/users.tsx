@@ -143,6 +143,23 @@ function AdjustForm({ user, onClose, onDone }: { user: AdminUserRow; onClose(): 
   );
 }
 
+function ProfileCell({ profile, real }: { profile: AdminUserRow["profile"]; real: boolean }) {
+  if (!profile) return <span className="text-xs text-silver-500">{real ? "Sin datos todavía" : "—"}</span>;
+  return (
+    <div className="text-xs leading-relaxed">
+      <div className="num text-silver-200">
+        {profile.docType} {profile.docNumber}
+      </div>
+      <div className="num text-silver-400">
+        {profile.phone} · {profile.city}
+      </div>
+      <div className={profile.termsCurrent ? "text-leaf-300" : "text-sun-300"}>
+        {profile.termsCurrent ? `Términos aceptados ${profile.termsAcceptedAt ? formatDateTime(profile.termsAcceptedAt) : ""}` : "Falta aceptar los términos nuevos"}
+      </div>
+    </div>
+  );
+}
+
 export function AdminUsers() {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -192,13 +209,14 @@ export function AdminUsers() {
 
       <section className="panel overflow-hidden" aria-label="Lista de usuarios">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[940px] text-left text-sm">
             <thead className="text-silver-400">
               <tr className="border-b border-silicon-600/50">
                 <th className="px-5 py-3.5 font-normal">Usuario</th>
                 <th className="px-3 py-3.5 font-normal">kW</th>
                 <th className="px-3 py-3.5 font-normal">Invertido</th>
                 <th className="px-3 py-3.5 font-normal">Ganancias</th>
+                <th className="px-3 py-3.5 font-normal">Datos de inversionista</th>
                 <th className="px-3 py-3.5 font-normal">Última actividad</th>
                 <th className="px-5 py-3.5" />
               </tr>
@@ -213,6 +231,9 @@ export function AdminUsers() {
                   <td className="num px-3 py-3.5 font-semibold text-silver-50">{formatNumber(u.kw, 1)}</td>
                   <td className="num px-3 py-3.5 text-silver-200">{formatCop(u.investedCop)}</td>
                   <td className="num px-3 py-3.5 text-leaf-300">{formatCop(u.earnedCop)}</td>
+                  <td className="px-3 py-3.5">
+                    <ProfileCell profile={u.profile} real={u.real} />
+                  </td>
                   <td className="num px-3 py-3.5 text-silver-400">{u.lastActivity ? formatDateTime(u.lastActivity) : "—"}</td>
                   <td className="px-5 py-3.5 text-right">
                     <button type="button" className="btn btn-ghost !px-4 !py-2 text-sm" onClick={() => setEditing(u)}>
@@ -223,7 +244,7 @@ export function AdminUsers() {
               ))}
               {!loading && users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-silver-400">
+                  <td colSpan={7} className="px-5 py-10 text-center text-silver-400">
                     {debounced ? `Nadie coincide con “${debounced}”.` : "No hay usuarios en esta lista. Las cuentas reales aparecen cuando alguien entra con Google o con la cuenta demo."}
                   </td>
                 </tr>

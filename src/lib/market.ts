@@ -5,19 +5,13 @@ import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
 import { ledgerTx, listing, positionEntry, user, walletLink } from "@/lib/db/schema";
 import { isDemoMode } from "@/lib/env";
+import { MarketError } from "@/lib/errors";
 import { newId, orderCode, simulatedTxHash } from "@/lib/ids";
 import { getBalances, getKwPosition, round1, toTxDTO } from "@/lib/portfolio";
 import { getRates, type Asset } from "@/lib/rates";
 import { buildOrderMessage, buildWithdrawalMessage, verifyWalletSignature } from "@/lib/signing";
 
-export class MarketError extends Error {
-  constructor(
-    message: string,
-    public status = 400,
-  ) {
-    super(message);
-  }
-}
+export { MarketError };
 
 const ORDER_TTL_MS = 15 * 60_000;
 export const QR_WALLET_NAME = "Pago QR (demo)";

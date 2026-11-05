@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/config/brand";
+import { isDemoMode } from "@/lib/env";
 import { Logo } from "@/components/ui/logo";
 
 export function LandingNav() {
@@ -178,11 +179,20 @@ export function Footer() {
         <div className="space-y-3">
           <Logo />
           <p className="max-w-[60ch]">
-            {BRAND.legalName}. MVP demostrativo: la planta, la telemetría y los pagos son simulados, y ninguna firma
-            mueve fondos. La rentabilidad que se muestra es estimada y no está garantizada.
+            {isDemoMode()
+              ? `${BRAND.legalName}. Modo demo: la planta, la telemetría y los pagos son simulados, y ninguna firma mueve fondos. La rentabilidad que se muestra es estimada y no está garantizada.`
+              : `${BRAND.legalName}. La telemetría de la planta es una simulación hasta que sus medidores estén conectados, y las ganancias que se muestran son estimadas. La rentabilidad no está garantizada.`}
           </p>
         </div>
-        <p>Hecho en Colombia</p>
+        <div className="flex flex-col gap-2 md:items-end">
+          <Link href="/terminos" className="hover:text-silver-50">
+            Términos y Condiciones
+          </Link>
+          <Link href="/privacidad" className="hover:text-silver-50">
+            Política de Tratamiento de Datos
+          </Link>
+          <p className="text-silver-500">Hecho en Colombia</p>
+        </div>
       </div>
     </footer>
   );

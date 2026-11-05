@@ -3,11 +3,12 @@ import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
-import { account, adminAudit, ledgerTx, listing, plant, positionEntry, user, type AdminAction } from "@/lib/db/schema";
+import { account, adminAudit, investorProfile, ledgerTx, listing, plant, positionEntry, user, type AdminAction } from "@/lib/db/schema";
 import { formatCop, formatKw } from "@/lib/format";
 import { newId, simulatedTxHash } from "@/lib/ids";
 import { MarketError, soldKw } from "@/lib/market";
 import { validateSettings, type PlantSettings } from "@/lib/plant-settings";
+import { TERMS_VERSION } from "@/lib/profile";
 import { earningsAt, kwOwnedAt } from "@/lib/portfolio-math";
 import { getKwPosition, round1, toTxDTO } from "@/lib/portfolio";
 import { invalidateSettings, readSettings } from "@/lib/settings";
@@ -69,6 +70,8 @@ export async function listUsersForAdmin({ query = "", scope = "todos" }: { query
     .where(inArray(ledgerTx.userId, ids))
     .groupBy(ledgerTx.userId);
   const lastBy = new Map(lastTx.map((t) => [t.userId, t.at]));
+  const profiles = await db.select().from(investorProfile).where(inArray(investorProfile.userId, ids));
+  const profileBy = new Map(profiles.map((p) => [p.userId, p]));
 
   return filtered
     .map((r) => {
@@ -82,9 +85,24 @@ export async function listUsersForAdmin({ query = "", scope = "todos" }: { query
         investedCop: Math.round(es.reduce((s, e) => s + e.kwDelta * e.pricePerKwCop, 0)),
         earnedCop: earningsAt(es, net, now),
         lastActivity: lastBy.get(r.id) ?? null,
+        profile: profileOf(profileBy.get(r.id)),
       };
     })
     .sort((a, b) => Number(b.real) - Number(a.real) || b.kw - a.kw);
+}
+
+function profileOf(p: typeof investorProfile.$inferSelect | undefined) {
+  if (!p) return null;
+  return {
+    fullName: p.fullName,
+    docType: p.docType,
+    docNumber: p.docNumber,
+    phone: p.phone,
+    city: p.city,
+    termsVersion: p.termsVersion,
+    termsAcceptedAt: p.termsAcceptedAt,
+    termsCurrent: p.termsVersion === TERMS_VERSION,
+  };
 }
 
 export interface AdjustInput {

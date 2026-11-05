@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeftRight, Gauge, LayoutDashboard, LogOut, MonitorPlay, ShieldCheck, Users, Wallet } from "lucide-react";
+import { ArrowLeftRight, Gauge, IdCard, LayoutDashboard, LogOut, MonitorPlay, ShieldCheck, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
@@ -50,6 +50,16 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col gap-1">
+        <Link
+          href="/panel/perfil"
+          aria-current={path === "/panel/perfil" ? "page" : undefined}
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] transition-colors ${
+            path === "/panel/perfil" ? "bg-silicon-700/80 font-semibold text-silver-50" : "text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
+          }`}
+        >
+          <IdCard size={18} className={path === "/panel/perfil" ? "text-sun-400" : ""} />
+          Mis datos
+        </Link>
         <Link href="/admin" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
           <ShieldCheck size={18} className="text-dusk-300" />
           Administración

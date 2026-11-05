@@ -34,6 +34,17 @@ export interface AdminUserRow {
   investedCop: number;
   earnedCop: number;
   lastActivity: number | null;
+  profile: {
+    fullName: string;
+    docType: string;
+    docNumber: string;
+    phone: string;
+    city: string;
+    termsVersion: string | null;
+    termsAcceptedAt: number | null;
+    /** Aceptó la versión vigente de los términos */
+    termsCurrent: boolean;
+  } | null;
 }
 
 export interface AdminWithdrawal extends TxDTO {
