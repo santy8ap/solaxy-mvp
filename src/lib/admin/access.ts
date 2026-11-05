@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { ensureReady } from "@/lib/db/init";
-import { authSecret, env } from "@/lib/env";
+import { adminEmailAllowed, adminPin, authSecret } from "@/lib/env";
 import { jsonError, unauthorized, type CurrentUser } from "@/lib/session";
 import { createPinLimiter, pinMatches, sessionBinding, signAdminToken, verifyAdminToken } from "./token";
 
@@ -32,8 +32,10 @@ async function clientKey() {
 export async function checkAdminPin(pin: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const key = await clientKey();
   const now = Date.now();
+  const expected = adminPin();
+  if (!expected) return { ok: false, error: "El acceso de administrador no está configurado (falta ADMIN_PIN)." };
   if (!limiter.allow(key, now)) return { ok: false, error: "Demasiados intentos. Espera 10 minutos e inténtalo de nuevo." };
-  if (!pinMatches(pin, env.adminPin)) {
+  if (!pinMatches(pin, expected)) {
     limiter.fail(key, now);
     return { ok: false, error: "El PIN no es correcto." };
   }
@@ -81,11 +83,10 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   const s = await auth.api.getSession({ headers: h });
   if (!s?.user || !s.session) return null;
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
-  const isAdmin = verifyAdminToken(
-    token,
-    { userId: s.user.id, binding: sessionBinding(s.session.token), now: Date.now() },
-    authSecret(),
-  );
+  // Con dinero real, además de la cookie firmada, el correo debe estar autorizado (ADMIN_EMAILS).
+  const isAdmin =
+    adminEmailAllowed(s.user.email) &&
+    verifyAdminToken(token, { userId: s.user.id, binding: sessionBinding(s.session.token), now: Date.now() }, authSecret());
   return {
     user: { id: s.user.id, name: s.user.name, email: s.user.email, image: s.user.image ?? null },
     isAdmin,

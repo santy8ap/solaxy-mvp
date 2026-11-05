@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getAuthContext } from "@/lib/admin/access";
+import { adminEmailAllowed } from "@/lib/env";
 import { AdminBottomNav, AdminPinWall, AdminSidebar } from "@/components/admin/shell";
 import { UserProvider } from "@/components/panel/user-context";
 import { Toaster } from "@/components/ui/toast";
@@ -14,7 +15,7 @@ export const instant = false;
 async function AdminGate({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/ingresar?rol=admin");
-  if (!ctx.isAdmin) return <AdminPinWall name={ctx.user.name} />;
+  if (!ctx.isAdmin) return <AdminPinWall name={ctx.user.name} email={ctx.user.email} allowed={adminEmailAllowed(ctx.user.email)} />;
   return <UserProvider user={ctx.user}>{children}</UserProvider>;
 }
 

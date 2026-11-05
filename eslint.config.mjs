@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Scripts locales de verificación (no forman parte de la app).
+    ".superpowers/**",
   ]),
 ]);
 

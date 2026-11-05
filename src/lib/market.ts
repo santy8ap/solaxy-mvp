@@ -4,6 +4,7 @@ import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
 import { ledgerTx, listing, positionEntry, user, walletLink } from "@/lib/db/schema";
+import { isDemoMode } from "@/lib/env";
 import { newId, orderCode, simulatedTxHash } from "@/lib/ids";
 import { getBalances, getKwPosition, round1, toTxDTO } from "@/lib/portfolio";
 import { getRates, type Asset } from "@/lib/rates";
@@ -135,7 +136,11 @@ export interface BuyInput {
   walletName: string;
 }
 
+const DEMO_ONLY = "El pago simulado solo existe en modo demo. Paga con Wompi o con cripto.";
+
+/** Orden de pago simulado (firma de la wallet, sin mover fondos). Solo en modo demo. */
 export async function createBuyOrder(input: BuyInput) {
+  if (!isDemoMode()) throw new MarketError(DEMO_ONLY, 403);
   const { spec, econ } = await ensureReady();
   const now = Date.now();
   let kw: number;
@@ -186,11 +191,15 @@ export async function createBuyOrder(input: BuyInput) {
     message,
     listingId: input.listingId ?? null,
     createdAt: now,
+    method: "demo",
+    expiresAt: now + ORDER_TTL_MS,
   });
   return { orderId: code, message, kw, amountCop, assetAmount, asset: input.asset, network: input.network, expiresAt: now + ORDER_TTL_MS, rateSource: rates.source };
 }
 
 export async function confirmBuyOrder(userId: string, orderId: string, proof: { signature?: string; simulated?: boolean }) {
+  // Una firma no mueve dinero: con cobros reales nunca asigna kW.
+  if (!isDemoMode()) throw new MarketError(DEMO_ONLY, 403);
   const { spec } = await ensureReady();
   const now = Date.now();
   const [tx] = await db
@@ -301,7 +310,7 @@ export async function instantSell(userId: string, kwInput: number) {
       amountCop,
       asset: "COP",
       walletName: "Solaxy",
-      txHash: simulatedTxHash(),
+      txHash: isDemoMode() ? simulatedTxHash() : null,
       createdAt: now,
       confirmedAt: now,
     }),
@@ -383,7 +392,8 @@ export async function confirmWithdrawal(userId: string, withdrawalId: string, si
   const pos = await getKwPosition(userId, now);
   const bal = await getBalances(userId, pos.entries, now);
   if (tx.amountCop > bal.balance) throw new MarketError("No tienes saldo suficiente");
-  if (settings.withdrawalApproval) {
+  // Con dinero real el administrador siempre hace el envío y registra su referencia.
+  if (settings.withdrawalApproval || !isDemoMode()) {
     // Queda esperando al administrador; mientras tanto aparta el saldo.
     const res = await db
       .update(ledgerTx)

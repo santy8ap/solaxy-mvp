@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { ECONOMICS } from "@/config/economics";
 import { PLANT } from "@/config/plant";
 import { auth } from "@/lib/auth";
-import { env } from "@/lib/env";
+import { env, isDemoMode } from "@/lib/env";
 import { REFERENCE_PRICES, type Asset } from "@/lib/rates";
 import { DAY_MS, HOUR_MS, dayStartMs, localDayIndex } from "@/lib/sim";
 import type { Db } from "./client";
@@ -41,7 +41,19 @@ const ASSET_POOL: { asset: Asset; network: string; chainId: number | null }[] = 
 export const INVESTOR_COUNT = 140;
 export const INVESTOR_TOTAL_KW = 1150;
 
-export async function seed(db: Db, now = Date.now()) {
+/** Crea la cuenta demo si no existe (por ejemplo, si la base se creó con dinero real y luego se activó el modo demo). */
+export async function ensureDemoAccount(db: Db) {
+  const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, env.demoEmail));
+  if (existing) return existing.id;
+  const res = await auth.api.signUpEmail({ body: { name: env.demoName, email: env.demoEmail, password: env.demoPassword } });
+  return res.user.id;
+}
+
+/**
+ * Siembra la base nueva: siempre la planta; y solo en modo demo, la comunidad ficticia,
+ * las ofertas P2P y la cuenta demo. Con dinero real no se inventan inversionistas.
+ */
+export async function seed(db: Db, now = Date.now(), { demo = isDemoMode() } = {}) {
   const rnd = mulberry32(PLANT.seed);
   const hex = (n: number) => Array.from({ length: n }, () => Math.floor(rnd() * 16).toString(16)).join("");
   const fakeAddress = () => `0x${hex(40)}`;
@@ -60,6 +72,7 @@ export async function seed(db: Db, now = Date.now()) {
       commissionedAt,
     })
     .onConflictDoNothing();
+  if (!demo) return { commissionedAt, demoId: null };
 
   // Inversionistas de la comunidad (ficticios, no pueden iniciar sesión).
   const raw = Array.from({ length: INVESTOR_COUNT }, () => 0.5 + 24 * rnd() ** 3);
@@ -121,12 +134,7 @@ export async function seed(db: Db, now = Date.now()) {
   }));
 
   // Cuenta demo: 7 kW hace 90 días + 5 kW hace 28 días + un retiro.
-  const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, env.demoEmail));
-  let demoId = existing[0]?.id;
-  if (!demoId) {
-    const res = await auth.api.signUpEmail({ body: { name: env.demoName, email: env.demoEmail, password: env.demoPassword } });
-    demoId = res.user.id;
-  }
+  const demoId = await ensureDemoAccount(db);
   const demoAddress = fakeAddress();
   const lot1 = dayStartMs(localDayIndex(now) - 90) + 10.4 * HOUR_MS;
   const lot2 = dayStartMs(localDayIndex(now) - 28) + 15.2 * HOUR_MS;

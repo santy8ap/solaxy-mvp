@@ -5,7 +5,7 @@ import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
 import { ledgerTx, listing, positionEntry } from "@/lib/db/schema";
-import { env } from "@/lib/env";
+import { env, isDemoMode } from "@/lib/env";
 import { newId } from "@/lib/ids";
 import { dailyEarnings, earningsAt, kwOwnedAt, type KwEntry } from "@/lib/portfolio-math";
 import { DAY_MS, dayStartMs, instantReading, localDayIndex } from "@/lib/sim";
@@ -68,9 +68,9 @@ async function loadEntries(userId: string) {
     .where(eq(positionEntry.userId, userId));
 }
 
-/** Las cuentas nuevas reciben una posición demo (configurable con DEMO_STARTER_KW). */
+/** En modo demo, las cuentas nuevas reciben una posición de regalo (configurable con DEMO_STARTER_KW). */
 async function grantStarterIfNeeded(userId: string, commissionedAt: number, now: number, pricePerKwCop: number) {
-  if (env.starterKw <= 0) return false;
+  if (!isDemoMode() || env.starterKw <= 0) return false;
   const [had] = await db
     .select({ n: sql<number>`count(*)` })
     .from(ledgerTx)

@@ -133,8 +133,26 @@ export function AdminTopbar({ title, subtitle, action }: { title: string; subtit
 }
 
 /** Se muestra si alguien con sesión abre /admin sin haber ingresado el PIN. */
-export function AdminPinWall({ name }: { name: string }) {
+export function AdminPinWall({ name, email, allowed }: { name: string; email: string; allowed: boolean }) {
   const [state, action, pending] = useActionState(becomeAdmin, undefined);
+  if (!allowed) {
+    return (
+      <div className="mx-auto mt-16 max-w-[440px]">
+        <div className="panel p-8">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-alert-400/15 text-alert-400">
+            <ShieldCheck size={24} />
+          </span>
+          <h1 className="mt-5 text-2xl font-semibold text-silver-50">Cuenta no autorizada</h1>
+          <p className="mt-2 text-silver-400">
+            {email} no está en la lista de administradores. Si debes tener acceso, pide que agreguen tu correo a la variable ADMIN_EMAILS.
+          </p>
+          <Link href="/panel" className="btn btn-ghost mt-6">
+            Volver a mi panel de inversionista
+          </Link>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto mt-16 max-w-[420px]">
       <div className="panel p-8">

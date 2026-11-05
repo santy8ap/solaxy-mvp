@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
@@ -137,9 +137,12 @@ export const positionEntry = sqliteTable(
 );
 
 export const TX_KINDS = ["compra", "compra_p2p", "venta_p2p", "venta_inmediata", "retiro", "asignacion_demo", "ajuste_admin"] as const;
-export const TX_STATUSES = ["pendiente", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada"] as const;
+export const TX_STATUSES = ["pendiente", "verificando", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada"] as const;
+/** Cómo se pagó una orden: firma simulada (solo modo demo), Wompi o cripto directo a la billetera de la empresa. */
+export const PAYMENT_METHODS = ["demo", "wompi", "crypto"] as const;
 export type TxKind = (typeof TX_KINDS)[number];
 export type TxStatus = (typeof TX_STATUSES)[number];
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const ledgerTx = sqliteTable(
   "ledger_tx",
@@ -166,9 +169,44 @@ export const ledgerTx = sqliteTable(
     note: text("note"),
     createdAt: integer("created_at").notNull(),
     confirmedAt: integer("confirmed_at"),
+    /** Pasarela de una compra (null en movimientos que no son pagos) */
+    method: text("method", { enum: PAYMENT_METHODS }),
+    /** Id del pago en el proveedor: transacción de Wompi o hash on-chain (en minúsculas) */
+    providerId: text("provider_id"),
+    /** Último estado reportado por el proveedor (APPROVED, PENDING, confirmaciones…) */
+    providerStatus: text("provider_status"),
+    /** Monto exacto esperado en unidades base, como texto: centavos de COP o wei del activo */
+    expectedAmount: text("expected_amount"),
+    /** Vigencia de la cotización (ms UTC) */
+    expiresAt: integer("expires_at"),
   },
-  (t) => [index("tx_user_idx").on(t.userId, t.createdAt)],
+  (t) => [
+    index("tx_user_idx").on(t.userId, t.createdAt),
+    index("tx_method_status_idx").on(t.method, t.status),
+    // Un mismo pago (transacción de Wompi u hash on-chain) no puede acreditarse dos veces.
+    uniqueIndex("tx_provider_uq").on(t.method, t.providerId),
+  ],
 );
+
+export const DOC_TYPES = ["CC", "CE", "PP", "NIT"] as const;
+export type DocType = (typeof DOC_TYPES)[number];
+
+/** Datos del inversionista: obligatorios antes de la primera compra real. */
+export const investorProfile = sqliteTable("investor_profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  fullName: text("full_name").notNull(),
+  docType: text("doc_type", { enum: DOC_TYPES }).notNull(),
+  docNumber: text("doc_number").notNull(),
+  phone: text("phone").notNull(),
+  city: text("city").notNull(),
+  /** Versión de los Términos y la Política de Datos aceptada, y cuándo */
+  termsVersion: text("terms_version"),
+  termsAcceptedAt: integer("terms_accepted_at"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
 
 export const LISTING_STATUSES = ["activa", "vendida", "cancelada"] as const;
 

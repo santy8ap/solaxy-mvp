@@ -15,6 +15,13 @@
       "when": 1793744309507,
       "tag": "0001_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793905724146,
+      "tag": "0002_pagos",
+      "breakpoints": true
     }
   ]
 }

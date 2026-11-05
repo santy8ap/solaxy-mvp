@@ -161,7 +161,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const last = readLast();
     if (!last) return;
     if (last.kind === "demo") {
-      void connectDemo();
+      // La wallet demo solo vuelve si el servidor sigue en modo demo.
+      void fetch("/api/config", { cache: "no-store" })
+        .then((r) => r.json() as Promise<{ demoMode?: boolean }>)
+        .then((c) => (c.demoMode ? connectDemo() : undefined))
+        .catch(() => undefined);
       return;
     }
     if (last.kind === "injected") {

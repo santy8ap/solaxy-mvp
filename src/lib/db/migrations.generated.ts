@@ -37,5 +37,18 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "ALTER TABLE `plant` ADD `withdrawal_approval` integer DEFAULT true NOT NULL;",
       "ALTER TABLE `plant` ADD `updated_at` integer;"
     ]
+  },
+  {
+    "id": "0002_pagos",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `investor_profile` (\n\t`user_id` text PRIMARY KEY NOT NULL,\n\t`full_name` text NOT NULL,\n\t`doc_type` text NOT NULL,\n\t`doc_number` text NOT NULL,\n\t`phone` text NOT NULL,\n\t`city` text NOT NULL,\n\t`terms_version` text,\n\t`terms_accepted_at` integer,\n\t`created_at` integer NOT NULL,\n\t`updated_at` integer NOT NULL,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade\n);",
+      "ALTER TABLE `ledger_tx` ADD `method` text;",
+      "ALTER TABLE `ledger_tx` ADD `provider_id` text;",
+      "ALTER TABLE `ledger_tx` ADD `provider_status` text;",
+      "ALTER TABLE `ledger_tx` ADD `expected_amount` text;",
+      "ALTER TABLE `ledger_tx` ADD `expires_at` integer;",
+      "CREATE INDEX IF NOT EXISTS `tx_method_status_idx` ON `ledger_tx` (`method`,`status`);",
+      "CREATE UNIQUE INDEX IF NOT EXISTS `tx_provider_uq` ON `ledger_tx` (`method`,`provider_id`);"
+    ]
   }
 ];

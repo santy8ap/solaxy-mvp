@@ -3,7 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { BRAND } from "@/config/brand";
-import { googleEnabled } from "@/lib/env";
+import { googleEnabled, isDemoMode } from "@/lib/env";
 import { Logo } from "@/components/ui/logo";
 import { LiveMini } from "@/components/live/live-mini";
 import { LoginOptions } from "./login-options";
@@ -14,7 +14,17 @@ async function Options({ searchParams }: { searchParams: Promise<{ rol?: string 
   // Se lee al momento de la visita: si agregas las credenciales de Google no hace falta recompilar.
   await connection();
   const { rol } = await searchParams;
-  return <LoginOptions googleEnabled={googleEnabled} defaultRole={rol === "admin" ? "admin" : "user"} />;
+  return <LoginOptions googleEnabled={googleEnabled} demoMode={isDemoMode()} defaultRole={rol === "admin" ? "admin" : "user"} />;
+}
+
+async function DemoNote() {
+  await connection();
+  if (!isDemoMode()) return null;
+  return (
+    <p className="mt-6 text-xs leading-relaxed text-silver-500">
+      {BRAND.demoBadge}. Las cuentas nuevas reciben una posición de demostración para explorar el panel.
+    </p>
+  );
 }
 
 export default function LoginPage({ searchParams }: PageProps<"/ingresar">) {
@@ -40,15 +50,15 @@ export default function LoginPage({ searchParams }: PageProps<"/ingresar">) {
         </div>
         <div className="panel cells mx-auto w-full max-w-[440px] p-7 sm:p-9">
           <h2 className="text-2xl font-semibold text-silver-50">Ingresar a {BRAND.name}</h2>
-          <p className="mt-2 text-silver-400">Elige cómo quieres entrar y usa tu cuenta de Google o la cuenta demo.</p>
+          <p className="mt-2 text-silver-400">Elige cómo quieres entrar y continúa con tu cuenta.</p>
           <div className="mt-8">
             <Suspense fallback={<div className="h-[260px] animate-pulse rounded-2xl bg-silicon-700/50" />}>
               <Options searchParams={searchParams as Promise<{ rol?: string }>} />
             </Suspense>
           </div>
-          <p className="mt-6 text-xs leading-relaxed text-silver-500">
-            {BRAND.demoBadge}. Las cuentas nuevas reciben una posición de demostración para explorar el panel.
-          </p>
+          <Suspense fallback={null}>
+            <DemoNote />
+          </Suspense>
         </div>
       </div>
     </main>

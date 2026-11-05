@@ -22,7 +22,15 @@ const ROLES: { id: Role; title: string; note: string; icon: typeof LineChart }[]
   { id: "admin", title: "Administrador", note: "Usuarios, planta y retiros", icon: KeyRound },
 ];
 
-export function LoginOptions({ googleEnabled, defaultRole = "user" }: { googleEnabled: boolean; defaultRole?: Role }) {
+export function LoginOptions({
+  googleEnabled,
+  demoMode,
+  defaultRole = "user",
+}: {
+  googleEnabled: boolean;
+  demoMode: boolean;
+  defaultRole?: Role;
+}) {
   const [role, setRole] = useState<Role>(defaultRole);
   const [pin, setPin] = useState("");
   const [state, formAction, pending] = useActionState(signInDemo, undefined);
@@ -33,7 +41,9 @@ export function LoginOptions({ googleEnabled, defaultRole = "user" }: { googleEn
     setNotice(null);
     if (!googleEnabled) {
       setNotice(
-        "El ingreso con Google aún no está configurado en este equipo. Agrega GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET (ver README). Mientras tanto, entra con la cuenta demo.",
+        demoMode
+          ? "El ingreso con Google aún no está configurado en este equipo. Agrega GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET (ver README). Mientras tanto, entra con la cuenta demo."
+          : "El ingreso con Google aún no está configurado. El administrador debe agregar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.",
       );
       return;
     }
@@ -54,7 +64,7 @@ export function LoginOptions({ googleEnabled, defaultRole = "user" }: { googleEn
     });
     if (error) {
       setGoogleLoading(false);
-      setNotice(error.message ?? "No se pudo conectar con Google. Intenta de nuevo o usa la cuenta demo.");
+      setNotice(error.message ?? (demoMode ? "No se pudo conectar con Google. Intenta de nuevo o usa la cuenta demo." : "No se pudo conectar con Google. Intenta de nuevo."));
     }
   };
 
@@ -121,13 +131,15 @@ export function LoginOptions({ googleEnabled, defaultRole = "user" }: { googleEn
           <GoogleG />
           {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
         </button>
-        <form action={formAction}>
-          <input type="hidden" name="role" value={role} />
-          <input type="hidden" name="pin" value={pin} />
-          <button type="submit" disabled={pending || googleLoading} className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}>
-            {pending ? "Entrando…" : role === "admin" ? "Entrar como administrador (demo)" : "Entrar con la cuenta demo"}
-          </button>
-        </form>
+        {demoMode && (
+          <form action={formAction}>
+            <input type="hidden" name="role" value={role} />
+            <input type="hidden" name="pin" value={pin} />
+            <button type="submit" disabled={pending || googleLoading} className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}>
+              {pending ? "Entrando…" : role === "admin" ? "Entrar como administrador (demo)" : "Entrar con la cuenta demo"}
+            </button>
+          </form>
+        )}
       </div>
 
       {error && (

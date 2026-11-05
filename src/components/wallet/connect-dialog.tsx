@@ -1,6 +1,7 @@
 "use client";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useAppConfig } from "@/lib/client/use-app-config";
 import { WC_PROJECT_ID, useWallet } from "@/lib/wallet/context";
 import { getWallets, subscribeWallets } from "@/lib/wallet/discovery";
 
@@ -62,6 +63,7 @@ function Option({ title, note, icon, onClick, disabled = false }: { title: strin
 
 export function ConnectWalletDialog() {
   const wallet = useWallet();
+  const { config } = useAppConfig();
   const injected = useSyncExternalStore(subscribeWallets, getWallets, () => EMPTY);
   const [uri, setUri] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -119,12 +121,14 @@ export function ConnectWalletDialog() {
             onClick={() => void wallet.connectWalletConnect(setUri)}
             disabled={!WC_PROJECT_ID || wallet.status === "connecting"}
           />
-          <Option
-            title="Wallet de demostración"
-            note="Firma de verdad, sin fondos. Ideal para la presentación"
-            icon={<span className="text-lg font-bold text-dusk-300">D</span>}
-            onClick={() => void wallet.connectDemo()}
-          />
+          {config?.demoMode && (
+            <Option
+              title="Wallet de demostración"
+              note="Firma de verdad, sin fondos. Ideal para la presentación"
+              icon={<span className="text-lg font-bold text-dusk-300">D</span>}
+              onClick={() => void wallet.connectDemo()}
+            />
+          )}
           {injected.length === 0 && (
             <p className="pt-1 text-sm text-silver-400">
               No encontramos extensiones de wallet en este navegador. Puedes instalar Trust Wallet o MetaMask, o usar el QR.
