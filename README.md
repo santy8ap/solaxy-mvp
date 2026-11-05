@@ -1,8 +1,13 @@
 # Solaxy: MVP de inversión en energía solar
 
-Solaxy permite comprar **kW de una planta solar** pagando con **Trust Wallet o cripto** y ver en vivo la telemetría de la planta y cómo crecen las ganancias, segundo a segundo.
+Solaxy permite comprar **kW de una planta solar** pagando con **tarjeta, PSE o Nequi (Wompi)** o con **USDT y BNB directo a la billetera de la empresa**, y ver en vivo la telemetría de la planta y cómo crecen las ganancias, segundo a segundo.
 
-Este repositorio es un **MVP demostrativo** que funciona de punta a punta:
+Funciona en dos modos (sección 9):
+
+- **Modo demo** (`DEMO_MODE=true`, por defecto): cuenta demo, wallet demo, pagos simulados e inversionistas de ejemplo. Ideal para presentar.
+- **Producción** (`DEMO_MODE=false`): solo Google para entrar y solo pagos reales; los kW se asignan cuando el pago queda confirmado.
+
+Lo que incluye:
 
 - **Landing:** el sol aparece en su posición real sobre la planta y los paneles se iluminan según la potencia. Incluye el mapa de propiedad de la planta, un simulador de inversión, los métodos de pago y preguntas frecuentes.
 - **Ingreso:** con Google o con la cuenta demo, que no necesita configurar nada.
@@ -11,9 +16,11 @@ Este repositorio es un **MVP demostrativo** que funciona de punta a punta:
   - Crecimiento de la inversión (90 días) y ganancias por día (30 días).
 - **Telemetría:** potencia, irradiancia, temperaturas, tensiones, frecuencia, batería, 10 inversores y la curva del día.
 - **Mercado:**
-  - Compra a la planta o a otros usuarios (P2P), firmando la orden con la wallet.
+  - Compra a la planta o a otros usuarios (P2P) con Wompi, con USDT o BNB desde tu wallet, o con el pago simulado (solo modo demo).
   - Venta inmediata y publicación de ofertas.
-- **Billetera:** saldo, retiros firmados a tu wallet e historial.
+- **Billetera:** saldo, retiros firmados a tu wallet (los aprueba el admin) e historial con enlaces a BscScan.
+- **Mis datos:** datos del inversionista y aceptación de los Términos y la Política de Datos, obligatorios antes de pagar.
+- **Administración:** usuarios, retiros, pagos (re-verificar y reembolsos), planta, actividad y la lista de lo que falta para cobrar de verdad.
 - **Vista de socios:** capital levantado, porcentaje de la planta vendido, ingresos y la parte de la plataforma.
 - **Modo presentación:** muestra la planta al mediodía, al amanecer o a las 7 p. m., y acelera el tiempo.
 
@@ -81,7 +88,8 @@ Para editar el código con recarga automática usa `npm run dev`.
 ## 3. Cuentas para la demo
 
 - **Entrar con la cuenta demo**: funciona siempre, incluso sin internet. Es un inversionista con 12 kW, comprados hace 90 y 28 días, y con historial.
-- **Continuar con Google**: necesita las credenciales (sección 4). Cada cuenta nueva recibe **5 kW de demostración con 30 días de historial** para que el panel se vea vivo. Se desactiva con `DEMO_STARTER_KW=0`.
+- **Continuar con Google**: necesita las credenciales (sección 4). En modo demo, cada cuenta nueva recibe **5 kW de demostración con 30 días de historial** para que el panel se vea vivo. Se desactiva con `DEMO_STARTER_KW=0`.
+- **Administrador**: al ingresar, elige *Administrador* y escribe el PIN. `npm run setup` genera uno aleatorio y lo muestra una vez; queda en `.env.local` como `ADMIN_PIN`. Si tu `.env.local` no tiene `ADMIN_PIN`, en tu PC el PIN de demostración es `2026`. En Vercel vale el PIN de la variable `ADMIN_PIN`.
 
 ## 4. Configurar Google (unos 10 minutos, opcional)
 
@@ -102,7 +110,10 @@ Para editar el código con recarga automática usa `npm run dev`.
 
 ## 5. Trust Wallet y cripto
 
-La conexión de la wallet y la **firma son reales**: el servidor verifica criptográficamente que la firma corresponde a tu dirección. El **pago se simula**: ninguna firma mueve fondos.
+Hay dos formas de pagar con la wallet:
+
+- **Pago real** (USDT o BNB en BNB Chain, si `CRYPTO_TREASURY_ADDRESS` está configurada): la wallet envía el monto exacto a la billetera de la empresa y el servidor lo verifica en la cadena (sección 9).
+- **Pago simulado** (solo en modo demo): firmas la orden y el servidor verifica criptográficamente que la firma corresponde a tu dirección, pero ninguna firma mueve fondos.
 
 - **En el computador:** instala la extensión de **Trust Wallet** (o MetaMask) en Chrome o Brave. Aparece sola en **Conectar wallet**.
 - **Desde el celular con QR (WalletConnect):**
@@ -110,10 +121,10 @@ La conexión de la wallet y la **firma son reales**: el servidor verifica cripto
   2. Ponlo en `.env.local` como `NEXT_PUBLIC_REOWN_PROJECT_ID=...`.
   3. Vuelve a correr `npm run presentar`.
   4. En la app elige **Trust Wallet en tu celular**, escanea el código con Trust Wallet y aprueba la firma en el teléfono.
-- **Wallet de demostración:** siempre está disponible. Genera una clave en el navegador que firma de verdad pero no tiene fondos. Es la opción más segura para la presentación.
-- **Bitcoin por QR:** el flujo es simulado y el código **no** es una dirección real, así que no envíes fondos.
+- **Wallet de demostración** (solo modo demo): genera una clave en el navegador que firma de verdad pero no tiene fondos. Es la opción más segura para la presentación. No sirve para pagos reales.
+- **Bitcoin por QR** (solo modo demo): el flujo es simulado y el código **no** es una dirección real, así que no envíes fondos.
 
-Las tasas de USDT, BNB, ETH y BTC vienen de CoinGecko. Si no hay internet, se usan precios de referencia.
+Las tasas vienen de CoinGecko. En el pago simulado, si no hay internet, se usan precios de referencia. En el pago real nunca: sin precio en vivo no se cotiza.
 
 ## 6. Modo presentación
 
@@ -131,14 +142,16 @@ Mientras está activo se ve el aviso **"Simulación"**. Nada de lo simulado se g
 1. En <https://vercel.com> elige **Add New → Project** e importa `santy8ap/solaxy-mvp`.
 2. Crea una base de datos gratuita en **Turso**, en <https://turso.tech> o desde el Marketplace de Vercel, y copia su URL y su token.
 3. En **Settings → Environment Variables** agrega:
-   - `BETTER_AUTH_SECRET`: una clave larga aleatoria.
+   - `BETTER_AUTH_SECRET`: una clave larga aleatoria. En Vercel la app no arranca sin ella.
+   - `ADMIN_PIN`: el PIN de administrador. Sin él, en Vercel nadie puede entrar al admin.
    - `BETTER_AUTH_URL`: por ejemplo `https://tu-proyecto.vercel.app`.
-   - `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
-   - Opcionales: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `NEXT_PUBLIC_REOWN_PROJECT_ID`.
+   - `DEMO_MODE`: `true` mientras presentas; `false` para cobrar de verdad (sección 9).
+   - `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` (las crea Vercel → Storage → Turso).
+   - Las de Google, Wompi y cripto de la sección 9.
 4. Si usas Google, agrega `https://tu-proyecto.vercel.app/api/auth/callback/google` en los URI de redireccionamiento.
 5. Despliega. La base de datos se crea y se siembra sola en la primera visita.
 
-Sin Turso también funciona, pero con una base de datos temporal que se reinicia cuando Vercel reinicia el servidor.
+Sin Turso también funciona, pero con una base de datos temporal que se reinicia cuando Vercel reinicia el servidor. La lista de configuración del admin (Admin → Pagos) lo marca como pendiente.
 
 ---
 
@@ -169,24 +182,148 @@ Sin Turso también funciona, pero con una base de datos temporal que se reinicia
 
 ### Qué es real y qué es simulado
 
-| Real | Simulado |
+| | Modo demo | Producción |
+| --- | --- | --- |
+| Login, sesiones y base de datos | Real | Real (solo Google) |
+| Pagos con Wompi y con cripto (USDT y BNB en BNB Chain) | Reales si están configurados (sandbox o testnet para probar) | Reales |
+| Pago simulado (firma sin mover fondos) y QR de Bitcoin | Disponibles | No existen |
+| Inversionistas y ofertas de ejemplo | Sí | No |
+| La planta y su telemetría | Simuladas (modelo físico realista) | Simuladas hasta conectar los medidores: las ganancias se muestran como estimadas |
+| Retiros | El admin decide si requieren aprobación | Siempre los aprueba el admin y registra la referencia del envío |
+
+## 9. Salir en vivo con pagos reales
+
+La app tiene dos modos, que se eligen con `DEMO_MODE`:
+
+| | Modo demo (`DEMO_MODE=true`) | Producción (`DEMO_MODE=false`) |
+| --- | --- | --- |
+| Ingreso | Google y cuenta demo | Solo Google |
+| Pagos | Wompi y cripto si están configurados, más el pago simulado | Solo Wompi (tarjeta, PSE, Nequi) y cripto real (USDT y BNB en BNB Chain) |
+| Inversionistas y ofertas de ejemplo | Sí | No |
+| Retiros | El admin decide si requieren aprobación | Siempre los aprueba el admin, con la referencia del envío |
+| Administración | PIN | PIN y correo en `ADMIN_EMAILS` |
+
+La planta sigue simulada en los dos modos hasta conectar sus medidores, así que las ganancias se muestran como **estimadas**.
+
+### Cómo se confirma un pago
+
+- **Wompi (tarjeta, PSE, Nequi):**
+  - El servidor crea la orden y firma el checkout con el secreto de integridad. El usuario paga en Wompi y vuelve a `/pagos/resultado`.
+  - El pago se confirma por dos vías: el webhook de Wompi (con su checksum verificado) y una consulta directa a la API de Wompi cuando el usuario vuelve. Las dos coinciden en la referencia, el monto y la moneda, y los kW se asignan **una sola vez**.
+  - PSE puede quedar "en proceso" unos minutos; la página se actualiza sola.
+- **Cripto directo (USDT o BNB en BNB Chain):**
+  - El servidor cotiza con el precio en vivo de CoinGecko. **Si no hay precio en vivo, no se cotiza.** La cotización dura 20 minutos.
+  - La wallet del usuario (Trust Wallet o MetaMask) envía el monto exacto a la billetera de la empresa.
+  - El servidor verifica en la cadena:
+    - El recibo es exitoso y tiene las confirmaciones pedidas.
+    - El pago salió de la wallet de la orden y llegó a la billetera de la empresa.
+    - El monto es igual o mayor al cotizado.
+    - En USDT, el evento `Transfer` es del contrato oficial.
+    - El hash no se había usado antes.
+- **Si algo sale mal:** un pago que llegó pero no se pudo asignar (sin cupo, oferta ya vendida, monto incompleto o tardío) queda **Por reembolsar** en Admin → Pagos.
+
+### Paso a paso
+
+1. **Base de datos.** En Vercel → Storage → Turso, conéctala al proyecto. Crea sola `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
+2. **Google.** Sigue la sección 4. En producción, el URI de redireccionamiento es `https://<tu-dominio>/api/auth/callback/google`.
+3. **Administradores.** Además de `ADMIN_PIN`, pon en `ADMIN_EMAILS` los correos de Google de quienes administran, separados por comas.
+4. **Wompi.**
+   - Crea la cuenta en <https://comercios.wompi.co>. En la sección de desarrolladores copia:
+     - la llave pública en `WOMPI_PUBLIC_KEY`;
+     - el secreto de integridad en `WOMPI_INTEGRITY_SECRET`;
+     - el secreto de eventos en `WOMPI_EVENTS_SECRET`.
+   - En **URL de eventos** escribe `https://<tu-dominio>/api/webhooks/wompi`.
+   - Empieza con las llaves de pruebas (`pub_test_…`) y cámbialas por las de producción (`pub_prod_…`) cuando todo funcione.
+   - Los secretos se pegan directamente en Vercel. No los compartas por chat.
+5. **Billetera de la empresa.**
+   - Pon solo su dirección **pública** (`0x…`) en `CRYPTO_TREASURY_ADDRESS`.
+   - **Nunca** compartas la frase semilla ni la guardes en la app.
+   - Para la tesorería conviene una wallet de hardware o una multifirma.
+6. **Revisa la lista.** En Admin → Pagos → *Para cobrar de verdad*, pulsa **Probar conexiones**. La lista muestra el nombre exacto de cada variable que falta y prueba Wompi, el nodo de BNB Chain y el precio de CoinGecko.
+7. **Prueba de punta a punta, sin dinero real**, todavía con `DEMO_MODE=true`:
+   - **Wompi sandbox:** con las llaves `pub_test_…`, compra 0,5 kW con una tarjeta de prueba que se aprueba y luego con una que se rechaza. Prueba también PSE y Nequi. Los datos de prueba están en la documentación de Wompi (*Datos de prueba en Sandbox*).
+   - **Cripto en testnet:**
+     - Usa `CRYPTO_NETWORK=bsc-testnet` y consigue tBNB en el faucet de BNB Chain: <https://www.bnbchain.org/en/testnet-faucet>.
+     - Compra 0,1 kW pagando con BNB desde MetaMask.
+     - Mira la transacción en <https://testnet.bscscan.com>.
+   - **Revisa en Admin → Pagos** que los pagos queden confirmados sin pulsar *Re-verificar*. Así sabes que el webhook llega.
+8. **Salida en vivo:**
+   - Pon las llaves `pub_prod_…`, `CRYPTO_NETWORK=bsc` y `DEMO_MODE=false`, y vuelve a desplegar.
+   - En Admin → Pagos, pulsa **Borrar datos de demostración**. Solo se puede antes del primer pago real.
+9. **Legal.**
+   - Completa los datos de la empresa en `src/config/legal.ts`. Pon `reviewed: true` cuando el abogado apruebe los textos de `/terminos` y `/privacidad`.
+   - La validación legal (estructura de la oferta, SARLAFT y Superintendencia Financiera) corre por cuenta de la empresa.
+
+### Operación diaria
+
+- **Retiros.** En Admin → Retiros, envía el dinero a la dirección que aparece. Al aprobar, pega la referencia del envío (el hash de la transacción o el número del comprobante).
+- **Pagos.** En Admin → Pagos puedes:
+  - re-verificar un pago en proceso;
+  - registrar el hash de un pago cripto, si el usuario cerró la pestaña antes de que se registrara;
+  - marcar un reembolso.
+- **Registros.** Cada evento de pago queda como una línea JSON en los logs de Vercel. Filtra por `"tipo":"pago"`.
+- **Venta inmediata.** Con dinero real, la plataforma recompra los kW al 97 % del precio y ese saldo se paga por retiro. Decide si quieres mantenerla.
+
+### Variables
+
+| Variable | Para qué |
 | --- | --- |
-| Login, sesiones y base de datos | La planta y su telemetría (modelo físico realista) |
-| Conexión de la wallet y verificación de la firma | El movimiento de fondos y los hashes de transacción |
-| Cálculo de ganancias, compras, ventas y retiros en la BD | Los inversionistas y las ofertas de ejemplo |
-| Tasas cripto en vivo (CoinGecko) | El pago por QR de Bitcoin |
+| `DEMO_MODE` | `true` (demo) o `false` (cobros reales) |
+| `BETTER_AUTH_SECRET` | Firma las sesiones. Obligatoria en Vercel |
+| `BETTER_AUTH_URL` | URL pública de la app |
+| `ADMIN_PIN` | PIN del administrador |
+| `ADMIN_EMAILS` | Correos de los administradores. Obligatoria con `DEMO_MODE=false` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Ingreso con Google |
+| `WOMPI_PUBLIC_KEY` | Llave pública: `pub_test_…` o `pub_prod_…` |
+| `WOMPI_INTEGRITY_SECRET` | Firma del checkout |
+| `WOMPI_EVENTS_SECRET` | Verifica los webhooks |
+| `CRYPTO_TREASURY_ADDRESS` | Dirección pública de la billetera de la empresa |
+| `CRYPTO_NETWORK` | `bsc` o `bsc-testnet` |
+| `CRYPTO_CONFIRMATIONS` | Confirmaciones antes de asignar los kW (5 por defecto) |
+| `BSC_RPC_URL` | Opcional: nodo propio de BNB Chain |
+| `USDT_CONTRACT` | Opcional: contrato del USDT (por defecto, el oficial) |
+| `COINGECKO_API_KEY` | Opcional: más límite de consultas de precios |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Base de datos en la nube |
 
-## 9. Próximos pasos hacia producción
+## 10. Pruebas
 
-1. **Conectar la planta real.** Hay que implementar una fuente de telemetría que lea el inversor (por ejemplo la API de Huawei FusionSolar, SMA o Fronius, o Modbus TCP) en lugar del modelo. Los cálculos de ganancias no cambian.
-2. **Pagos reales.** Detectar transferencias de USDT en la cadena (eventos del contrato BEP-20 o ERC-20) o integrar una pasarela. Agregar PSE y tarjeta.
-3. **Cumplimiento.** KYC y prevención de lavado de activos (SARLAFT). La estructura legal de la oferta a inversionistas debe validarse con asesoría legal y la Superintendencia Financiera.
-4. **Operación.** Base de datos administrada, monitoreo, auditoría de seguridad y respaldos.
+- **Unitarias.** `npm test` cubre la firma de Wompi (con el ejemplo de su documentación), el checksum de los eventos, la verificación cripto con transacciones construidas, el cumplimiento idempotente de las órdenes, el perfil, el modo demo y el admin.
+- **De punta a punta, con servicios falsos y sin internet.** En `e2e/` hay un Wompi falso, una BNB Chain falsa y una wallet EIP-6963 que se inyecta en el navegador. Cada comando va en su propia terminal:
 
-## 10. Solución de problemas
+```bash
+WOMPI_INTEGRITY_SECRET=test_integrity_e2e WOMPI_EVENTS_SECRET=test_events_e2e WEBHOOK_URL=http://localhost:3000/api/webhooks/wompi node e2e/fake-wompi.mjs
+```
+
+```bash
+node e2e/fake-chain.mjs
+```
+
+```bash
+WOMPI_PUBLIC_KEY=pub_test_e2e WOMPI_INTEGRITY_SECRET=test_integrity_e2e WOMPI_EVENTS_SECRET=test_events_e2e WOMPI_API_BASE=http://localhost:4010/v1 WOMPI_CHECKOUT_URL=http://localhost:4010/p/ CRYPTO_TREASURY_ADDRESS=0x8ba1f109551bD432803012645Ac136ddd64DBA72 CRYPTO_CONFIRMATIONS=3 BSC_RPC_URL=http://localhost:4020/rpc COINGECKO_API_BASE=http://localhost:4020/coingecko npm run dev
+```
+
+```bash
+node e2e/wompi-flow.cjs && node e2e/crypto-flow.cjs && node e2e/demo-and-profile.cjs
+```
+
+## 11. Próximos pasos
+
+1. **Conectar la planta real.** Hay que implementar una fuente de telemetría que lea el inversor (por ejemplo, la API de Huawei FusionSolar, SMA o Fronius, o Modbus TCP) en lugar del modelo. Los cálculos de ganancias no cambian.
+2. **Verificación de identidad.** Un proveedor de KYC (documento y selfie) además de los datos del inversionista.
+3. **Retiros automáticos.** Hoy el admin paga a mano y registra la referencia.
+4. **Operación.** Monitoreo y alertas, respaldos de Turso y una auditoría de seguridad externa antes de recibir montos grandes.
+
+## 12. Solución de problemas
 
 - **"Port 3000 is already in use":** cierra la otra app que usa el puerto o detén el servidor anterior con `Ctrl+C`.
 - **`npm install` falla en un Windows con procesador ARM:** el driver local de SQLite no trae binario para ARM. Usa Turso (sección 7) definiendo `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
 - **Google dice `redirect_uri_mismatch`:** el URI de redireccionamiento debe ser exactamente `http://localhost:3000/api/auth/callback/google`.
 - **No aparece mi extensión de wallet:** recarga la página con la extensión desbloqueada, o usa la wallet de demostración.
 - **Quiero empezar la demo de cero:** corre `npm run reset-demo` y vuelve a arrancar.
+- **Los pagos de Wompi quedan "en proceso" (no llega el webhook):**
+  - Revisa que la URL de eventos en Wompi sea `https://<tu-dominio>/api/webhooks/wompi`.
+  - Revisa que `WOMPI_EVENTS_SECRET` sea el secreto de eventos del mismo ambiente (pruebas o producción).
+  - Los webhooks rechazados quedan en los logs como `webhook_rechazado`.
+  - Mientras tanto, el pago se confirma cuando el usuario vuelve de Wompi, o con *Re-verificar* en Admin → Pagos.
+- **"No hay precio en vivo de las criptomonedas":** CoinGecko no respondió. Si pasa seguido, agrega `COINGECKO_API_KEY` (hay un plan gratuito). Con dinero real nunca se cotiza con precios de referencia.
+- **"El nodo de BNB Chain configurado está en otra red":** `BSC_RPC_URL` apunta a una red distinta de `CRYPTO_NETWORK`, por ejemplo un nodo de testnet con `CRYPTO_NETWORK=bsc`.
