@@ -3,6 +3,7 @@
 // Uso: FAKE_CHAIN_PORT=4020 USDT_CONTRACT=0x55d3… node e2e/fake-chain.mjs
 import { createHash } from "node:crypto";
 import http from "node:http";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const PORT = Number(process.env.FAKE_CHAIN_PORT ?? 4020);
 const CHAIN_ID = Number(process.env.FAKE_CHAIN_ID ?? 56);
@@ -17,6 +18,8 @@ const h32 = (s) => `0x${createHash("sha256").update(String(s)).digest("hex")}`;
 const pad = (addr) => `0x${"0".repeat(24)}${addr.slice(2).toLowerCase()}`;
 const txs = new Map();
 let nonce = 0;
+/** Llave de la wallet de prueba (la del navegador firma pidiéndole a este servidor). */
+const walletAccount = privateKeyToAccount(process.env.FAKE_WALLET_KEY ?? generatePrivateKey());
 
 function block(n) {
   return {
@@ -157,6 +160,11 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith("/coingecko/simple/price")) {
     return json(200, { tether: { cop: Number(process.env.FAKE_USDT_COP ?? 4000) }, binancecoin: { cop: Number(process.env.FAKE_BNB_COP ?? 2_800_000) } });
   }
+  if (req.method === "GET" && url.pathname === "/__wallet") return json(200, { address: walletAccount.address });
+  if (req.method === "POST" && url.pathname === "/__sign") {
+    const { message } = JSON.parse(raw || "{}");
+    return json(200, { signature: await walletAccount.signMessage({ message: { raw: message } }) });
+  }
   if (req.method === "POST" && url.pathname === "/__send") {
     try {
       return json(200, { hash: send(JSON.parse(raw)) });
@@ -177,4 +185,4 @@ const server = http.createServer(async (req, res) => {
   }
   json(404, { error: "no encontrado" });
 });
-server.listen(PORT, () => console.log(`[fake-chain] escuchando en http://localhost:${PORT} (chainId ${CHAIN_ID})`));
+server.listen(PORT, () => console.log(`[fake-chain] escuchando en http://localhost:${PORT} (chainId ${CHAIN_ID}), wallet de prueba ${walletAccount.address}`));

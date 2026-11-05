@@ -6,6 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { ChainReader } from "@/lib/payments/chain";
 import type { WompiTransaction } from "@/lib/payments/wompi";
+import { buildPayerProofMessage } from "@/lib/signing";
 
 process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-admpay-")), "test.db")}`;
 const TREASURY = "0x2222222222222222222222222222222222222222";
@@ -132,9 +133,12 @@ describe("sección Pagos del admin", () => {
 
   it("registra a mano el hash de un pago cripto y lo verifica", async () => {
     prices.resetPriceCache();
-    const q = await crypto.createCryptoQuote({ userId: "inv-072", kw: 0.5, asset: "BNB", payer: "0x7777777777777777777777777777777777777777", walletName: "MetaMask" }, { fetch: priceFetch });
+    const payer = privateKeyToAccount(generatePrivateKey());
+    const issuedAt = Date.now();
+    const signature = await payer.signMessage({ message: buildPayerProofMessage({ userId: "inv-072", payer: payer.address, issuedAt }) });
+    const q = await crypto.createCryptoQuote({ userId: "inv-072", kw: 0.5, asset: "BNB", payer: payer.address, walletName: "MetaMask", proof: { issuedAt, signature } }, { fetch: priceFetch });
     const hash = hashOf("pago-cripto-admin");
-    chainTxs.set(hash, { from: "0x7777777777777777777777777777777777777777", value: BigInt(q.amountBaseUnits), block: latest.n - 20n });
+    chainTxs.set(hash, { from: payer.address, value: BigInt(q.amountBaseUnits), block: latest.n - 20n });
     const r = await payments.attachCryptoHash(actor, q.orderId, hash, { reader });
     expect(r.status).toBe("confirmada");
   });

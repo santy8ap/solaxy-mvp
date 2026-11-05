@@ -7,6 +7,7 @@ import { MarketError } from "@/lib/errors";
 import { orderCode } from "@/lib/ids";
 import { closeOrder, fulfillOrder, getOrder, markProviderStatus, resolvePurchase, type OrderRow } from "@/lib/orders";
 import { requireCompleteProfile } from "@/lib/profile";
+import { buildPayerProofMessage, verifyWalletSignature } from "@/lib/signing";
 import { rpcChainReader, type ChainReader } from "./chain";
 import { cryptoConfig } from "./config";
 import { quoteBaseUnits, verifyCryptoPayment, type CryptoAsset, type VerifyResult } from "./crypto";
@@ -27,15 +28,33 @@ function enabledConfig() {
   return { ...cfg, treasury: cfg.treasury };
 }
 
+/** Una firma de propiedad vale 10 minutos (y se tolera un reloj adelantado hasta 2 minutos). */
+const PROOF_TTL_MS = 10 * 60_000;
+
 /** Cotiza con el precio en vivo y crea la orden con el monto exacto y 20 minutos de vigencia. */
 export async function createCryptoQuote(
-  input: { userId: string; kw?: number; listingId?: string; asset: CryptoAsset; payer: string; walletName: string },
+  input: {
+    userId: string;
+    kw?: number;
+    listingId?: string;
+    asset: CryptoAsset;
+    payer: string;
+    walletName: string;
+    /** Firma de la wallet que paga (buildPayerProofMessage): prueba que es del usuario */
+    proof: { signature: string; issuedAt: number };
+  },
   deps: CryptoDeps = {},
 ) {
   const cfg = enabledConfig();
   if (!isAddress(input.payer)) throw new MarketError("Conecta una wallet válida para pagar");
-  await requireCompleteProfile(input.userId);
   const now = Date.now();
+  const age = now - input.proof.issuedAt;
+  const owns =
+    age <= PROOF_TTL_MS &&
+    age >= -2 * 60_000 &&
+    (await verifyWalletSignature({ address: input.payer, message: buildPayerProofMessage({ userId: input.userId, payer: input.payer, issuedAt: input.proof.issuedAt }), signature: input.proof.signature }));
+  if (!owns) throw new MarketError("No pudimos comprobar que la wallet es tuya. Firma de nuevo desde la wallet con la que vas a pagar.", 403);
+  await requireCompleteProfile(input.userId);
   const p = await resolvePurchase(input.userId, { kw: input.kw, listingId: input.listingId }, now);
   const prices = await liveCopPrices(deps);
   const priceCop = prices[input.asset];

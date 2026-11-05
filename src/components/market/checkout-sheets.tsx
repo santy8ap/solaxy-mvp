@@ -7,7 +7,9 @@ import { refetch } from "@/lib/client/use-json";
 import { clearPending, savePending } from "@/lib/client/pending-crypto";
 import { formatCop, formatKw, shortAddress } from "@/lib/format";
 import type { TxDTO } from "@/lib/portfolio";
+import { buildPayerProofMessage } from "@/lib/signing";
 import { useWallet } from "@/lib/wallet/context";
+import { useUser } from "@/components/panel/user-context";
 import { ProfileForm, useProfile } from "@/components/profile/profile-form";
 import { toast } from "@/components/ui/toast";
 import { Modal } from "@/components/wallet/connect-dialog";
@@ -208,6 +210,7 @@ function countdown(ms: number) {
 
 export function CryptoSheet({ request, asset, onClose }: { request: CheckoutRequest | null; asset: "USDT" | "BNB"; onClose(): void }) {
   const wallet = useWallet();
+  const user = useUser();
   const { config } = useAppConfig();
   const [phase, setPhase] = useState<Phase>("inicio");
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -268,12 +271,16 @@ export function CryptoSheet({ request, asset, onClose }: { request: CheckoutRequ
     setPhase("cotizando");
     try {
       await wallet.ensureChain(config.crypto.chainId);
+      // La wallet firma que es tuya (no mueve fondos): así nadie puede pagar "a tu nombre" con una dirección ajena.
+      const issuedAt = Date.now();
+      const signature = await wallet.signMessage(buildPayerProofMessage({ userId: user.id, payer: wallet.address, issuedAt }));
       const q = await api<Quote>("/api/payments/crypto/quote", {
         kw: request.listingId ? undefined : request.kw,
         listingId: request.listingId,
         asset,
         payer: wallet.address,
         walletName: wallet.name ?? "Wallet",
+        proof: { signature, issuedAt },
       });
       setQuote(q);
       setPhase("listo");
@@ -441,7 +448,7 @@ export function CryptoSheet({ request, asset, onClose }: { request: CheckoutRequ
               )}
               {phase === "cotizando" && (
                 <button type="button" className="btn btn-sun" disabled>
-                  <Loader2 size={16} className="animate-spin" /> Cotizando…
+                  <Loader2 size={16} className="animate-spin" /> Firma en tu wallet y cotizamos…
                 </button>
               )}
               {(phase === "listo" || phase === "enviando") && quote && (

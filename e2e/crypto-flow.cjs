@@ -15,7 +15,7 @@ function check(cond, msg) {
 (async () => {
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  await context.addInitScript({ content: `window.__FAKE_WALLET = "0x9999999999999999999999999999999999999999"; ${walletScript}` });
+  await context.addInitScript({ content: walletScript });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));

@@ -1,8 +1,10 @@
-// Wallet EIP-6963 falsa para e2e (se inyecta con page.addInitScript). Firma nada: "envía" las
-// transacciones a la cadena falsa (e2e/fake-chain.mjs) y devuelve el hash, como haría MetaMask.
+// Wallet EIP-6963 falsa para e2e (se inyecta con page.addInitScript). Firma y "envía" las transacciones
+// a través de la cadena falsa (e2e/fake-chain.mjs), que tiene la llave de prueba, como haría MetaMask.
 (() => {
   const CHAIN = window.__FAKE_CHAIN_URL || "http://localhost:4020";
-  const address = window.__FAKE_WALLET || "0x9999999999999999999999999999999999999999";
+  // La llave vive en la cadena falsa: allí se firma. La dirección se pide una vez.
+  let addressP = null;
+  const getAddress = () => (addressP ??= fetch(`${CHAIN}/__wallet`).then((r) => r.json()).then((j) => j.address));
   let chainId = window.__FAKE_START_CHAIN || "0x1";
   const listeners = {};
   const emit = (ev, v) => (listeners[ev] || []).forEach((f) => f(v));
@@ -12,7 +14,11 @@
       switch (method) {
         case "eth_requestAccounts":
         case "eth_accounts":
-          return [address];
+          return [await getAddress()];
+        case "personal_sign": {
+          const r = await fetch(`${CHAIN}/__sign`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: params[0] }) });
+          return (await r.json()).signature;
+        }
         case "eth_chainId":
           return chainId;
         case "eth_getBalance":

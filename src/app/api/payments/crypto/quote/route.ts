@@ -12,6 +12,7 @@ const Body = z
     asset: z.enum(["USDT", "BNB"]),
     payer: z.string().refine((a) => isAddress(a), "Dirección de wallet inválida"),
     walletName: z.string().min(1).max(40),
+    proof: z.object({ signature: z.string().regex(/^0x[0-9a-fA-F]+$/).max(600), issuedAt: z.number().int().positive() }),
   })
   .refine((b) => (b.kw != null) !== (b.listingId != null), "Indica los kW o una oferta del mercado");
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     if (!user) return unauthorized();
     const b = Body.parse(await readJson(req));
     if (!orderLimiter.hit(user.id)) return jsonError(TOO_MANY_ORDERS, 429);
-    const quote = await createCryptoQuote({ userId: user.id, kw: b.kw, listingId: b.listingId, asset: b.asset, payer: b.payer, walletName: b.walletName });
+    const quote = await createCryptoQuote({ userId: user.id, kw: b.kw, listingId: b.listingId, asset: b.asset, payer: b.payer, walletName: b.walletName, proof: b.proof });
     return Response.json(quote, { status: 201 });
   } catch (e) {
     return handleError(e);
