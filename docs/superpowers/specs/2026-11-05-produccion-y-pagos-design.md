@@ -90,6 +90,18 @@ Que la plataforma funcione de verdad: los usuarios pagan con **tarjeta, PSE o Ne
 | `DEMO_MODE` | `true` o `false` |
 | `COINGECKO_API_KEY` | Opcional, para más límite de consultas |
 
+### Cómo se configuran las variables (el `.env`)
+
+- **Local:**
+  - `.env.example` documenta todas las variables.
+  - `npm run setup` crea `.env.local` y genera solo `BETTER_AUTH_SECRET` y un `ADMIN_PIN` aleatorio, que imprime una vez en la terminal.
+- **Vercel (lo hace Claude con la conexión de Vercel):**
+  - `BETTER_AUTH_SECRET` y `ADMIN_PIN` ya están configuradas.
+  - También configura `DEMO_MODE`, `CRYPTO_NETWORK`, `CRYPTO_CONFIRMATIONS` y `BETTER_AUTH_URL`.
+  - Configura además los valores **públicos** que el usuario comparta: la llave pública de Wompi y la dirección de la billetera.
+- **Secretos de cuentas externas:** los secretos de Wompi, el secreto de Google y el token de Turso **no se comparten por chat**. El usuario los pega directamente en Vercel → Settings → Environment Variables con los nombres de la tabla de arriba. Turso los crea solo al conectarlo desde Vercel → Storage.
+- **Validación:** la lista de configuración del admin muestra en vivo qué variable falta y su nombre exacto.
+
 ## 8. Lo que necesito del usuario
 
 1. Conectar **Turso** en Vercel.
