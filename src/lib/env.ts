@@ -28,11 +28,17 @@ function strict() {
 }
 
 const FALLBACK_SECRET = "solaxy-demo-secret-cambiar-en-produccion-7f3a9c21e8b4";
+/** Solo para `next build`: nadie inicia sesión durante el build, así que basta una clave efímera. */
+let buildSecret: string | null = null;
 
 export function authSecret() {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (secret) return secret;
   if (strict()) {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      buildSecret ??= `build-${crypto.randomUUID()}-${crypto.randomUUID()}`;
+      return buildSecret;
+    }
     throw new Error("Falta BETTER_AUTH_SECRET: configúrala en las variables de entorno (en local, con npm run setup).");
   }
   return FALLBACK_SECRET;

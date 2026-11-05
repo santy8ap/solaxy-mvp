@@ -24,6 +24,16 @@ describe("clave secreta", () => {
     expect(() => authSecret()).toThrow(/BETTER_AUTH_SECRET/);
   });
 
+  it("durante el build no se cae, pero tampoco usa la clave de respaldo pública", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("BETTER_AUTH_SECRET", "");
+    vi.stubEnv("NEXT_PHASE", "phase-production-build");
+    const { authSecret } = await import("@/lib/env");
+    const secret = authSecret();
+    expect(secret.length).toBeGreaterThan(30);
+    expect(secret).not.toMatch(/solaxy-demo-secret/);
+  });
+
   it("fuera del modo demo tampoco usa la clave de respaldo", async () => {
     vi.stubEnv("VERCEL", "");
     vi.stubEnv("DEMO_MODE", "false");

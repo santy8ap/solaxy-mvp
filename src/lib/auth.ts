@@ -5,7 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { BRAND } from "@/config/brand";
 import { db } from "@/lib/db";
 import { account, session, user, verification } from "@/lib/db/schema";
-import { authSecret, baseUrl, env, googleEnabled, trustedOrigins } from "@/lib/env";
+import { authSecret, baseUrl, env, googleEnabled, isDemoMode, trustedOrigins } from "@/lib/env";
 
 export const auth = betterAuth({
   appName: BRAND.name,
@@ -15,7 +15,8 @@ export const auth = betterAuth({
     provider: "sqlite",
     schema: { user, session, account, verification },
   }),
-  emailAndPassword: { enabled: true, autoSignIn: true },
+  // Correo y contraseña solo existe para la cuenta demo. Con dinero real se entra únicamente con Google.
+  emailAndPassword: { enabled: isDemoMode(), autoSignIn: true },
   socialProviders: googleEnabled
     ? {
         google: {
