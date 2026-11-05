@@ -66,7 +66,7 @@ function phaseIndex(phase: Phase) {
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function Burst() {
+export function Burst() {
   return (
     <span className="pointer-events-none absolute inset-0" aria-hidden="true">
       {Array.from({ length: 18 }, (_, i) => {

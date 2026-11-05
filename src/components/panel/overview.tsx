@@ -46,7 +46,7 @@ export function Overview() {
         <div className="p-6 sm:p-8">
           <div className="flex items-center gap-2 text-sm text-silver-400">
             <span className="live-dot" data-tone={earn?.simulated ? "sim" : undefined} />
-            {earn?.simulated ? "Ganancias (simulación acelerada)" : "Tus ganancias acumuladas"}
+            {earn?.simulated ? "Ganancias (simulación acelerada)" : "Tus ganancias estimadas"}
           </div>
           <div className="mt-4 text-[clamp(1.75rem,7.6vw,4.4rem)]">
             {p ? <Odometer value={earn?.earned ?? p.earnedCop} decimals={2} prefix={"$\u00a0"} className="display text-silver-50" /> : <span className="display text-silver-500">$ —</span>}

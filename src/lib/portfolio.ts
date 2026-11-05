@@ -27,6 +27,10 @@ export interface TxDTO {
   note: string | null;
   createdAt: number;
   confirmedAt: number | null;
+  /** Pasarela de una compra: demo, wompi o crypto */
+  method: string | null;
+  providerStatus: string | null;
+  chainId: number | null;
 }
 
 export interface PortfolioDTO {
@@ -224,6 +228,9 @@ export function toTxDTO(t: typeof ledgerTx.$inferSelect): TxDTO {
     note: t.note ?? null,
     createdAt: t.createdAt,
     confirmedAt: t.confirmedAt,
+    method: t.method ?? null,
+    providerStatus: t.providerStatus ?? null,
+    chainId: t.chainId ?? null,
   };
 }
 

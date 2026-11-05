@@ -76,7 +76,7 @@ export function Partners() {
             </div>
           </dl>
           <p className="mt-6 text-xs text-silver-500">
-            Modelo: la energía se vende a {formatCop(d?.tariffDayCop ?? 0)}/kWh en el día y a {formatCop(d?.tariffPeakCop ?? 0)}/kWh en la hora pico con la batería. Cifras simuladas para la demo.
+            Modelo: la energía se vende a {formatCop(d?.tariffDayCop ?? 0)}/kWh en el día y a {formatCop(d?.tariffPeakCop ?? 0)}/kWh en la hora pico con la batería. Las ganancias son estimadas con la telemetría simulada de la planta.
           </p>
         </section>
 

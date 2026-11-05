@@ -23,11 +23,24 @@ export function txTitle(t: TxDTO) {
   }
 }
 
+/** Hash de una transacción EVM (los comprobantes bancarios de un retiro no lo son). */
+export const isEvmHash = (h: string | null | undefined): h is string => !!h && /^0x[0-9a-fA-F]{64}$/.test(h);
+
+export function explorerTxUrl(t: Pick<TxDTO, "txHash" | "chainId">) {
+  if (!isEvmHash(t.txHash)) return null;
+  if (t.chainId === 97) return `https://testnet.bscscan.com/tx/${t.txHash}`;
+  if (t.chainId === 56 || t.chainId == null) return `https://bscscan.com/tx/${t.txHash}`;
+  return null;
+}
+
 export function txDetail(t: TxDTO) {
+  if ((t.status === "fallida" || t.status === "por_reembolsar" || t.status === "reembolsada") && t.note) return t.note;
+  if (t.status === "verificando") return `Verificando en BNB Chain${t.providerStatus ? ` · ${t.providerStatus}` : ""}`;
+  if (t.method === "wompi") return `Pago con Wompi${t.providerStatus === "PENDING" ? " · en proceso" : ""}`;
   if (t.kind === "asignacion_demo") return "Para explorar el panel";
   if (t.kind === "ajuste_admin") return t.note ?? "Ajuste del administrador";
   if (t.kind === "retiro" && t.status === "rechazada") return `Rechazado: ${t.note ?? "sin motivo"}`;
-  if (t.kind === "retiro" && t.status === "por_aprobar") return "Esperando la aprobación del administrador";
+  if (t.kind === "retiro" && t.status === "por_aprobar") return "En revisión: el equipo de Solaxy enviará el dinero";
   if (t.kind === "venta_inmediata" || t.kind === "venta_p2p") return "Abonado a tu saldo en Solaxy";
   const parts = [t.walletName, t.assetAmount != null && t.asset && t.asset !== "COP" ? formatAsset(t.assetAmount, t.asset) : null, t.walletAddress && t.walletAddress.startsWith("0x") ? shortAddress(t.walletAddress) : null].filter(Boolean);
   return parts.join(", ");
@@ -50,6 +63,9 @@ export const STATUS_LABEL: Record<string, string> = {
   rechazada: "Rechazada",
   confirmada: "Confirmada",
   pendiente: "Pendiente",
+  verificando: "Verificando",
   fallida: "Fallida",
   cancelada: "Cancelada",
+  por_reembolsar: "Por reembolsar",
+  reembolsada: "Reembolsada",
 };

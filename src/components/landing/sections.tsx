@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BRAND } from "@/config/brand";
 import { isDemoMode } from "@/lib/env";
+import { cryptoConfig, wompiConfig } from "@/lib/payments/config";
 import { Logo } from "@/components/ui/logo";
 
 export function LandingNav() {
@@ -66,32 +67,50 @@ function Glyph({ children, tone }: { children: React.ReactNode; tone: string }) 
   );
 }
 
-const METHODS = [
+const WALLETS = [
   { name: "Trust Wallet", note: "Extensión o celular con QR", glyph: "TW", tone: "#7fb2ff" },
   { name: "MetaMask", note: "Extensión del navegador", glyph: "MM", tone: "#f6b73c" },
-  { name: "WalletConnect", note: "Cualquier wallet móvil", glyph: "WC", tone: "#a68bff" },
-  { name: "USDT", note: "BNB Smart Chain o Ethereum", glyph: "₮", tone: "#57d69b" },
-  { name: "BNB", note: "BNB Smart Chain", glyph: "◆", tone: "#f6b73c" },
-  { name: "Ether", note: "Red Ethereum", glyph: "Ξ", tone: "#b7c1da" },
-  { name: "Bitcoin", note: "Pago con código QR", glyph: "₿", tone: "#ff9a4d" },
-  { name: "PSE y tarjeta", note: "Próximamente", glyph: "$", tone: "#6b789f" },
 ];
 
+function paymentMethods() {
+  const methods: { name: string; note: string; glyph: string; tone: string }[] = [];
+  if (wompiConfig().enabled) {
+    methods.push(
+      { name: "Tarjeta", note: "Crédito o débito, con Wompi", glyph: "$", tone: "#57d69b" },
+      { name: "PSE y Nequi", note: "Desde tu banco o tu celular", glyph: "⇄", tone: "#7fb2ff" },
+    );
+  }
+  if (cryptoConfig().enabled) {
+    methods.push(
+      { name: "USDT", note: "BNB Smart Chain, directo a Solaxy", glyph: "₮", tone: "#57d69b" },
+      { name: "BNB", note: "BNB Smart Chain, directo a Solaxy", glyph: "◆", tone: "#f6b73c" },
+      ...WALLETS,
+    );
+  }
+  if (isDemoMode()) {
+    methods.push(...(cryptoConfig().enabled ? [] : WALLETS), { name: "Pago simulado", note: "Firma con tu wallet, sin mover fondos", glyph: "D", tone: "#a68bff" });
+  }
+  return methods;
+}
+
 export function Payments() {
+  const demo = isDemoMode();
+  const methods = paymentMethods();
   return (
     <section className="mx-auto max-w-[1240px] px-5 py-20 sm:px-8" aria-labelledby="pagos-title">
       <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
         <div>
           <h2 id="pagos-title" className="display text-[clamp(2rem,3.6vw,3rem)] text-silver-50">
-            Paga con la wallet que ya usas
+            Paga como prefieras
           </h2>
           <p className="mt-4 max-w-[42ch] text-silver-300">
-            Conectas tu wallet, revisas la orden y la firmas. La firma prueba que la wallet es tuya; en esta demo no se
-            mueve dinero.
+            Con tarjeta, PSE o Nequi a través de Wompi, o con USDT y BNB desde tu wallet directo a la billetera de Solaxy. Tus kW se asignan apenas
+            se confirma el pago.
           </p>
+          {demo && <p className="mt-3 max-w-[42ch] text-sm text-silver-500">En modo demo también puedes simular un pago firmando con tu wallet, sin mover fondos.</p>}
         </div>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {METHODS.map((m) => (
+          {methods.map((m) => (
             <li key={m.name} className="panel-quiet flex items-center gap-4 p-4">
               <Glyph tone={m.tone}>{m.glyph}</Glyph>
               <div>
@@ -125,13 +144,19 @@ const FAQ = [
   },
   {
     q: "¿Cómo retiro mis ganancias?",
-    a: "Tus ganancias se acumulan en tu saldo. Cuando quieras, las retiras a tu wallet en USDT firmando la solicitud.",
-  },
-  {
-    q: "¿Esto ya funciona con dinero real?",
-    a: "Todavía no. Es un MVP demostrativo: la planta, la telemetría y los pagos son simulados y ninguna firma mueve fondos. La conexión de la wallet y la verificación de la firma sí son reales.",
+    a: "Tus ganancias se acumulan en tu saldo. Cuando quieras, pides el retiro a tu wallet en USDT y lo firmas; el equipo de Solaxy revisa la solicitud y te envía el dinero.",
   },
 ];
+
+const FAQ_DEMO = {
+  q: "¿Esto ya funciona con dinero real?",
+  a: "En este modo demo, no: la planta, la telemetría y los pagos simulados no mueven fondos. La conexión de la wallet y la verificación de la firma sí son reales.",
+};
+
+const FAQ_LIVE = {
+  q: "¿Esto ya funciona con dinero real?",
+  a: "Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Wompi, y los pagos en USDT o BNB llegan directo a la billetera de Solaxy en BNB Chain. La planta todavía no tiene sus medidores conectados a la plataforma: la telemetría es una simulación y las ganancias que ves son estimadas.",
+};
 
 export function Faq() {
   return (
@@ -140,7 +165,7 @@ export function Faq() {
         Preguntas frecuentes
       </h2>
       <div className="mt-10 divide-y divide-silicon-600/50 border-y border-silicon-600/50">
-        {FAQ.map((f) => (
+        {[...FAQ, isDemoMode() ? FAQ_DEMO : FAQ_LIVE].map((f) => (
           <details key={f.q} className="group py-5">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-semibold text-silver-50 [&::-webkit-details-marker]:hidden">
               {f.q}

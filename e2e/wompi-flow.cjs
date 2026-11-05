@@ -33,10 +33,15 @@ function check(cond, msg) {
 
   const kwBefore = (await api("/api/portfolio")).json.kw;
 
-  // 1) Aprobado
-  let o = await api("/api/payments/wompi", { method: "POST", body: JSON.stringify({ kw: 1 }) });
-  check(o.status === 201 && o.json.checkoutUrl.startsWith(`${fake}/p/`), "orden Wompi creada con URL de checkout");
-  await page.goto(o.json.checkoutUrl, { waitUntil: "load" });
+  // 1) Aprobado, desde la interfaz del mercado
+  await page.goto(`${base}/panel/mercado`, { waitUntil: "load", timeout: 180000 });
+  await page.locator("input[name=pay][value=wompi]").check();
+  await page.getByRole("button", { name: /^Estrella|^Sol|^Semilla/ }).first().waitFor();
+  await page.locator("#buy-kw").fill("1");
+  await page.getByRole("button", { name: "Pagar con tarjeta, PSE o Nequi" }).click();
+  await page.getByRole("button", { name: /^Pagar \$/ }).click();
+  await page.waitForURL(new RegExp(`^${fake}/p/`), { timeout: 60000 });
+  check(true, "el mercado abre el checkout de Wompi");
   check((await page.locator("#firma-invalida").count()) === 0, "el checkout acepta la firma de integridad");
   check((await page.locator("#cliente").innerText()).includes("CC 1036123456"), "el checkout recibe los datos del cliente");
   await page.getByRole("button", { name: "Aprobar" }).click();
@@ -49,7 +54,7 @@ function check(cond, msg) {
   check(Math.abs((await api("/api/portfolio")).json.kw - kwAfter) < 1e-6, "el webhook duplicado no vuelve a asignar kW");
 
   // 2) Rechazado
-  o = await api("/api/payments/wompi", { method: "POST", body: JSON.stringify({ kw: 0.5 }) });
+  let o = await api("/api/payments/wompi", { method: "POST", body: JSON.stringify({ kw: 0.5 }) });
   await page.goto(o.json.checkoutUrl, { waitUntil: "load" });
   await page.getByRole("button", { name: "Rechazar" }).click();
   await page.getByRole("heading", { name: "El pago no se aprobó" }).waitFor({ timeout: 60000 });

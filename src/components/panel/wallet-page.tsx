@@ -1,7 +1,8 @@
 "use client";
-import { Check, Copy, Loader2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { PortfolioDTO } from "@/lib/portfolio";
+import { useAppConfig } from "@/lib/client/use-app-config";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { formatCop, formatDateTime, formatNumber, shortAddress } from "@/lib/format";
 import { useWallet } from "@/lib/wallet/context";
@@ -10,7 +11,7 @@ import { Odometer } from "@/components/ui/odometer";
 import { toast } from "@/components/ui/toast";
 import { Modal } from "@/components/wallet/connect-dialog";
 import { Topbar } from "./shell";
-import { STATUS_LABEL, txAmount, txDetail, txTitle } from "./tx-meta";
+import { STATUS_LABEL, explorerTxUrl, txAmount, txDetail, txTitle } from "./tx-meta";
 import { useLiveEarnings } from "./use-live-earnings";
 
 function CopyHash({ hash }: { hash: string }) {
@@ -20,7 +21,7 @@ function CopyHash({ hash }: { hash: string }) {
       type="button"
       className="num inline-flex items-center gap-1.5 text-xs text-silver-400 hover:text-silver-100"
       onClick={() => void navigator.clipboard?.writeText(hash).then(() => setCopied(true))}
-      title="Copiar hash (simulado)"
+      title="Copiar referencia"
     >
       {hash.length > 18 ? `${hash.slice(0, 10)}…${hash.slice(-6)}` : hash}
       {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -30,6 +31,8 @@ function CopyHash({ hash }: { hash: string }) {
 
 function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void; max: number }) {
   const wallet = useWallet();
+  const { config } = useAppConfig();
+  const demo = config?.demoMode ?? false;
   const [amount, setAmount] = useState(100_000);
   const [phase, setPhase] = useState<"form" | "signing" | "sending" | "waiting" | "done" | "rejected">("form");
   const [hash, setHash] = useState<string | null>(null);
@@ -128,7 +131,12 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
           <p className="text-silver-300">
             Enviamos <span className="num font-semibold text-leaf-300">{formatCop(amount)}</span> en USDT a {wallet.name} ({shortAddress(wallet.address)}).
           </p>
-          {hash && <p className="num mt-3 text-sm text-silver-400">Transacción {hash.slice(0, 12)}…{hash.slice(-6)} (simulada)</p>}
+          {hash && (
+            <p className="num mt-3 break-all text-sm text-silver-400">
+              Referencia {hash.length > 24 ? `${hash.slice(0, 12)}…${hash.slice(-6)}` : hash}
+              {demo ? " (simulada)" : ""}
+            </p>
+          )}
           <button type="button" className="btn btn-sun mt-6 w-full" onClick={close}>
             Listo
           </button>
@@ -162,7 +170,11 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
               "Firmar y retirar"
             )}
           </button>
-          <p className="mt-3 text-center text-xs text-silver-500">La firma autoriza el retiro. En esta demo no se mueve dinero.</p>
+          <p className="mt-3 text-center text-xs text-silver-500">
+            {demo
+              ? "La firma autoriza el retiro. En modo demo no se mueve dinero."
+              : "La firma prueba que la wallet es tuya. El equipo de Solaxy revisa la solicitud y te envía el dinero."}
+          </p>
         </div>
       )}
     </Modal>
@@ -170,6 +182,8 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
 }
 
 export function WalletPage() {
+  const { config } = useAppConfig();
+  const demo = config?.demoMode ?? false;
   const { data: p } = useJson<PortfolioDTO>("/api/portfolio", { refreshMs: 30_000 });
   const wallet = useWallet();
   const earn = useLiveEarnings(p);
@@ -228,7 +242,9 @@ export function WalletPage() {
             </div>
           ) : (
             <div className="mt-4">
-              <p className="text-silver-300">Conecta Trust Wallet, MetaMask o la wallet de demostración para comprar y retirar.</p>
+              <p className="text-silver-300">
+                {demo ? "Conecta Trust Wallet, MetaMask o la wallet de demostración para comprar y retirar." : "Conecta Trust Wallet o MetaMask para pagar con cripto y recibir tus retiros."}
+              </p>
               <button type="button" className="btn btn-sun mt-6" onClick={wallet.openConnect}>
                 Conectar wallet
               </button>
@@ -248,7 +264,7 @@ export function WalletPage() {
                 <th className="py-3 font-normal">Movimiento</th>
                 <th className="py-3 font-normal">Fecha</th>
                 <th className="py-3 font-normal">Estado</th>
-                <th className="py-3 font-normal">Hash</th>
+                <th className="py-3 font-normal">Referencia</th>
                 <th className="py-3 text-right font-normal">Monto</th>
               </tr>
             </thead>
@@ -269,16 +285,31 @@ export function WalletPage() {
                             ? "bg-leaf-400/12 text-leaf-300"
                             : t.status === "por_aprobar"
                               ? "bg-dusk-400/15 text-dusk-300"
-                              : t.status === "rechazada"
+                              : t.status === "rechazada" || t.status === "fallida" || t.status === "por_reembolsar"
                                 ? "bg-alert-400/12 text-alert-400"
-                                : "bg-silicon-700 text-silver-300"
+                                : t.status === "verificando"
+                                  ? "bg-sun-400/12 text-sun-300"
+                                  : "bg-silicon-700 text-silver-300"
                         }`}
                       >
                         {t.status === "confirmada" && <Check size={12} />}
                         {STATUS_LABEL[t.status] ?? t.status}
                       </span>
                     </td>
-                    <td className="py-3.5">{t.txHash ? <CopyHash hash={t.txHash} /> : <span className="text-silver-500">—</span>}</td>
+                    <td className="py-3.5">
+                      {t.txHash ? (
+                        <span className="inline-flex items-center gap-2">
+                          <CopyHash hash={t.txHash} />
+                          {!demo && explorerTxUrl(t) && (
+                            <a href={explorerTxUrl(t) ?? undefined} target="_blank" rel="noreferrer" className="text-silver-400 hover:text-silver-100" aria-label="Ver en BscScan">
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-silver-500">—</span>
+                      )}
+                    </td>
                     <td className={`num py-3.5 text-right font-semibold ${amt.tone}`}>{amt.text}</td>
                   </tr>
                 );
@@ -287,7 +318,10 @@ export function WalletPage() {
           </table>
           {p && p.transactions.length === 0 && <p className="py-8 text-center text-silver-400">Todavía no hay movimientos.</p>}
         </div>
-        <p className="mt-4 text-xs text-silver-500">Los hashes son simulados en este MVP. {p ? `${formatNumber(p.transactions.length)} movimientos.` : ""}</p>
+        <p className="mt-4 text-xs text-silver-500">
+          {demo ? "En modo demo los hashes son simulados. " : ""}
+          {p ? `${formatNumber(p.transactions.length)} movimientos.` : ""}
+        </p>
       </section>
 
       <WithdrawDialog open={withdrawOpen} onClose={() => setWithdrawOpen(false)} max={liveBalance} />

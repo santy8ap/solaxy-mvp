@@ -4,10 +4,13 @@ import { ECONOMICS, PACKAGES } from "@/config/economics";
 import type { PortfolioDTO } from "@/lib/portfolio";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { formatAsset, formatCop, formatDay, formatKw, formatNumber, formatPct } from "@/lib/format";
+import { useAppConfig } from "@/lib/client/use-app-config";
 import { useWallet } from "@/lib/wallet/context";
 import { Topbar } from "@/components/panel/shell";
 import { toast } from "@/components/ui/toast";
-import { PAY_OPTIONS, PaymentSheet, type PayOption, type PurchaseRequest } from "./payment-sheet";
+import { CryptoSheet, WompiSheet, type CheckoutRequest } from "./checkout-sheets";
+import { MethodSelect, availableMethods, type PayMethod } from "./pay-methods";
+import { PaymentSheet, type PurchaseRequest } from "./payment-sheet";
 
 interface MarketDTO {
   plant: { name: string; capacityKwp: number; soldKw: number; availableKw: number; pricePerKwCop: number; minKw: number; maxKw: number; instantSellFactor: number };
@@ -22,20 +25,33 @@ type Tab = "comprar" | "p2p" | "vender";
 
 export function Market() {
   const { data: m, error } = useJson<MarketDTO>("/api/market", { refreshMs: 30_000 });
+  const { config } = useAppConfig();
   const wallet = useWallet();
   const [tab, setTab] = useState<Tab>("comprar");
   const [kw, setKw] = useState(2);
-  const [payId, setPayId] = useState(PAY_OPTIONS[0].id);
-  const [request, setRequest] = useState<PurchaseRequest | null>(null);
-  const pay = PAY_OPTIONS.find((o) => o.id === payId) ?? PAY_OPTIONS[0];
+  const methods = useMemo(() => availableMethods(config), [config]);
+  const [payId, setPayId] = useState<string | null>(null);
+  const method = methods.find((x) => x.id === payId) ?? methods[0] ?? null;
+  const [demoRequest, setDemoRequest] = useState<PurchaseRequest | null>(null);
+  const [checkout, setCheckout] = useState<{ request: CheckoutRequest; method: PayMethod } | null>(null);
 
-  const start = (req: Omit<PurchaseRequest, "pay">, option: PayOption = pay) => {
-    if (option.method === "wallet" && wallet.status !== "connected") {
-      wallet.openConnect();
-      toast("Conecta tu wallet para firmar la compra.", "info");
+  const start = (req: CheckoutRequest) => {
+    if (!method) return;
+    if (method.kind === "demo") {
+      if (method.option.method === "wallet" && wallet.status !== "connected") {
+        wallet.openConnect();
+        toast("Conecta tu wallet para firmar la compra.", "info");
+        return;
+      }
+      setDemoRequest({ kw: req.kw, listingId: req.listingId, title: req.title, pay: method.option });
       return;
     }
-    setRequest({ ...req, pay: option });
+    if (method.kind === "crypto" && wallet.status !== "connected") {
+      wallet.openConnect();
+      toast("Conecta Trust Wallet o MetaMask para pagar con cripto.", "info");
+      return;
+    }
+    setCheckout({ request: req, method });
   };
 
   if (error && !m) return <div className="panel p-8 text-silver-300">No pudimos cargar el mercado: {error}</div>;
@@ -65,43 +81,81 @@ export function Market() {
         ))}
       </div>
 
-      {tab === "comprar" && <BuyPlant m={m} kw={kw} setKw={setKw} pay={pay} setPayId={setPayId} onBuy={() => start({ kw, title: `Comprar ${formatKw(kw, 1)}` })} />}
-      {tab === "p2p" && <P2P m={m} pay={pay} setPayId={setPayId} onBuy={(l) => start({ listingId: l.id, kw: l.kw, title: `Comprar ${formatKw(l.kw, 1)} a ${l.sellerName}` })} />}
+      {tab === "comprar" && (
+        <BuyPlant
+          m={m}
+          kw={kw}
+          setKw={setKw}
+          methods={methods}
+          method={method}
+          setPayId={setPayId}
+          loadingMethods={!config}
+          onBuy={() => start({ kw, title: `Comprar ${formatKw(kw, 1)}`, amountCop: Math.round(kw * (m?.plant.pricePerKwCop ?? ECONOMICS.pricePerKwCop)) })}
+        />
+      )}
+      {tab === "p2p" && (
+        <P2P
+          m={m}
+          methods={methods}
+          method={method}
+          setPayId={setPayId}
+          onBuy={(l) => start({ listingId: l.id, kw: l.kw, title: `Comprar ${formatKw(l.kw, 1)} a ${l.sellerName}`, amountCop: Math.round(l.kw * l.pricePerKwCop) })}
+        />
+      )}
       {tab === "vender" && <Sell m={m} />}
 
-      <PaymentSheet request={request} onClose={() => setRequest(null)} />
+      <PaymentSheet request={demoRequest} onClose={() => setDemoRequest(null)} />
+      <WompiSheet request={checkout?.method.kind === "wompi" ? checkout.request : null} onClose={() => setCheckout(null)} />
+      <CryptoSheet
+        request={checkout?.method.kind === "crypto" ? checkout.request : null}
+        asset={checkout?.method.kind === "crypto" ? checkout.method.asset : "USDT"}
+        onClose={() => setCheckout(null)}
+      />
     </>
   );
 }
 
-function PaySelect({ value, onChange }: { value: string; onChange(id: string): void }) {
-  return (
-    <fieldset>
-      <legend className="text-sm text-silver-400">Pagar con</legend>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {PAY_OPTIONS.map((o) => (
-          <label
-            key={o.id}
-            className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-sm transition-colors ${
-              value === o.id ? "border-sun-400/70 bg-sun-400/10 text-silver-50" : "border-silicon-600/70 text-silver-300 hover:border-silicon-500"
-            }`}
-          >
-            <input type="radio" name="pay" value={o.id} checked={value === o.id} onChange={() => onChange(o.id)} className="accent-[#f6b73c]" />
-            {o.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
+function payButtonLabel(method: PayMethod | null, walletConnected: boolean, walletName: string | null) {
+  if (!method) return "Pagos no disponibles";
+  if (method.kind === "wompi") return "Pagar con tarjeta, PSE o Nequi";
+  if (method.kind === "crypto") return walletConnected ? `Pagar ${method.asset} con ${walletName ?? "tu wallet"}` : "Conectar wallet y pagar";
+  if (method.option.method === "qr") return "Pagar con código QR (demo)";
+  return walletConnected ? `Firmar con ${walletName} (demo)` : "Conectar wallet y pagar";
 }
 
-function BuyPlant({ m, kw, setKw, pay, setPayId, onBuy }: { m?: MarketDTO; kw: number; setKw(v: number): void; pay: PayOption; setPayId(id: string): void; onBuy(): void }) {
+function payFootnote(method: PayMethod | null) {
+  if (!method) return "";
+  if (method.kind === "wompi") return "Pagas en Wompi. Tus kW se asignan apenas el pago quede aprobado.";
+  if (method.kind === "crypto") return `Envías ${method.asset} desde tu wallet a la billetera de Solaxy en BNB Chain. Tus kW se asignan tras las confirmaciones de la red.`;
+  return "Pago simulado: firmas la orden con tu wallet y no se mueve dinero.";
+}
+
+function BuyPlant({
+  m,
+  kw,
+  setKw,
+  methods,
+  method,
+  setPayId,
+  loadingMethods,
+  onBuy,
+}: {
+  m?: MarketDTO;
+  kw: number;
+  setKw(v: number): void;
+  methods: PayMethod[];
+  method: PayMethod | null;
+  setPayId(id: string): void;
+  loadingMethods: boolean;
+  onBuy(): void;
+}) {
   const wallet = useWallet();
   const { data: portfolio } = useJson<PortfolioDTO>("/api/portfolio");
   const price = m?.plant.pricePerKwCop ?? ECONOMICS.pricePerKwCop;
   const yearlyPerKwp = (portfolio?.yieldEa ?? 0.158) * price;
   const total = kw * price;
-  const assetAmount = m ? total / (m.rates.prices[pay.asset]?.cop ?? 1) : null;
+  const asset = method?.kind === "crypto" ? method.asset : method?.kind === "demo" ? method.option.asset : null;
+  const assetAmount = m && asset ? total / (m.rates.prices[asset]?.cop ?? 1) : null;
   const max = Math.min(ECONOMICS.maxPurchaseKw, m?.plant.availableKw ?? ECONOMICS.maxPurchaseKw);
   const soldPct = m ? m.plant.soldKw / m.plant.capacityKwp : 0;
 
@@ -139,7 +193,11 @@ function BuyPlant({ m, kw, setKw, pay, setPayId, onBuy }: { m?: MarketDTO; kw: n
           <input id="buy-kw" type="range" min={ECONOMICS.minPurchaseKw} max={Math.max(ECONOMICS.minPurchaseKw, Math.min(25, max))} step={0.1} value={kw} onChange={(e) => setKw(Number(e.target.value))} className="mt-3 w-full" />
         </div>
         <div className="mt-7">
-          <PaySelect value={pay.id} onChange={setPayId} />
+          {loadingMethods ? (
+            <div className="h-24 animate-pulse rounded-2xl bg-silicon-800/60" aria-busy="true" aria-label="Cargando medios de pago" />
+          ) : (
+            <MethodSelect methods={methods} value={method?.id ?? ""} onChange={setPayId} />
+          )}
         </div>
       </section>
 
@@ -155,27 +213,40 @@ function BuyPlant({ m, kw, setKw, pay, setPayId, onBuy }: { m?: MarketDTO; kw: n
             <dd className="num text-xl font-semibold text-silver-50">{formatCop(total)}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-silver-400">En {pay.asset}</dt>
-            <dd className="num text-silver-100">{assetAmount != null ? `≈ ${formatAsset(assetAmount, pay.asset)}` : "—"}</dd>
+            <dt className="text-silver-400">{asset ? `En ${asset}` : "Pagas en"}</dt>
+            <dd className="num text-silver-100">{asset ? (assetAmount != null ? `≈ ${formatAsset(assetAmount, asset)}` : "—") : "pesos (COP)"}</dd>
           </div>
           <div className="flex justify-between gap-4 border-t border-silicon-600/50 pt-3">
             <dt className="text-silver-400">Ganarías al mes, aprox.</dt>
             <dd className="num font-semibold text-leaf-300">{formatCop((kw * yearlyPerKwp) / 12)}</dd>
           </div>
         </dl>
-        {m?.rates.source === "referencia" && <p className="mt-3 text-xs text-silver-500">Sin conexión a CoinGecko: se usan precios de referencia.</p>}
+        {method?.kind === "crypto" && <p className="mt-3 text-xs text-silver-500">Aproximado. El monto exacto se cotiza con el precio en vivo al pagar.</p>}
+        {method?.kind === "demo" && m?.rates.source === "referencia" && <p className="mt-3 text-xs text-silver-500">Sin conexión a CoinGecko: se usan precios de referencia.</p>}
         <div className="mt-auto pt-7">
-          <button type="button" className="btn btn-sun w-full !py-3.5" onClick={onBuy} disabled={!m || kw > max}>
-            {pay.method === "qr" ? "Pagar con código QR" : wallet.status === "connected" ? `Pagar con ${wallet.name}` : "Conectar wallet y pagar"}
+          <button type="button" className="btn btn-sun w-full !py-3.5" onClick={onBuy} disabled={!m || !method || kw > max}>
+            {payButtonLabel(method, wallet.status === "connected", wallet.name)}
           </button>
-          <p className="mt-3 text-center text-xs text-silver-500">Firmas la orden con tu wallet. En esta demo no se mueve dinero.</p>
+          <p className="mt-3 text-center text-xs text-silver-500">{payFootnote(method)}</p>
         </div>
       </aside>
     </div>
   );
 }
 
-function P2P({ m, pay, setPayId, onBuy }: { m?: MarketDTO; pay: PayOption; setPayId(id: string): void; onBuy(l: MarketDTO["listings"][number]): void }) {
+function P2P({
+  m,
+  methods,
+  method,
+  setPayId,
+  onBuy,
+}: {
+  m?: MarketDTO;
+  methods: PayMethod[];
+  method: PayMethod | null;
+  setPayId(id: string): void;
+  onBuy(l: MarketDTO["listings"][number]): void;
+}) {
   const price = m?.plant.pricePerKwCop ?? ECONOMICS.pricePerKwCop;
   return (
     <section className="panel p-5 sm:p-7" aria-labelledby="p2p-title">
@@ -186,8 +257,8 @@ function P2P({ m, pay, setPayId, onBuy }: { m?: MarketDTO; pay: PayOption; setPa
           </h2>
           <p className="mt-1 text-sm text-silver-400">Compras kW que ya están generando. El precio lo pone quien vende.</p>
         </div>
-        <div className="w-full max-w-[420px]">
-          <PaySelect value={pay.id} onChange={setPayId} />
+        <div className="w-full max-w-[460px]">
+          <MethodSelect methods={methods} value={method?.id ?? ""} onChange={setPayId} />
         </div>
       </div>
       <div className="mt-6 overflow-x-auto">
@@ -216,7 +287,7 @@ function P2P({ m, pay, setPayId, onBuy }: { m?: MarketDTO; pay: PayOption; setPa
                   <td className={`num py-3.5 ${diff < 0 ? "text-leaf-300" : "text-silver-300"}`}>{`${diff > 0 ? "+" : ""}${formatNumber(diff * 100, 1)} %`}</td>
                   <td className="num py-3.5 font-semibold text-silver-50">{formatCop(l.kw * l.pricePerKwCop)}</td>
                   <td className="py-3.5 text-right">
-                    <button type="button" className="btn btn-ghost !px-4 !py-2 text-sm" onClick={() => onBuy(l)}>
+                    <button type="button" className="btn btn-ghost !px-4 !py-2 text-sm" onClick={() => onBuy(l)} disabled={!method}>
                       Comprar
                     </button>
                   </td>

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getSessionUser } from "@/lib/session";
 import { WalletProvider } from "@/lib/wallet/context";
 import { PresenterControl } from "@/components/live/presenter";
+import { CryptoRecovery } from "@/components/panel/crypto-recovery";
 import { BottomNav, Sidebar } from "@/components/panel/shell";
 import { UserProvider } from "@/components/panel/user-context";
 import { ConnectWalletDialog } from "@/components/wallet/connect-dialog";
@@ -19,6 +20,7 @@ async function SessionGate({ children }: { children: React.ReactNode }) {
       <WalletProvider>
         {children}
         <ConnectWalletDialog />
+        <CryptoRecovery />
       </WalletProvider>
     </UserProvider>
   );
