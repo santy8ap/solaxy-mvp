@@ -27,7 +27,7 @@ beforeAll(async () => {
 }, 120_000);
 
 afterEach(() => {
-  for (const k of ["DEMO_MODE", "WOMPI_PUBLIC_KEY", "WOMPI_INTEGRITY_SECRET", "WOMPI_EVENTS_SECRET", "CRYPTO_TREASURY_ADDRESS", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "ADMIN_PIN", "ADMIN_EMAILS", "TURSO_DATABASE_URL", "VERCEL"]) {
+  for (const k of ["DEMO_MODE", "MERCADOPAGO_ACCESS_TOKEN", "MERCADOPAGO_WEBHOOK_SECRET", "CRYPTO_TREASURY_ADDRESS", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "ADMIN_PIN", "ADMIN_EMAILS", "TURSO_DATABASE_URL", "VERCEL"]) {
     vi.stubEnv(k, "");
   }
 });
@@ -36,21 +36,21 @@ describe("lista de configuración", () => {
   it("dice qué falta, con el nombre exacto de cada variable", async () => {
     const s = await status.configStatus();
     const byId = Object.fromEntries(s.checks.map((c) => [c.id, c]));
-    expect(byId["wompi-llave"]).toMatchObject({ state: "falta", vars: ["WOMPI_PUBLIC_KEY"] });
-    expect(byId["wompi-integridad"]).toMatchObject({ state: "falta", vars: ["WOMPI_INTEGRITY_SECRET"] });
+    expect(byId["mp-token"]).toMatchObject({ state: "falta", vars: ["MERCADOPAGO_ACCESS_TOKEN"] });
+    expect(byId["mp-webhook"]).toMatchObject({ state: "falta", vars: ["MERCADOPAGO_WEBHOOK_SECRET"] });
     expect(byId["cripto-billetera"]).toMatchObject({ state: "falta", vars: ["CRYPTO_TREASURY_ADDRESS"] });
     expect(byId["google"]).toMatchObject({ state: "falta", vars: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] });
     expect(s.readyForLive).toBe(false);
-    expect(s.webhookUrl).toMatch(/\/api\/webhooks\/wompi$/);
+    expect(s.webhookUrl).toMatch(/\/api\/webhooks\/mercadopago$/);
   });
 
-  it("marca como listo lo que está configurado y avisa si la llave de Wompi es de pruebas", async () => {
-    vi.stubEnv("WOMPI_PUBLIC_KEY", "pub_test_x");
-    vi.stubEnv("WOMPI_INTEGRITY_SECRET", "test_integrity_x");
+  it("marca como listo lo que está configurado y avisa si las credenciales de Mercado Pago son de prueba", async () => {
+    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "TEST-123-abc");
+    vi.stubEnv("MERCADOPAGO_WEBHOOK_SECRET", "clave-secreta");
     vi.stubEnv("CRYPTO_TREASURY_ADDRESS", "0x8ba1f109551bD432803012645Ac136ddd64DBA72");
     const byId = Object.fromEntries((await status.configStatus()).checks.map((c) => [c.id, c]));
-    expect(byId["wompi-llave"].state).toBe("aviso");
-    expect(byId["wompi-integridad"].state).toBe("ok");
+    expect(byId["mp-token"].state).toBe("aviso");
+    expect(byId["mp-webhook"].state).toBe("ok");
     expect(byId["cripto-billetera"].state).toBe("ok");
   });
 
@@ -86,8 +86,8 @@ describe("borrar los datos de demostración", () => {
     await db.insert(schema.user).values({ id: "real-1", name: "Socia Real", email: "socia@solaxy.co", emailVerified: true, createdAt: now, updatedAt: now });
     await db.insert(schema.account).values({ id: "acc-1", accountId: "g-1", providerId: "google", userId: "real-1", createdAt: now, updatedAt: now });
     await profile.saveProfile("real-1", { fullName: "Socia Real", docType: "CC", docNumber: "1036123456", phone: "3001234567", city: "Medellín", acceptTerms: true });
-    // Wompi de pruebas (sandbox) sí se puede borrar.
-    await db.insert(schema.ledgerTx).values({ id: "SLX-SANDBOX001", userId: "real-1", kind: "compra", status: "confirmada", amountCop: 1, createdAt: Date.now(), method: "wompi", network: "Wompi (sandbox)", providerId: "sbx-1" });
+    // Un pago de prueba de Mercado Pago sí se puede borrar.
+    await db.insert(schema.ledgerTx).values({ id: "SLX-SANDBOX001", userId: "real-1", kind: "compra", status: "confirmada", amountCop: 1, createdAt: Date.now(), method: "mercadopago", network: "Mercado Pago (pruebas)", providerId: "sbx-1" });
 
     const r = await reset.resetDemoData(actor, PHRASE);
     expect(r.deletedUsers).toBeGreaterThan(100);

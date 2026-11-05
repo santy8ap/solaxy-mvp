@@ -5,23 +5,19 @@ import { getAddress, isAddress, zeroAddress } from "viem";
  * (así un cambio en Vercel aplica con el siguiente despliegue sin tocar código).
  */
 
-export function wompiConfig() {
-  const publicKey = process.env.WOMPI_PUBLIC_KEY?.trim() ?? "";
-  const integritySecret = process.env.WOMPI_INTEGRITY_SECRET?.trim() ?? "";
-  const eventsSecret = process.env.WOMPI_EVENTS_SECRET?.trim() ?? "";
-  const sandbox = publicKey.startsWith("pub_test_");
-  const validKey = sandbox || publicKey.startsWith("pub_prod_");
+export function mercadoPagoConfig() {
+  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim() ?? "";
+  const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim() ?? "";
+  const sandbox = accessToken.startsWith("TEST-");
   return {
-    enabled: validKey && Boolean(integritySecret),
-    /** Sin el secreto de eventos no se aceptan webhooks (la consulta directa sigue funcionando). */
-    webhooksEnabled: validKey && Boolean(eventsSecret),
-    publicKey,
-    integritySecret,
-    eventsSecret,
+    enabled: sandbox || accessToken.startsWith("APP_USR-"),
+    /** Con el secreto, las notificaciones sin firma válida se rechazan. */
+    webhookSecret,
+    accessToken,
+    /** Credenciales TEST-…: checkout de pruebas. (Las cuentas de prueba usan APP_USR-…: lo dice el pago con live_mode.) */
     sandbox,
-    /** WOMPI_API_BASE solo existe para las pruebas automáticas (un Wompi falso). */
-    apiBase: (process.env.WOMPI_API_BASE?.trim() || (sandbox ? "https://sandbox.wompi.co/v1" : "https://production.wompi.co/v1")).replace(/\/$/, ""),
-    checkoutUrl: process.env.WOMPI_CHECKOUT_URL?.trim() || "https://checkout.wompi.co/p/",
+    /** MERCADOPAGO_API_BASE solo existe para las pruebas automáticas (un Mercado Pago falso). */
+    apiBase: (process.env.MERCADOPAGO_API_BASE?.trim() || "https://api.mercadopago.com").replace(/\/$/, ""),
   };
 }
 

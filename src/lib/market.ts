@@ -124,7 +124,7 @@ export interface BuyInput {
   walletName: string;
 }
 
-const DEMO_ONLY = "El pago simulado solo existe en modo demo. Paga con Wompi o con cripto.";
+const DEMO_ONLY = "El pago simulado solo existe en modo demo. Paga con tarjeta, PSE, Nequi o cripto.";
 
 /** Orden de pago simulado (firma de la wallet, sin mover fondos). Solo en modo demo. */
 export async function createBuyOrder(input: BuyInput) {

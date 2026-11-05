@@ -38,7 +38,7 @@ const demo = !/^DEMO_MODE=(false|0|no|off)\s*$/im.test(env);
 console.log(`✓ Modo: ${demo ? "demo (pagos simulados)" : "producción (cobros reales)"}`);
 console.log(`✓ Google: ${has("GOOGLE_CLIENT_ID") && has("GOOGLE_CLIENT_SECRET") ? "configurado" : "sin configurar (se usa la cuenta demo)"}`);
 console.log(`✓ Admin: ${has("ADMIN_PIN") ? "PIN configurado en .env.local" : "PIN de demostración 2026 (agrega ADMIN_PIN para cambiarlo)"}`);
-console.log(`✓ Wompi: ${has("WOMPI_PUBLIC_KEY") && has("WOMPI_INTEGRITY_SECRET") ? "configurado" : "sin configurar"}`);
+console.log(`✓ Mercado Pago: ${has("MERCADOPAGO_ACCESS_TOKEN") ? "configurado" : "sin configurar"}`);
 console.log(`✓ Cripto directo: ${has("CRYPTO_TREASURY_ADDRESS") ? "configurado" : "sin configurar"}`);
 console.log(`✓ Trust Wallet por QR: ${has("NEXT_PUBLIC_REOWN_PROJECT_ID") ? "configurado" : "sin configurar (funcionan la extensión y la wallet demo)"}`);
 console.log("✓ Base de datos: se crea sola en data/solaxy.db al abrir la app\n");

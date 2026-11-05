@@ -20,7 +20,10 @@ export type OrderRow = typeof ledgerTx.$inferSelect;
 /** Estados desde los que una orden todavía puede confirmarse. */
 const OPEN: TxStatus[] = ["pendiente", "verificando"];
 
-/** Mientras alguien paga una oferta P2P con Wompi o cripto, queda apartada este tiempo. */
+/** Pasarelas con dinero real (el pago simulado del modo demo no cuenta). */
+export const REAL_PAYMENT_METHODS = ["mercadopago", "crypto"] as const;
+
+/** Mientras alguien paga una oferta P2P con Mercado Pago o cripto, queda apartada este tiempo. */
 export const LISTING_HOLD_MS = 30 * 60_000;
 
 /** kW vendidos por la plataforma (suma de todas las posiciones). */
@@ -54,7 +57,7 @@ export async function resolvePurchase(userId: string, input: { kw?: number; list
         and(
           eq(ledgerTx.listingId, l.id),
           inArray(ledgerTx.status, OPEN),
-          inArray(ledgerTx.method, ["wompi", "crypto"]),
+          inArray(ledgerTx.method, [...REAL_PAYMENT_METHODS]),
           gt(ledgerTx.expiresAt, now),
           ne(ledgerTx.userId, userId),
         ),
@@ -116,8 +119,8 @@ export type FulfillOutcome = "confirmada" | "ya_confirmada" | "sin_cupo" | "cerr
 
 /**
  * Asigna los kW de una orden pagada. Idempotente.
- * `reopen`: estados cerrados que un pago aprobado puede reabrir (p. ej. un intento rechazado en Wompi
- * seguido de uno aprobado con la misma referencia).
+ * `reopen`: estados cerrados que un pago aprobado puede reabrir (p. ej. un intento rechazado en
+ * Mercado Pago seguido de uno aprobado para la misma orden).
  */
 export async function fulfillOrder(
   orderId: string,
@@ -133,7 +136,7 @@ export async function fulfillOrder(
 
   const kw = tx.kw ?? 0;
   // Sin dinero de por medio (demo) basta con fallar; con un pago real hay que devolverlo.
-  const unfulfilled: TxStatus = tx.method === "wompi" || tx.method === "crypto" ? "por_reembolsar" : "fallida";
+  const unfulfilled: TxStatus = tx.method === "mercadopago" || tx.method === "crypto" ? "por_reembolsar" : "fallida";
   const refundNote = unfulfilled === "por_reembolsar" ? " Hay que devolver el pago." : "";
 
   if (!tx.listingId) {

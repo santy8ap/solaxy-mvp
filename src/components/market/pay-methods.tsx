@@ -4,7 +4,7 @@ import { PAY_OPTIONS, type PayOption } from "./payment-sheet";
 
 /** Un medio de pago que el usuario puede elegir en el mercado. */
 export type PayMethod =
-  | { id: "wompi"; kind: "wompi"; label: string; note: string }
+  | { id: "mercadopago"; kind: "mercadopago"; label: string; note: string }
   | { id: "usdt" | "bnb"; kind: "crypto"; asset: "USDT" | "BNB"; label: string; note: string }
   | { id: string; kind: "demo"; option: PayOption; label: string; note: string };
 
@@ -12,8 +12,13 @@ export type PayMethod =
 export function availableMethods(config: AppConfigDTO | null): PayMethod[] {
   if (!config) return [];
   const list: PayMethod[] = [];
-  if (config.wompi.enabled) {
-    list.push({ id: "wompi", kind: "wompi", label: "Tarjeta, PSE o Nequi", note: config.wompi.sandbox ? "Wompi · modo de pruebas" : "Pago seguro con Wompi" });
+  if (config.mercadopago.enabled) {
+    list.push({
+      id: "mercadopago",
+      kind: "mercadopago",
+      label: "Tarjeta, PSE o Nequi",
+      note: config.mercadopago.sandbox ? "Mercado Pago · modo de pruebas" : "Pago seguro con Mercado Pago",
+    });
   }
   if (config.crypto.enabled) {
     const net = config.crypto.network === "bsc-testnet" ? "BNB Chain testnet" : "BNB Chain";
@@ -30,7 +35,7 @@ export function availableMethods(config: AppConfigDTO | null): PayMethod[] {
 
 export function MethodSelect({ methods, value, onChange }: { methods: PayMethod[]; value: string; onChange(id: string): void }) {
   const groups: { title: string; items: PayMethod[] }[] = [
-    { title: "Pesos colombianos", items: methods.filter((m) => m.kind === "wompi") },
+    { title: "Pesos colombianos", items: methods.filter((m) => m.kind === "mercadopago") },
     { title: "Cripto directo a Solaxy", items: methods.filter((m) => m.kind === "crypto") },
     { title: "Modo demo", items: methods.filter((m) => m.kind === "demo") },
   ].filter((g) => g.items.length > 0);

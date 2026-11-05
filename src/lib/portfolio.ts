@@ -27,7 +27,7 @@ export interface TxDTO {
   note: string | null;
   createdAt: number;
   confirmedAt: number | null;
-  /** Pasarela de una compra: demo, wompi o crypto */
+  /** Pasarela de una compra: demo, mercadopago o crypto */
   method: string | null;
   providerStatus: string | null;
   chainId: number | null;

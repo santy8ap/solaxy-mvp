@@ -3,7 +3,7 @@ import { requireAdminApi } from "@/lib/admin/access";
 import { configStatus } from "@/lib/admin/config-status";
 import { handleError } from "@/lib/api";
 
-/** Qué falta para cobrar de verdad. Con ?probar=1 también prueba Wompi, el nodo y el precio en vivo. */
+/** Qué falta para cobrar de verdad. Con ?probar=1 también prueba Mercado Pago, el nodo y el precio en vivo. */
 export async function GET(req: Request) {
   try {
     await connection();

@@ -6,7 +6,7 @@ import { ProfileForm } from "./profile-form";
 
 const WHY = [
   { icon: ShieldCheck, title: "Para que tus kW queden a tu nombre", text: "Tu participación en la planta se registra con tus datos, igual que en tu documento." },
-  { icon: FileCheck2, title: "Para procesar tus pagos", text: "Wompi usa tu nombre, documento y celular para el pago con tarjeta, PSE o Nequi." },
+  { icon: FileCheck2, title: "Para procesar tus pagos", text: "Tus pagos con tarjeta, PSE o Nequi (por Mercado Pago) y tus retiros quedan a tu nombre." },
   { icon: Lock, title: "Protegidos por la ley", text: "Solo los usamos para lo que dice la Política de Tratamiento de Datos (Ley 1581 de 2012)." },
 ];
 

@@ -2,7 +2,7 @@ import "server-only";
 import { LEGAL } from "@/config/legal";
 import { adminEmails, baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
 import { rpcChainReader } from "@/lib/payments/chain";
-import { cryptoConfig, wompiConfig } from "@/lib/payments/config";
+import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
 import { liveCopPrices } from "@/lib/payments/prices";
 import { demoDataStats, hasDemoData } from "./demo-reset";
 
@@ -10,7 +10,7 @@ export type CheckState = "ok" | "falta" | "aviso" | "info";
 
 export interface ConfigCheck {
   id: string;
-  group: "Modo" | "Base" | "Acceso" | "Wompi" | "Cripto" | "Legal" | "Datos";
+  group: "Modo" | "Base" | "Acceso" | "Mercado Pago" | "Cripto" | "Legal" | "Datos";
   title: string;
   state: CheckState;
   detail: string;
@@ -29,13 +29,13 @@ async function probe<T>(fn: () => Promise<T>, ms = 6000): Promise<T> {
 
 /**
  * Qué está configurado y qué falta para cobrar de verdad. Con `probes`, además prueba en vivo
- * la llave de Wompi, el nodo de BNB Chain y el precio de CoinGecko (cada uno con tiempo límite).
+ * la cuenta de Mercado Pago, el nodo de BNB Chain y el precio de CoinGecko (cada uno con tiempo límite).
  */
 export async function configStatus({ probes = false }: { probes?: boolean } = {}) {
   const demo = isDemoMode();
-  const w = wompiConfig();
+  const mp = mercadoPagoConfig();
   const c = cryptoConfig();
-  const webhookUrl = `${baseUrl()}/api/webhooks/wompi`;
+  const webhookUrl = `${baseUrl()}/api/webhooks/mercadopago`;
   const checks: ConfigCheck[] = [];
   const add = (check: ConfigCheck) => checks.push(check);
 
@@ -46,7 +46,7 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     state: demo ? "info" : "ok",
     detail: demo
       ? "Hay cuenta demo, wallet demo y pagos simulados. Cuando todo lo de abajo esté listo, pon DEMO_MODE=false y vuelve a desplegar."
-      : "Solo se aceptan pagos con Wompi y cripto real.",
+      : "Solo se aceptan pagos con Mercado Pago y cripto real.",
     vars: ["DEMO_MODE"],
     required: false,
   });
@@ -108,40 +108,30 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     required: true,
   });
 
-  const validKey = w.publicKey.startsWith("pub_test_") || w.publicKey.startsWith("pub_prod_");
   add({
-    id: "wompi-llave",
-    group: "Wompi",
-    title: "Llave pública de Wompi",
-    state: !w.publicKey || !validKey ? "falta" : w.sandbox ? (demo ? "aviso" : "falta") : "ok",
-    detail: !w.publicKey
-      ? "Cópiala del panel de Wompi (pub_test_… para pruebas, pub_prod_… para cobrar)."
-      : !validKey
-        ? "No parece una llave pública de Wompi (debe empezar por pub_test_ o pub_prod_)."
-        : w.sandbox
+    id: "mp-token",
+    group: "Mercado Pago",
+    title: "Access Token de Mercado Pago",
+    state: !mp.enabled ? "falta" : mp.sandbox ? (demo ? "aviso" : "falta") : "ok",
+    detail: !mp.accessToken
+      ? "En Mercado Pago → Tus integraciones → tu aplicación → Credenciales. TEST-… para pruebas, APP_USR-… para cobrar."
+      : !mp.enabled
+        ? "No parece un Access Token de Mercado Pago (empieza por TEST- o APP_USR-)."
+        : mp.sandbox
           ? demo
-            ? "Es una llave de pruebas (sandbox): no se cobra dinero real."
-            : "Con dinero real usa la llave de producción (pub_prod_…): la de pruebas no cobra."
-          : "Llave de producción.",
-    vars: ["WOMPI_PUBLIC_KEY"],
+            ? "Son credenciales de prueba: no se cobra dinero real."
+            : "Con dinero real usa las credenciales de producción (APP_USR-…): las de prueba no cobran."
+          : "Credenciales de producción.",
+    vars: ["MERCADOPAGO_ACCESS_TOKEN"],
     required: true,
   });
   add({
-    id: "wompi-integridad",
-    group: "Wompi",
-    title: "Secreto de integridad",
-    state: w.integritySecret ? "ok" : "falta",
-    detail: w.integritySecret ? "Configurado (firma el checkout)." : "En Wompi: Desarrolladores → Secretos para integración técnica.",
-    vars: ["WOMPI_INTEGRITY_SECRET"],
-    required: true,
-  });
-  add({
-    id: "wompi-eventos",
-    group: "Wompi",
-    title: "Eventos (webhook)",
-    state: w.eventsSecret ? "ok" : "falta",
-    detail: `${w.eventsSecret ? "Secreto configurado." : "Falta el secreto de eventos."} En Wompi, la URL de eventos debe ser ${webhookUrl}`,
-    vars: ["WOMPI_EVENTS_SECRET"],
+    id: "mp-webhook",
+    group: "Mercado Pago",
+    title: "Notificaciones (webhook)",
+    state: mp.webhookSecret ? "ok" : "falta",
+    detail: `${mp.webhookSecret ? "Clave secreta configurada." : "Falta la clave secreta de las notificaciones."} En Mercado Pago → Webhooks, la URL debe ser ${webhookUrl} con el evento Pagos.`,
+    vars: ["MERCADOPAGO_WEBHOOK_SECRET"],
     required: true,
   });
 
@@ -194,13 +184,26 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
   });
 
   if (probes) {
-    if (w.publicKey) {
+    if (mp.enabled) {
       try {
-        const res = await probe(() => fetch(`${w.apiBase}/merchants/${encodeURIComponent(w.publicKey)}`, { cache: "no-store" }));
-        const json = (await res.json().catch(() => ({}))) as { data?: { name?: string } };
-        add({ id: "wompi-prueba", group: "Wompi", title: "Conexión con Wompi", state: res.ok ? "ok" : "falta", detail: res.ok ? `Wompi reconoce la llave${json.data?.name ? ` (comercio: ${json.data.name})` : ""}.` : `Wompi respondió ${res.status}: revisa la llave pública.`, required: true });
+        const res = await probe(() => fetch(`${mp.apiBase}/users/me`, { headers: { authorization: `Bearer ${mp.accessToken}` }, cache: "no-store" }));
+        const me = (await res.json().catch(() => ({}))) as { nickname?: string; site_id?: string; tags?: string[] };
+        const colombia = me.site_id === "MCO";
+        const testUser = me.tags?.includes("test_user") ?? false;
+        add({
+          id: "mp-prueba",
+          group: "Mercado Pago",
+          title: "Conexión con Mercado Pago",
+          state: !res.ok || !colombia ? "falta" : testUser && !demo ? "falta" : testUser ? "aviso" : "ok",
+          detail: !res.ok
+            ? `Mercado Pago respondió ${res.status}: revisa el Access Token.`
+            : !colombia
+              ? `La cuenta ${me.nickname ?? ""} no es de Colombia (${me.site_id ?? "?"}): no puede cobrar en pesos con PSE.`
+              : `Cuenta ${me.nickname ?? ""}${testUser ? " (cuenta de prueba: no cobra dinero real)" : ""}.`,
+          required: true,
+        });
       } catch (err) {
-        add({ id: "wompi-prueba", group: "Wompi", title: "Conexión con Wompi", state: "falta", detail: `No se pudo conectar: ${(err as Error).message}.`, required: true });
+        add({ id: "mp-prueba", group: "Mercado Pago", title: "Conexión con Mercado Pago", state: "falta", detail: `No se pudo conectar: ${(err as Error).message}.`, required: true });
       }
     }
     try {

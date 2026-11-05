@@ -1,6 +1,34 @@
-# Diseño: Solaxy listo para producción, con pagos reales (Wompi y cripto directo)
+# Diseño: Solaxy listo para producción, con pagos reales (Mercado Pago y cripto directo)
 
 **Fecha:** 5 de noviembre de 2026.
+
+> **Adenda del 5 de noviembre de 2026: Mercado Pago reemplaza a Wompi.** Wompi no habilitó la cuenta, así que el usuario eligió **Mercado Pago (Checkout Pro)** para tarjeta, PSE y Nequi, y pidió **borrar** el código de Wompi. Nequi y Daviplata se pagan por PSE, porque aparecen como bancos. Las secciones de Wompi de abajo quedan como registro del diseño original. Lo que rige ahora:
+>
+> 1. **Orden y checkout.** El servidor crea la orden pendiente y una *preferencia* (`POST /checkout/preferences`, con el Access Token y una clave de idempotencia igual a la orden). La preferencia lleva:
+>    - el monto exacto en COP y `external_reference = orden`;
+>    - las URL de retorno a `/pagos/resultado?ref=<orden>`;
+>    - la URL de notificación, solo cuando la app es https;
+>    - sin efectivo (`ticket` ni `atm`).
+>
+>    Con un token `TEST-` se usa `sandbox_init_point`.
+> 2. **Confirmación.** La orden solo se confirma con lo que devuelve la API de Mercado Pago:
+>    - Cuando el usuario vuelve del checkout, se consulta `GET /v1/payments/{payment_id}` y luego `/v1/payments/search?external_reference=<orden>`.
+>    - En cada notificación pasa lo mismo. Las notificaciones solo sirven de aviso y se verifican con `x-signature`: HMAC-SHA256 de `id:{data.id};request-id:{x-request-id};ts:{ts};` con la clave secreta del webhook.
+>    - El cuerpo de la notificación nunca se usa como prueba.
+> 3. **Estados.**
+>    - `approved` asigna los kW si el monto y la moneda coinciden; si no coinciden, la orden pasa a `por_reembolsar`.
+>    - `rejected` y `cancelled` cierran la orden como `fallida` y guardan el motivo en palabras.
+>    - `pending`, `in_process` y `authorized` siguen esperando: PSE puede tardar.
+>    - `refunded` y `charged_back` dejan la orden marcada para revisión.
+>    - Si el primer intento se rechaza y luego uno se aprueba, gana el aprobado.
+>    - Un segundo pago aprobado para la misma orden queda como `por_reembolsar`.
+> 4. **Pagos de prueba.** Los pagos de cuentas de prueba (`live_mode=false`) quedan marcados con la red "Mercado Pago (pruebas)". El borrado de los datos demo los puede eliminar y no cuentan como pagos reales. La lista de configuración del admin consulta `GET /users/me` y exige:
+>    - una cuenta de Colombia (`MCO`);
+>    - que, con dinero real, no sea una cuenta de prueba.
+> 5. **Variables.** `MERCADOPAGO_ACCESS_TOKEN` (`TEST-…` o `APP_USR-…`) y `MERCADOPAGO_WEBHOOK_SECRET`. La URL de notificaciones es `https://<dominio>/api/webhooks/mercadopago`, con el evento "Pagos".
+> 6. **Pruebas.**
+>    - Unitarias: `mercadopago.test.ts` y `mercadopago-service.test.ts`.
+>    - De punta a punta, contra un Mercado Pago falso (`e2e/fake-mercadopago.mjs` y `e2e/mercadopago-flow.cjs`): aprobado, rechazado con motivo, PSE en proceso aprobado por notificación, volver sin pagar, notificación falsificada y orden ajena.
 
 ## Objetivo
 

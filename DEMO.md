@@ -48,7 +48,7 @@
 3. Sigue los pasos en pantalla: orden creada, firma verificada, pago enviado, confirmaciones 1/3 a 3/3 y **energía asignada**.
 4. **Ver mis ganancias**: los kW subieron y el ritmo por hora también.
 
-> "En esta presentación el pago es simulado: la firma es real y el servidor verifica criptográficamente que la wallet es tuya, pero no se mueve dinero. En producción, el mismo botón cobra de verdad con Wompi o con USDT y BNB directo a la billetera de la empresa, verificado en la cadena."
+> "En esta presentación el pago es simulado: la firma es real y el servidor verifica criptográficamente que la wallet es tuya, pero no se mueve dinero. En producción, el mismo botón cobra de verdad con Mercado Pago (tarjeta, PSE o Nequi) o con USDT y BNB directo a la billetera de la empresa, verificado en la cadena."
 
 ## 7. Liquidez (30 s)
 
@@ -78,7 +78,7 @@ De vender la energía: kWh entregados × tarifa (560 $/kWh de día y 820 $/kWh e
 Con el 18 % del ingreso por energía (configurable) y el 3 % de diferencia en la venta inmediata. En el futuro puede haber una comisión en el mercado P2P.
 
 **¿Por qué cripto?**
-Las stablecoins como USDT permiten pagos rápidos y de bajo costo, incluso desde el exterior. Además, la plataforma ya cobra con tarjeta, PSE y Nequi a través de Wompi, y con USDT o BNB directo a la billetera de la empresa (verificado en la cadena). Para la presentación se usa el modo demo, con pagos simulados.
+Las stablecoins como USDT permiten pagos rápidos y de bajo costo, incluso desde el exterior. Además, la plataforma ya cobra con tarjeta, PSE y Nequi a través de Mercado Pago, y con USDT o BNB directo a la billetera de la empresa (verificado en la cadena). Para la presentación se usa el modo demo, con pagos simulados.
 
 **¿Es legal?**
 El MVP no capta dinero. Antes de abrirlo al público hay que definir la estructura legal (KYC, SARLAFT y el marco de la Superintendencia Financiera) con asesoría especializada.

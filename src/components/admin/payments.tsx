@@ -171,7 +171,7 @@ function ConfigChecklist() {
 }
 
 function methodLabel(p: AdminPaymentRow) {
-  if (p.method === "wompi") return p.network === "Wompi (sandbox)" ? "Wompi · pruebas" : "Wompi";
+  if (p.method === "mercadopago") return p.network === "Mercado Pago (pruebas)" ? "Mercado Pago · pruebas" : "Mercado Pago";
   if (p.method === "crypto") return `Cripto · ${p.asset ?? ""}${p.chainId === 97 ? " (testnet)" : ""}`;
   return "Demo";
 }
@@ -194,7 +194,8 @@ function PaymentActions({ p, explorer }: { p: AdminPaymentRow; explorer: string 
       setBusy(false);
     }
   };
-  const canReverify = (p.method === "wompi" && !!p.providerId && p.status === "pendiente") || (p.method === "crypto" && p.status === "verificando");
+  // Mercado Pago se consulta por la referencia de la orden: sirve aunque el usuario no haya vuelto del checkout.
+  const canReverify = (p.method === "mercadopago" && (p.status === "pendiente" || p.status === "fallida")) || (p.method === "crypto" && p.status === "verificando");
   const canAttach = p.method === "crypto" && p.status === "pendiente" && !p.providerId;
   const canRefund = p.status === "por_reembolsar";
   return (
@@ -246,7 +247,7 @@ function PaymentActions({ p, explorer }: { p: AdminPaymentRow; explorer: string 
 
 export function AdminPayments() {
   const [filter, setFilter] = useState<PaymentFilter>("todos");
-  const [method, setMethod] = useState<"todos" | "wompi" | "crypto" | "demo">("todos");
+  const [method, setMethod] = useState<"todos" | "mercadopago" | "crypto" | "demo">("todos");
   const url = `/api/admin/payments?estado=${filter}&metodo=${method}`;
   const { data, loading } = useJson<{ payments: AdminPaymentRow[]; summary: { totalCop: number; todayCop: number; inProgress: number; toRefund: number } }>(url, { refreshMs: 8000 });
   const { config } = useAppConfig();
@@ -256,7 +257,7 @@ export function AdminPayments() {
 
   return (
     <>
-      <AdminTopbar title="Pagos" subtitle="Pagos con Wompi y cripto: estado, verificación y reembolsos." />
+      <AdminTopbar title="Pagos" subtitle="Pagos con Mercado Pago y cripto: estado, verificación y reembolsos." />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile label="Recaudado hoy" value={s ? formatCop(s.todayCop) : "—"} />
         <Tile label="Recaudado en total" value={s ? formatCop(s.totalCop) : "—"} />
@@ -288,7 +289,7 @@ export function AdminPayments() {
             </div>
             <select value={method} onChange={(e) => setMethod(e.target.value as typeof method)} className="field !w-auto !py-2 text-sm" aria-label="Método de pago">
               <option value="todos">Todos los métodos</option>
-              <option value="wompi">Wompi</option>
+              <option value="mercadopago">Mercado Pago</option>
               <option value="crypto">Cripto</option>
               <option value="demo">Demo</option>
             </select>
@@ -340,7 +341,7 @@ export function AdminPayments() {
               {!loading && payments.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-10 text-center text-silver-400">
-                    No hay pagos en esta lista. Los pagos con Wompi y cripto aparecen aquí apenas se crean.
+                    No hay pagos en esta lista. Los pagos con Mercado Pago y cripto aparecen aquí apenas se crean.
                   </td>
                 </tr>
               )}

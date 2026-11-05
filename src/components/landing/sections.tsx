@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BRAND } from "@/config/brand";
 import { isDemoMode } from "@/lib/env";
-import { cryptoConfig, wompiConfig } from "@/lib/payments/config";
+import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
 import { Logo } from "@/components/ui/logo";
 
 export function LandingNav() {
@@ -74,10 +74,10 @@ const WALLETS = [
 
 function paymentMethods() {
   const methods: { name: string; note: string; glyph: string; tone: string }[] = [];
-  if (wompiConfig().enabled) {
+  if (mercadoPagoConfig().enabled) {
     methods.push(
-      { name: "Tarjeta", note: "Crédito o débito, con Wompi", glyph: "$", tone: "#57d69b" },
-      { name: "PSE y Nequi", note: "Desde tu banco o tu celular", glyph: "⇄", tone: "#7fb2ff" },
+      { name: "Tarjeta", note: "Crédito o débito, con Mercado Pago", glyph: "$", tone: "#57d69b" },
+      { name: "PSE y Nequi", note: "Desde tu banco o tu billetera (por PSE)", glyph: "⇄", tone: "#7fb2ff" },
     );
   }
   if (cryptoConfig().enabled) {
@@ -104,7 +104,7 @@ export function Payments() {
             Paga como prefieras
           </h2>
           <p className="mt-4 max-w-[42ch] text-silver-300">
-            Con tarjeta, PSE o Nequi a través de Wompi, o con USDT y BNB desde tu wallet directo a la billetera de Solaxy. Tus kW se asignan apenas
+            Con tarjeta, PSE o Nequi a través de Mercado Pago, o con USDT y BNB desde tu wallet directo a la billetera de Solaxy. Tus kW se asignan apenas
             se confirma el pago.
           </p>
           {demo && <p className="mt-3 max-w-[42ch] text-sm text-silver-500">En modo demo también puedes simular un pago firmando con tu wallet, sin mover fondos.</p>}
@@ -155,7 +155,7 @@ const FAQ_DEMO = {
 
 const FAQ_LIVE = {
   q: "¿Esto ya funciona con dinero real?",
-  a: "Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Wompi, y los pagos en USDT o BNB llegan directo a la billetera de Solaxy en BNB Chain. La planta todavía no tiene sus medidores conectados a la plataforma: la telemetría es una simulación y las ganancias que ves son estimadas.",
+  a: "Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Mercado Pago, y los pagos en USDT o BNB llegan directo a la billetera de Solaxy en BNB Chain. La planta todavía no tiene sus medidores conectados a la plataforma: la telemetría es una simulación y las ganancias que ves son estimadas.",
 };
 
 export function Faq() {

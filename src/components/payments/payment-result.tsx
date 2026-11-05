@@ -6,26 +6,33 @@ import { useEffect, useState } from "react";
 import type { TxDTO } from "@/lib/portfolio";
 import { formatCop, formatKw } from "@/lib/format";
 
+type Outcome = "aprobada" | "fallida" | "pendiente" | "devuelta" | "sin_pago";
+
 type View =
   | { kind: "cargando" }
-  | { kind: "orden"; order: TxDTO }
+  | { kind: "orden"; order: TxDTO; outcome: Outcome; gaveUp?: boolean }
   | { kind: "no_encontrado"; message: string }
   | { kind: "error"; message: string };
 
 /** Cada cuánto se vuelve a consultar un pago en proceso (PSE puede tardar). */
 const pollDelay = (attempt: number) => (attempt < 24 ? 5_000 : 15_000);
+/**
+ * Si Mercado Pago no tiene ningún pago para la orden, se reintenta unas veces (puede tardar en registrarlo) y luego se
+ * avisa. Sin número de pago en la URL de retorno, lo normal es que la persona volvió sin pagar: se avisa antes.
+ */
+const noPaymentAttempts = (paymentId: string | undefined) => (paymentId ? 6 : 2);
 
-async function fetchStatus(transactionId: string): Promise<View> {
+async function fetchStatus(ref: string, paymentId: string | undefined): Promise<View> {
   try {
-    const res = await fetch("/api/payments/wompi/sync", {
+    const res = await fetch("/api/payments/mercadopago/sync", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: transactionId }),
+      body: JSON.stringify({ ref, paymentId }),
     });
-    const json = (await res.json().catch(() => ({}))) as { order?: TxDTO; error?: string };
+    const json = (await res.json().catch(() => ({}))) as { order?: TxDTO; outcome?: Outcome; error?: string };
     if (res.status === 404) return { kind: "no_encontrado", message: json.error ?? "No encontramos ese pago en tu cuenta." };
     if (!res.ok || !json.order) return { kind: "error", message: json.error ?? "No pudimos consultar el pago." };
-    return { kind: "orden", order: json.order };
+    return { kind: "orden", order: json.order, outcome: json.outcome ?? "pendiente" };
   } catch {
     return { kind: "error", message: "No pudimos conectarnos. Revisa tu internet." };
   }
@@ -33,18 +40,22 @@ async function fetchStatus(transactionId: string): Promise<View> {
 
 const inProgress = (v: View) => v.kind === "orden" && (v.order.status === "pendiente" || v.order.status === "verificando");
 
-export function PaymentResult({ transactionId }: { transactionId: string }) {
-  const [view, setView] = useState<View>(transactionId ? { kind: "cargando" } : { kind: "no_encontrado", message: "Falta el identificador del pago." });
+export function PaymentResult({ orderRef, paymentId }: { orderRef: string; paymentId?: string }) {
+  const [view, setView] = useState<View>(orderRef ? { kind: "cargando" } : { kind: "no_encontrado", message: "Falta la referencia de la orden." });
   const [round, setRound] = useState(0);
 
   useEffect(() => {
-    if (!transactionId) return;
+    if (!orderRef) return;
     let cancelled = false;
     let attempt = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const run = async () => {
-      const next = await fetchStatus(transactionId);
+      const next = await fetchStatus(orderRef, paymentId);
       if (cancelled) return;
+      if (next.kind === "orden" && next.outcome === "sin_pago" && attempt >= noPaymentAttempts(paymentId)) {
+        setView({ ...next, gaveUp: true });
+        return;
+      }
       setView(next);
       if (inProgress(next)) timer = setTimeout(run, pollDelay(attempt++));
     };
@@ -53,7 +64,7 @@ export function PaymentResult({ transactionId }: { transactionId: string }) {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [transactionId, round]);
+  }, [orderRef, paymentId, round]);
 
   return (
     <section className="panel cells w-full p-8 text-center sm:p-10" aria-live="polite">
@@ -89,14 +100,16 @@ function Badge({ tone, children }: { tone: "ok" | "wait" | "bad" | "warn"; child
 }
 
 function Body({ view, onRetry }: { view: View; onRetry(): void }) {
-  if (view.kind === "cargando") {
+  // Mientras se espera a que Mercado Pago registre el pago, todavía no sabemos si hubo pago: se sigue mostrando "confirmando".
+  const waitingForPayment = view.kind === "orden" && view.outcome === "sin_pago" && !view.gaveUp && view.order.status === "pendiente";
+  if (view.kind === "cargando" || waitingForPayment) {
     return (
       <>
         <Badge tone="wait">
           <Clock size={28} className="animate-pulse" />
         </Badge>
         <h1 className="mt-6 text-2xl font-semibold text-silver-50">Confirmando tu pago…</h1>
-        <p className="mt-2 text-silver-400">Estamos consultando el resultado con Wompi.</p>
+        <p className="mt-2 text-silver-400">Estamos consultando el resultado con Mercado Pago.</p>
       </>
     );
   }
@@ -145,6 +158,26 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
       </>
     );
   }
+  if (o.status === "pendiente" && view.outcome === "sin_pago" && view.gaveUp) {
+    return (
+      <>
+        <Badge tone="warn">
+          <AlertTriangle size={28} />
+        </Badge>
+        <h1 className="mt-6 text-2xl font-semibold text-silver-50">No completaste el pago</h1>
+        <p className="mt-2 text-silver-400">Mercado Pago no tiene un pago para esta orden. No se hizo ningún cobro; puedes intentarlo de nuevo cuando quieras.</p>
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
+          <Link href="/panel/mercado" className="btn btn-sun">
+            Volver a comprar
+          </Link>
+          <button type="button" onClick={onRetry} className="btn btn-ghost">
+            <RotateCcw size={16} /> Ya pagué, volver a consultar
+          </button>
+        </div>
+        {ref}
+      </>
+    );
+  }
   if (o.status === "pendiente" || o.status === "verificando") {
     return (
       <>
@@ -181,7 +214,7 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
         <X size={30} />
       </Badge>
       <h1 className="mt-6 text-2xl font-semibold text-silver-50">El pago no se aprobó</h1>
-      <p className="mt-2 text-silver-400">{o.note ?? "Wompi no aprobó la transacción. No se hizo ningún cobro."}</p>
+      <p className="mt-2 text-silver-400">{o.note ?? "Mercado Pago no aprobó el pago. No se hizo ningún cobro."}</p>
       <Link href="/panel/mercado" className="btn btn-sun mt-8">
         Intentar de nuevo
       </Link>

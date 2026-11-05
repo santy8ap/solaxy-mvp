@@ -58,7 +58,7 @@ const SECTIONS: LegalSection[] = [
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Tarjeta, PSE y Nequi:</strong> se procesan a través de Wompi, que aplica sus propios términos. Solaxy no recibe ni guarda
+            <strong>Tarjeta, PSE y Nequi:</strong> se procesan a través de Mercado Pago, que aplica sus propios términos. Solaxy no recibe ni guarda
             los datos de tu tarjeta.
           </li>
           <li>
@@ -131,7 +131,7 @@ const SECTIONS: LegalSection[] = [
     title: "Responsabilidad",
     body: (
       <p>
-        Solaxy responde por la prestación diligente de sus servicios. No responde por fallas de terceros (Wompi, redes blockchain, wallets,
+        Solaxy responde por la prestación diligente de sus servicios. No responde por fallas de terceros (Mercado Pago, redes blockchain, wallets,
         proveedores de internet) ni por casos de fuerza mayor o caso fortuito. <Ph>[El abogado debe ajustar esta cláusula a la ley
         colombiana y al Estatuto del Consumidor cuando aplique.]</Ph>
       </p>

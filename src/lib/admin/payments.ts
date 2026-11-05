@@ -7,7 +7,7 @@ import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
 import { getOrder, type OrderRow } from "@/lib/orders";
 import { submitCryptoPayment, verifyCryptoOrder, type CryptoDeps } from "@/lib/payments/crypto-service";
-import { syncWompiTransaction } from "@/lib/payments/wompi-service";
+import { MP_SANDBOX_NETWORK, syncMercadoPagoOrder } from "@/lib/payments/mercadopago-service";
 import { toTxDTO, type TxDTO } from "@/lib/portfolio";
 import { localDayIndex, dayStartMs } from "@/lib/sim";
 import { audit, type Actor } from "./service";
@@ -50,7 +50,7 @@ function toRow(t: OrderRow, u: { name: string; email: string } | null): AdminPay
   };
 }
 
-/** Órdenes de compra pagadas (o por pagar) con Wompi, cripto o en modo demo. */
+/** Órdenes de compra pagadas (o por pagar) con Mercado Pago, cripto o en modo demo. */
 export async function listPayments({ status = "todos", method = "todos", limit = 200 }: { status?: PaymentFilter; method?: PaymentMethod | "todos"; limit?: number } = {}) {
   await ensureReady();
   const where = and(
@@ -69,12 +69,12 @@ export async function listPayments({ status = "todos", method = "todos", limit =
   return rows.map((r) => toRow(r.t, r.name ? { name: r.name, email: r.email ?? "" } : null));
 }
 
-/** Números para el encabezado de la sección Pagos (solo pagos reales: Wompi y cripto). */
+/** Números para el encabezado de la sección Pagos (solo pagos reales: Mercado Pago y cripto). */
 export async function paymentSummary(now = Date.now()) {
   await ensureReady();
-  // Los pagos de prueba (Wompi sandbox o testnet) no cuentan como recaudo.
+  // Los pagos de prueba (Mercado Pago de pruebas o testnet) no cuentan como recaudo.
   const real = or(
-    and(eq(ledgerTx.method, "wompi"), or(isNull(ledgerTx.network), ne(ledgerTx.network, "Wompi (sandbox)"))),
+    and(eq(ledgerTx.method, "mercadopago"), or(isNull(ledgerTx.network), ne(ledgerTx.network, MP_SANDBOX_NETWORK))),
     and(eq(ledgerTx.method, "crypto"), or(isNull(ledgerTx.chainId), ne(ledgerTx.chainId, 97))),
   );
   const today = dayStartMs(localDayIndex(now));
@@ -102,13 +102,13 @@ async function rowOf(orderId: string) {
   return toRow(order, u ?? null);
 }
 
-/** Vuelve a consultar el pago en Wompi o en la cadena (por ejemplo, si el webhook nunca llegó). */
+/** Vuelve a consultar el pago en Mercado Pago o en la cadena (por ejemplo, si el webhook nunca llegó). */
 export async function reverifyPayment(actor: Actor, orderId: string, deps: CryptoDeps & { fetch?: typeof fetch } = {}) {
   const order = await requirePayment(orderId);
-  if (order.method === "wompi") {
-    if (!order.providerId) throw new MarketError("Este pago todavía no tiene una transacción de Wompi: el usuario no terminó el checkout.", 409);
-    if (order.status !== "pendiente") throw new MarketError("Solo se re-verifican los pagos de Wompi que siguen en proceso.", 409);
-    await syncWompiTransaction(order.providerId, { fetch: deps.fetch });
+  if (order.method === "mercadopago") {
+    // Busca los pagos de la orden por su referencia: sirve aunque el usuario no haya vuelto del checkout.
+    if (order.status !== "pendiente" && order.status !== "fallida") throw new MarketError("Este pago ya está cerrado.", 409);
+    await syncMercadoPagoOrder({ orderId: order.id }, { fetch: deps.fetch });
   } else if (order.method === "crypto") {
     if (!order.providerId) throw new MarketError("Este pago no tiene hash todavía. Si el usuario ya pagó, registra el hash de la transacción.", 409);
     await verifyCryptoOrder(order.id, deps);

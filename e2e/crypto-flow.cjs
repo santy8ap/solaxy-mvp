@@ -35,7 +35,7 @@ function check(cond, msg) {
   await api("/api/profile", { method: "PUT", body: JSON.stringify({ fullName: "Laura Gómez", docType: "CC", docNumber: "1036123456", phone: "3001234567", city: "Medellín", acceptTerms: true }) });
   const kwBefore = (await api("/api/portfolio")).json.kw;
 
-  async function buy(assetLabel, kwButton, expectKw) {
+  async function buy(assetLabel, kwButton) {
     await page.goto(`${base}/panel/mercado`, { waitUntil: "load", timeout: 180000 });
     await page.locator(`input[name=pay][value=${assetLabel.toLowerCase()}]`).check();
     await page.getByRole("button", { name: kwButton }).first().click();
@@ -61,10 +61,10 @@ function check(cond, msg) {
     return kw;
   }
 
-  const afterUsdt = await buy("USDT", /Semilla/, 0.5);
+  const afterUsdt = await buy("USDT", /Semilla/);
   check(Math.abs(afterUsdt - kwBefore - 0.5) < 1e-6, `USDT asignó 0,5 kW (${kwBefore} → ${afterUsdt})`);
   await page.keyboard.press("Escape");
-  const afterBnb = await buy("BNB", /Semilla/, 0.5);
+  const afterBnb = await buy("BNB", /Semilla/);
   check(Math.abs(afterBnb - afterUsdt - 0.5) < 1e-6, `BNB asignó 0,5 kW (${afterUsdt} → ${afterBnb})`);
 
   // El historial muestra la compra con el estado y el enlace a BscScan.

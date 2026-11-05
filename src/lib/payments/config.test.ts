@@ -1,29 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cryptoConfig, wompiConfig } from "@/lib/payments/config";
+import { cryptoConfig } from "@/lib/payments/config";
 
 afterEach(() => vi.unstubAllEnvs());
-
-describe("configuración de Wompi", () => {
-  it("está desactivado sin llaves", () => {
-    vi.stubEnv("WOMPI_PUBLIC_KEY", "");
-    vi.stubEnv("WOMPI_INTEGRITY_SECRET", "");
-    expect(wompiConfig().enabled).toBe(false);
-  });
-
-  it("la llave pública decide sandbox o producción", () => {
-    vi.stubEnv("WOMPI_INTEGRITY_SECRET", "test_integrity_x");
-    vi.stubEnv("WOMPI_PUBLIC_KEY", "pub_test_abc");
-    expect(wompiConfig()).toMatchObject({ enabled: true, sandbox: true, apiBase: "https://sandbox.wompi.co/v1" });
-    vi.stubEnv("WOMPI_PUBLIC_KEY", "pub_prod_abc");
-    expect(wompiConfig()).toMatchObject({ enabled: true, sandbox: false, apiBase: "https://production.wompi.co/v1" });
-  });
-
-  it("rechaza una llave que no es pública (por ejemplo, la privada)", () => {
-    vi.stubEnv("WOMPI_INTEGRITY_SECRET", "test_integrity_x");
-    vi.stubEnv("WOMPI_PUBLIC_KEY", "prv_test_abc");
-    expect(wompiConfig().enabled).toBe(false);
-  });
-});
 
 describe("configuración cripto", () => {
   it("necesita una dirección válida de la billetera de la empresa", () => {

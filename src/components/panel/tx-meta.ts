@@ -36,7 +36,7 @@ export function explorerTxUrl(t: Pick<TxDTO, "txHash" | "chainId">) {
 export function txDetail(t: TxDTO) {
   if ((t.status === "fallida" || t.status === "por_reembolsar" || t.status === "reembolsada") && t.note) return t.note;
   if (t.status === "verificando") return `Verificando en BNB Chain${t.providerStatus ? ` · ${t.providerStatus}` : ""}`;
-  if (t.method === "wompi") return `Pago con Wompi${t.providerStatus === "PENDING" ? " · en proceso" : ""}`;
+  if (t.method === "mercadopago") return `Pago con Mercado Pago${t.providerStatus === "pending" || t.providerStatus === "in_process" ? " · en proceso" : ""}`;
   if (t.kind === "asignacion_demo") return "Para explorar el panel";
   if (t.kind === "ajuste_admin") return t.note ?? "Ajuste del administrador";
   if (t.kind === "retiro" && t.status === "rechazada") return `Rechazado: ${t.note ?? "sin motivo"}`;

@@ -84,9 +84,9 @@ function ErrorBox({ message }: { message: string }) {
   );
 }
 
-/* ───────────── Wompi: tarjeta, PSE o Nequi ───────────── */
+/* ───────────── Mercado Pago: tarjeta, PSE o Nequi ───────────── */
 
-export function WompiSheet({ request, onClose }: { request: CheckoutRequest | null; onClose(): void }) {
+export function MercadoPagoSheet({ request, onClose }: { request: CheckoutRequest | null; onClose(): void }) {
   const { config } = useAppConfig();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export function WompiSheet({ request, onClose }: { request: CheckoutRequest | nu
     setBusy(true);
     setError(null);
     try {
-      const o = await api<{ checkoutUrl: string }>("/api/payments/wompi", { kw: request.listingId ? undefined : request.kw, listingId: request.listingId });
+      const o = await api<{ checkoutUrl: string }>("/api/payments/mercadopago", { kw: request.listingId ? undefined : request.kw, listingId: request.listingId });
       window.location.assign(o.checkoutUrl);
     } catch (e) {
       setBusy(false);
@@ -112,15 +112,15 @@ export function WompiSheet({ request, onClose }: { request: CheckoutRequest | nu
           <Summary request={request}>
             <div className="mt-2 flex items-baseline justify-between gap-4">
               <span className="text-silver-400">Medio</span>
-              <span className="text-silver-100">Tarjeta, PSE o Nequi (Wompi)</span>
+              <span className="text-silver-100">Tarjeta, PSE o Nequi (Mercado Pago)</span>
             </div>
           </Summary>
           <ProfileGate>
             <p className="mt-5 text-sm leading-relaxed text-silver-300">
-              Te llevamos al checkout seguro de Wompi. Allí eliges tarjeta, PSE o Nequi y, al terminar, vuelves a Solaxy. Tus kW se asignan apenas el pago
-              quede aprobado.
+              Te llevamos al checkout seguro de Mercado Pago. Allí eliges tarjeta o PSE (para pagar con Nequi o Daviplata, elige PSE y luego tu
+              billetera) y, al terminar, vuelves a Solaxy. Tus kW se asignan apenas el pago quede aprobado.
             </p>
-            {config?.wompi.sandbox && <p className="mt-2 text-xs text-sun-300">Modo de pruebas de Wompi: no se cobra dinero real.</p>}
+            {config?.mercadopago.sandbox && <p className="mt-2 text-xs text-sun-300">Modo de pruebas de Mercado Pago: no se cobra dinero real.</p>}
             {error && <ErrorBox message={error} />}
             <div className="mt-6 flex flex-wrap justify-end gap-2">
               <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
@@ -129,7 +129,7 @@ export function WompiSheet({ request, onClose }: { request: CheckoutRequest | nu
               <button type="button" className="btn btn-sun" onClick={() => void pay()} disabled={busy}>
                 {busy ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Abriendo Wompi…
+                    <Loader2 size={16} className="animate-spin" /> Abriendo Mercado Pago…
                   </>
                 ) : (
                   `Pagar ${formatCop(request.amountCop)}`

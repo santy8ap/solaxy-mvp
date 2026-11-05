@@ -26,9 +26,9 @@ function check(cond, msg) {
   await page.getByRole("button", { name: "Entrar con la cuenta demo" }).click();
   await page.waitForURL(/\/panel/, { timeout: 180000 });
 
-  // 1) Pedido de datos dentro del pago con Wompi
+  // 1) Pedido de datos dentro del pago con Mercado Pago
   await page.goto(`${base}/panel/mercado`, { waitUntil: "load", timeout: 180000 });
-  await page.locator("input[name=pay][value=wompi]").check();
+  await page.locator("input[name=pay][value=mercadopago]").check();
   await page.getByRole("button", { name: "Pagar con tarjeta, PSE o Nequi" }).click();
   await page.getByText("Antes de tu primera compra, completa tus datos").waitFor({ timeout: 30000 });
   check((await page.getByRole("button", { name: /^Pagar \$/ }).count()) === 0, "sin datos no se puede pagar: el formulario aparece primero");

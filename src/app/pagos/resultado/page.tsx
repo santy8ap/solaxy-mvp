@@ -9,11 +9,15 @@ import { PaymentResult } from "@/components/payments/payment-result";
 
 export const metadata: Metadata = { title: "Resultado del pago" };
 
-async function Gate({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
-  const { id } = await searchParams;
+type ResultParams = { ref?: string; payment_id?: string; collection_id?: string };
+
+/** Mercado Pago vuelve aquí con ?ref=<orden> (nuestro) y payment_id / collection_id (suyos). */
+async function Gate({ searchParams }: { searchParams: Promise<ResultParams> }) {
+  const { ref, payment_id, collection_id } = await searchParams;
   const user = await getSessionUser();
   if (!user) redirect(`/ingresar`);
-  return <PaymentResult transactionId={typeof id === "string" ? id : ""} />;
+  const paymentId = [payment_id, collection_id].find((v) => typeof v === "string" && /^\d+$/.test(v));
+  return <PaymentResult orderRef={typeof ref === "string" ? ref : ""} paymentId={paymentId} />;
 }
 
 export default function ResultadoPage({ searchParams }: PageProps<"/pagos/resultado">) {
@@ -29,7 +33,7 @@ export default function ResultadoPage({ searchParams }: PageProps<"/pagos/result
       </div>
       <div className="mx-auto flex w-full max-w-[520px] flex-1 items-center px-5 pb-20">
         <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-[var(--radius-panel)] bg-silicon-800/60" />}>
-          <Gate searchParams={searchParams as Promise<{ id?: string }>} />
+          <Gate searchParams={searchParams as Promise<ResultParams>} />
         </Suspense>
       </div>
     </main>

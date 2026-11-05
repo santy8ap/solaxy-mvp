@@ -139,8 +139,8 @@ export const positionEntry = sqliteTable(
 export const TX_KINDS = ["compra", "compra_p2p", "venta_p2p", "venta_inmediata", "retiro", "asignacion_demo", "ajuste_admin"] as const;
 /** por_reembolsar: el pago llegó pero no se pudo asignar (sin cupo, oferta vendida, monto distinto); reembolsada: el admin ya lo devolvió. */
 export const TX_STATUSES = ["pendiente", "verificando", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada", "por_reembolsar", "reembolsada"] as const;
-/** Cómo se pagó una orden: firma simulada (solo modo demo), Wompi o cripto directo a la billetera de la empresa. */
-export const PAYMENT_METHODS = ["demo", "wompi", "crypto"] as const;
+/** Cómo se pagó una orden: firma simulada (solo modo demo), Mercado Pago o cripto directo a la billetera de la empresa. */
+export const PAYMENT_METHODS = ["demo", "mercadopago", "crypto"] as const;
 export type TxKind = (typeof TX_KINDS)[number];
 export type TxStatus = (typeof TX_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -172,11 +172,11 @@ export const ledgerTx = sqliteTable(
     confirmedAt: integer("confirmed_at"),
     /** Pasarela de una compra (null en movimientos que no son pagos) */
     method: text("method", { enum: PAYMENT_METHODS }),
-    /** Id del pago en el proveedor: transacción de Wompi o hash on-chain (en minúsculas) */
+    /** Id del pago en el proveedor: pago de Mercado Pago o hash on-chain (en minúsculas) */
     providerId: text("provider_id"),
     /** Último estado reportado por el proveedor (APPROVED, PENDING, confirmaciones…) */
     providerStatus: text("provider_status"),
-    /** Monto exacto esperado en unidades base, como texto: centavos de COP o wei del activo */
+    /** Monto exacto esperado, como texto: pesos (Mercado Pago) o wei del activo (cripto) */
     expectedAmount: text("expected_amount"),
     /** Vigencia de la cotización (ms UTC) */
     expiresAt: integer("expires_at"),
@@ -184,7 +184,7 @@ export const ledgerTx = sqliteTable(
   (t) => [
     index("tx_user_idx").on(t.userId, t.createdAt),
     index("tx_method_status_idx").on(t.method, t.status),
-    // Un mismo pago (transacción de Wompi u hash on-chain) no puede acreditarse dos veces.
+    // Un mismo pago (de Mercado Pago u hash on-chain) no puede acreditarse dos veces.
     uniqueIndex("tx_provider_uq").on(t.method, t.providerId),
   ],
 );

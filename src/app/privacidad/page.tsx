@@ -31,7 +31,7 @@ const SECTIONS: LegalSection[] = [
         </li>
         <li>
           <strong>Operaciones:</strong> compras, ventas y retiros; direcciones públicas de wallet; hashes de transacciones; referencias de
-          pago de Wompi. No recibimos ni guardamos los datos de tu tarjeta.
+          pago de Mercado Pago. No recibimos ni guardamos los datos de tu tarjeta.
         </li>
         <li>
           <strong>Datos técnicos:</strong> dirección IP, navegador y registros de seguridad.
@@ -95,7 +95,7 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>Solo con los proveedores que necesitamos para prestar el servicio, que tratan los datos por encargo nuestro:</p>
         <ul className="list-disc space-y-2 pl-5">
-          <li>Wompi, para procesar pagos con tarjeta, PSE y Nequi.</li>
+          <li>Mercado Pago, para procesar pagos con tarjeta, PSE y Nequi.</li>
           <li>Google, para el inicio de sesión.</li>
           <li>Vercel y Turso, para alojar la plataforma y su base de datos. Pueden guardar información fuera de Colombia.</li>
         </ul>

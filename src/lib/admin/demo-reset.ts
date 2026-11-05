@@ -5,15 +5,16 @@ import { ensureReady } from "@/lib/db/init";
 import { account, appMeta, investorProfile, ledgerTx, listing, positionEntry, session, user, walletLink } from "@/lib/db/schema";
 import { env, isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
+import { MP_SANDBOX_NETWORK } from "@/lib/payments/mercadopago-service";
 import { audit, type Actor } from "./service";
 
 export const RESET_PHRASE = "BORRAR DATOS DEMO";
 const FAKE_EMAILS = "%@comunidad.solaxy.local";
 
-/** Pagos con dinero real ya registrados: Wompi de producción o cripto en BNB Chain (no testnet). */
+/** Pagos con dinero real ya registrados: Mercado Pago (no de pruebas) o cripto en BNB Chain (no testnet). */
 const realPayment = and(
   isNotNull(ledgerTx.providerId),
-  or(and(eq(ledgerTx.method, "wompi"), or(isNull(ledgerTx.network), ne(ledgerTx.network, "Wompi (sandbox)"))), and(eq(ledgerTx.method, "crypto"), eq(ledgerTx.chainId, 56))),
+  or(and(eq(ledgerTx.method, "mercadopago"), or(isNull(ledgerTx.network), ne(ledgerTx.network, MP_SANDBOX_NETWORK))), and(eq(ledgerTx.method, "crypto"), eq(ledgerTx.chainId, 56))),
 );
 
 /** Qué queda de la demostración: comunidad ficticia, cuenta demo y movimientos simulados. */
@@ -24,7 +25,7 @@ export async function demoDataStats() {
   const [simulated] = await db
     .select({ n: sql<number>`count(*)` })
     .from(ledgerTx)
-    .where(or(eq(ledgerTx.method, "demo"), eq(ledgerTx.kind, "asignacion_demo"), and(eq(ledgerTx.method, "wompi"), eq(ledgerTx.network, "Wompi (sandbox)")), and(eq(ledgerTx.method, "crypto"), eq(ledgerTx.chainId, 97))));
+    .where(or(eq(ledgerTx.method, "demo"), eq(ledgerTx.kind, "asignacion_demo"), and(eq(ledgerTx.method, "mercadopago"), eq(ledgerTx.network, MP_SANDBOX_NETWORK)), and(eq(ledgerTx.method, "crypto"), eq(ledgerTx.chainId, 97))));
   const [real] = await db.select({ n: sql<number>`count(*)` }).from(ledgerTx).where(realPayment);
   return { fakeUsers: fake.n, demoAccount: Boolean(demo), simulatedTx: simulated.n, realPayments: real.n };
 }

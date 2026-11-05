@@ -8,7 +8,7 @@ import { useAppConfig } from "@/lib/client/use-app-config";
 import { useWallet } from "@/lib/wallet/context";
 import { Topbar } from "@/components/panel/shell";
 import { toast } from "@/components/ui/toast";
-import { CryptoSheet, WompiSheet, type CheckoutRequest } from "./checkout-sheets";
+import { CryptoSheet, MercadoPagoSheet, type CheckoutRequest } from "./checkout-sheets";
 import { MethodSelect, availableMethods, type PayMethod } from "./pay-methods";
 import { PaymentSheet, type PurchaseRequest } from "./payment-sheet";
 
@@ -105,7 +105,7 @@ export function Market() {
       {tab === "vender" && <Sell m={m} />}
 
       <PaymentSheet request={demoRequest} onClose={() => setDemoRequest(null)} />
-      <WompiSheet request={checkout?.method.kind === "wompi" ? checkout.request : null} onClose={() => setCheckout(null)} />
+      <MercadoPagoSheet request={checkout?.method.kind === "mercadopago" ? checkout.request : null} onClose={() => setCheckout(null)} />
       <CryptoSheet
         request={checkout?.method.kind === "crypto" ? checkout.request : null}
         asset={checkout?.method.kind === "crypto" ? checkout.method.asset : "USDT"}
@@ -117,7 +117,7 @@ export function Market() {
 
 function payButtonLabel(method: PayMethod | null, walletConnected: boolean, walletName: string | null) {
   if (!method) return "Pagos no disponibles";
-  if (method.kind === "wompi") return "Pagar con tarjeta, PSE o Nequi";
+  if (method.kind === "mercadopago") return "Pagar con tarjeta, PSE o Nequi";
   if (method.kind === "crypto") return walletConnected ? `Pagar ${method.asset} con ${walletName ?? "tu wallet"}` : "Conectar wallet y pagar";
   if (method.option.method === "qr") return "Pagar con código QR (demo)";
   return walletConnected ? `Firmar con ${walletName} (demo)` : "Conectar wallet y pagar";
@@ -125,7 +125,7 @@ function payButtonLabel(method: PayMethod | null, walletConnected: boolean, wall
 
 function payFootnote(method: PayMethod | null) {
   if (!method) return "";
-  if (method.kind === "wompi") return "Pagas en Wompi. Tus kW se asignan apenas el pago quede aprobado.";
+  if (method.kind === "mercadopago") return "Pagas en Mercado Pago. Tus kW se asignan apenas el pago quede aprobado.";
   if (method.kind === "crypto") return `Envías ${method.asset} desde tu wallet a la billetera de Solaxy en BNB Chain. Tus kW se asignan tras las confirmaciones de la red.`;
   return "Pago simulado: firmas la orden con tu wallet y no se mueve dinero.";
 }

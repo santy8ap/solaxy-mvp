@@ -11,7 +11,7 @@ function check(cond, msg) {
 (async () => {
   const cfg = await (await fetch(`${base}/api/config`)).json();
   check(cfg.demoMode === false, "el servidor está en modo producción (DEMO_MODE=false)");
-  check(cfg.wompi.enabled && !cfg.wompi.sandbox, "Wompi activo con llave de producción");
+  check(cfg.mercadopago.enabled && !cfg.mercadopago.sandbox, "Mercado Pago activo con credenciales de producción");
   check(cfg.crypto.enabled && cfg.crypto.chainId === 56, "cripto activo en BNB Chain (56)");
 
   const head = await fetch(`${base}/`);
@@ -37,7 +37,7 @@ function check(cond, msg) {
 
   await page.goto(`${base}/`, { waitUntil: "load" });
   const landing = await page.locator("body").innerText();
-  check(landing.includes("Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Wompi") || (await page.getByText("¿Esto ya funciona con dinero real?").count()) > 0, "la landing tiene la pregunta sobre dinero real");
+  check(landing.includes("Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Mercado Pago") || (await page.getByText("¿Esto ya funciona con dinero real?").count()) > 0, "la landing tiene la pregunta sobre dinero real");
   check(!/Pago simulado|MVP demostrativo|Modo demo/i.test(landing), "la landing no menciona pagos simulados ni modo demo");
   check(/Tarjeta/.test(landing) && /USDT/.test(landing), "la landing muestra tarjeta, PSE/Nequi y USDT/BNB");
 

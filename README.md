@@ -1,6 +1,6 @@
 # Solaxy: MVP de inversión en energía solar
 
-Solaxy permite comprar **kW de una planta solar** pagando con **tarjeta, PSE o Nequi (Wompi)** o con **USDT y BNB directo a la billetera de la empresa**, y ver en vivo la telemetría de la planta y cómo crecen las ganancias, segundo a segundo.
+Solaxy permite comprar **kW de una planta solar** pagando con **tarjeta, PSE o Nequi (Mercado Pago)** o con **USDT y BNB directo a la billetera de la empresa**, y ver en vivo la telemetría de la planta y cómo crecen las ganancias, segundo a segundo.
 
 Funciona en dos modos (sección 9):
 
@@ -16,7 +16,7 @@ Lo que incluye:
   - Crecimiento de la inversión (90 días) y ganancias por día (30 días).
 - **Telemetría:** potencia, irradiancia, temperaturas, tensiones, frecuencia, batería, 10 inversores y la curva del día.
 - **Mercado:**
-  - Compra a la planta o a otros usuarios (P2P) con Wompi, con USDT o BNB desde tu wallet, o con el pago simulado (solo modo demo).
+  - Compra a la planta o a otros usuarios (P2P) con Mercado Pago, con USDT o BNB desde tu wallet, o con el pago simulado (solo modo demo).
   - Venta inmediata y publicación de ofertas.
 - **Billetera:** saldo, retiros firmados a tu wallet (los aprueba el admin) e historial con enlaces a BscScan.
 - **Mis datos:** datos del inversionista y aceptación de los Términos y la Política de Datos, obligatorios antes de pagar.
@@ -147,7 +147,7 @@ Mientras está activo se ve el aviso **"Simulación"**. Nada de lo simulado se g
    - `BETTER_AUTH_URL`: por ejemplo `https://tu-proyecto.vercel.app`.
    - `DEMO_MODE`: `true` mientras presentas; `false` para cobrar de verdad (sección 9).
    - `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` (las crea Vercel → Storage → Turso).
-   - Las de Google, Wompi y cripto de la sección 9.
+   - Las de Google, Mercado Pago y cripto de la sección 9.
 4. Si usas Google, agrega `https://tu-proyecto.vercel.app/api/auth/callback/google` en los URI de redireccionamiento.
 5. Despliega. La base de datos se crea y se siembra sola en la primera visita.
 
@@ -185,7 +185,7 @@ Sin Turso también funciona, pero con una base de datos temporal que se reinicia
 | | Modo demo | Producción |
 | --- | --- | --- |
 | Login, sesiones y base de datos | Real | Real (solo Google) |
-| Pagos con Wompi y con cripto (USDT y BNB en BNB Chain) | Reales si están configurados (sandbox o testnet para probar) | Reales |
+| Pagos con Mercado Pago y con cripto (USDT y BNB en BNB Chain) | Reales si están configurados (credenciales de prueba o testnet para probar) | Reales |
 | Pago simulado (firma sin mover fondos) y QR de Bitcoin | Disponibles | No existen |
 | Inversionistas y ofertas de ejemplo | Sí | No |
 | La planta y su telemetría | Simuladas (modelo físico realista) | Simuladas hasta conectar los medidores: las ganancias se muestran como estimadas |
@@ -198,7 +198,7 @@ La app tiene dos modos, que se eligen con `DEMO_MODE`:
 | | Modo demo (`DEMO_MODE=true`) | Producción (`DEMO_MODE=false`) |
 | --- | --- | --- |
 | Ingreso | Google y cuenta demo | Solo Google |
-| Pagos | Wompi y cripto si están configurados, más el pago simulado | Solo Wompi (tarjeta, PSE, Nequi) y cripto real (USDT y BNB en BNB Chain) |
+| Pagos | Mercado Pago y cripto si están configurados, más el pago simulado | Solo Mercado Pago (tarjeta, PSE, Nequi) y cripto real (USDT y BNB en BNB Chain) |
 | Inversionistas y ofertas de ejemplo | Sí | No |
 | Retiros | El admin decide si requieren aprobación | Siempre los aprueba el admin, con la referencia del envío |
 | Administración | PIN | PIN y correo en `ADMIN_EMAILS` |
@@ -207,10 +207,11 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
 
 ### Cómo se confirma un pago
 
-- **Wompi (tarjeta, PSE, Nequi):**
-  - El servidor crea la orden y firma el checkout con el secreto de integridad. El usuario paga en Wompi y vuelve a `/pagos/resultado`.
-  - El pago se confirma por dos vías: el webhook de Wompi (con su checksum verificado) y una consulta directa a la API de Wompi cuando el usuario vuelve. Las dos coinciden en la referencia, el monto y la moneda, y los kW se asignan **una sola vez**.
-  - PSE puede quedar "en proceso" unos minutos; la página se actualiza sola.
+- **Mercado Pago (tarjeta, PSE, Nequi):**
+  - El servidor crea la orden y una preferencia del Checkout Pro con el monto exacto y la orden como referencia. El usuario paga en Mercado Pago y vuelve a `/pagos/resultado`.
+  - Nequi y Daviplata se pagan desde PSE: el usuario elige PSE y luego su billetera.
+  - El pago se confirma por dos vías: las notificaciones de Mercado Pago (con su firma verificada) y una consulta directa a su API cuando el usuario vuelve. En ambas, el pago se lee de la API de Mercado Pago y se valida la referencia, el monto y la moneda; los kW se asignan **una sola vez**.
+  - PSE puede quedar "en proceso" unos minutos; la página se actualiza sola. Si alguien paga dos veces la misma orden, el segundo pago queda **Por reembolsar**.
 - **Cripto directo (USDT o BNB en BNB Chain):**
   - El servidor cotiza con el precio en vivo de CoinGecko. **Si no hay precio en vivo, no se cotiza.** La cotización dura 20 minutos.
   - La wallet del usuario (Trust Wallet o MetaMask) envía el monto exacto a la billetera de la empresa.
@@ -227,28 +228,30 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
 1. **Base de datos.** En Vercel → Storage → Turso, conéctala al proyecto. Crea sola `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
 2. **Google.** Sigue la sección 4. En producción, el URI de redireccionamiento es `https://<tu-dominio>/api/auth/callback/google`.
 3. **Administradores.** Además de `ADMIN_PIN`, pon en `ADMIN_EMAILS` los correos de Google de quienes administran, separados por comas.
-4. **Wompi.**
-   - Crea la cuenta en <https://comercios.wompi.co>. En la sección de desarrolladores copia:
-     - la llave pública en `WOMPI_PUBLIC_KEY`;
-     - el secreto de integridad en `WOMPI_INTEGRITY_SECRET`;
-     - el secreto de eventos en `WOMPI_EVENTS_SECRET`.
-   - En **URL de eventos** escribe `https://<tu-dominio>/api/webhooks/wompi`.
-   - Empieza con las llaves de pruebas (`pub_test_…`) y cámbialas por las de producción (`pub_prod_…`) cuando todo funcione.
-   - Los secretos se pegan directamente en Vercel. No los compartas por chat.
+4. **Mercado Pago.**
+   - Crea la cuenta en <https://www.mercadopago.com.co>. Sirve como persona natural.
+   - Entra a **Tus integraciones** (<https://www.mercadopago.com.co/developers/panel/app>), pulsa **Crear aplicación** y elige pagos en línea con **Checkout Pro**.
+   - En **Credenciales de prueba**, copia el **Access Token** en `MERCADOPAGO_ACCESS_TOKEN`. La Public Key no se necesita.
+   - En **Webhooks**, configura la URL `https://<tu-dominio>/api/webhooks/mercadopago` con el evento **Pagos**, y copia la **clave secreta** en `MERCADOPAGO_WEBHOOK_SECRET`.
+   - Cuando todo funcione, activa las **credenciales de producción** y reemplaza el Access Token (y la clave secreta, si cambia).
+   - Los dos valores se pegan directamente en Vercel.
 5. **Billetera de la empresa.**
    - Pon solo su dirección **pública** (`0x…`) en `CRYPTO_TREASURY_ADDRESS`.
    - **Nunca** compartas la frase semilla ni la guardes en la app.
    - Para la tesorería conviene una wallet de hardware o una multifirma.
-6. **Revisa la lista.** En Admin → Pagos → *Para cobrar de verdad*, pulsa **Probar conexiones**. La lista muestra el nombre exacto de cada variable que falta y prueba Wompi, el nodo de BNB Chain y el precio de CoinGecko.
+6. **Revisa la lista.** En Admin → Pagos → *Para cobrar de verdad*, pulsa **Probar conexiones**. La lista muestra el nombre exacto de cada variable que falta y prueba la cuenta de Mercado Pago (que sea de Colombia y si es de prueba), el nodo de BNB Chain y el precio de CoinGecko.
 7. **Prueba de punta a punta, sin dinero real**, todavía con `DEMO_MODE=true`:
-   - **Wompi sandbox:** con las llaves `pub_test_…`, compra 0,5 kW con una tarjeta de prueba que se aprueba y luego con una que se rechaza. Prueba también PSE y Nequi. Los datos de prueba están en la documentación de Wompi (*Datos de prueba en Sandbox*).
+   - **Mercado Pago de prueba:**
+     - Con las credenciales de prueba, compra 0,5 kW.
+     - Mercado Pago no deja pagarte con tu propia cuenta: en **Tus integraciones → Cuentas de prueba**, crea un comprador de prueba y paga con él.
+     - Usa las tarjetas de prueba de la documentación de Mercado Pago. El nombre del titular decide el resultado: `APRO` se aprueba y `OTHE` se rechaza.
    - **Cripto en testnet:**
      - Usa `CRYPTO_NETWORK=bsc-testnet` y consigue tBNB en el faucet de BNB Chain: <https://www.bnbchain.org/en/testnet-faucet>.
      - Compra 0,1 kW pagando con BNB desde MetaMask.
      - Mira la transacción en <https://testnet.bscscan.com>.
    - **Revisa en Admin → Pagos** que los pagos queden confirmados sin pulsar *Re-verificar*. Así sabes que el webhook llega.
 8. **Salida en vivo:**
-   - Pon las llaves `pub_prod_…`, `CRYPTO_NETWORK=bsc` y `DEMO_MODE=false`, y vuelve a desplegar.
+   - Pon las credenciales de producción de Mercado Pago, `CRYPTO_NETWORK=bsc` y `DEMO_MODE=false`, y vuelve a desplegar.
    - En Admin → Pagos, pulsa **Borrar datos de demostración**. Solo se puede antes del primer pago real.
 9. **Legal.**
    - Completa los datos de la empresa en `src/config/legal.ts`. Pon `reviewed: true` cuando el abogado apruebe los textos de `/terminos` y `/privacidad`.
@@ -274,9 +277,8 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
 | `ADMIN_PIN` | PIN del administrador |
 | `ADMIN_EMAILS` | Correos de los administradores. Obligatoria con `DEMO_MODE=false` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Ingreso con Google |
-| `WOMPI_PUBLIC_KEY` | Llave pública: `pub_test_…` o `pub_prod_…` |
-| `WOMPI_INTEGRITY_SECRET` | Firma del checkout |
-| `WOMPI_EVENTS_SECRET` | Verifica los webhooks |
+| `MERCADOPAGO_ACCESS_TOKEN` | Access Token: `TEST-…` (pruebas) o `APP_USR-…` (producción) |
+| `MERCADOPAGO_WEBHOOK_SECRET` | Clave secreta que firma las notificaciones |
 | `CRYPTO_TREASURY_ADDRESS` | Dirección pública de la billetera de la empresa |
 | `CRYPTO_NETWORK` | `bsc` o `bsc-testnet` |
 | `CRYPTO_CONFIRMATIONS` | Confirmaciones antes de asignar los kW (5 por defecto) |
@@ -287,11 +289,11 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
 
 ## 10. Pruebas
 
-- **Unitarias.** `npm test` cubre la firma de Wompi (con el ejemplo de su documentación), el checksum de los eventos, la verificación cripto con transacciones construidas, el cumplimiento idempotente de las órdenes, el perfil, el modo demo y el admin.
-- **De punta a punta, con servicios falsos y sin internet.** En `e2e/` hay un Wompi falso, una BNB Chain falsa y una wallet EIP-6963 que se inyecta en el navegador. Cada comando va en su propia terminal:
+- **Unitarias.** `npm test` cubre la preferencia del checkout y la firma de las notificaciones de Mercado Pago, la verificación cripto con transacciones construidas, el cumplimiento idempotente de las órdenes, el perfil, el modo demo y el admin.
+- **De punta a punta, con servicios falsos y sin internet.** En `e2e/` hay un Mercado Pago falso, una BNB Chain falsa y una wallet EIP-6963 que se inyecta en el navegador. Cada comando va en su propia terminal:
 
 ```bash
-WOMPI_INTEGRITY_SECRET=test_integrity_e2e WOMPI_EVENTS_SECRET=test_events_e2e WEBHOOK_URL=http://localhost:3000/api/webhooks/wompi node e2e/fake-wompi.mjs
+MP_WEBHOOK_SECRET=mp_secret_e2e WEBHOOK_URL=http://localhost:3000/api/webhooks/mercadopago node e2e/fake-mercadopago.mjs
 ```
 
 ```bash
@@ -299,11 +301,11 @@ node e2e/fake-chain.mjs
 ```
 
 ```bash
-WOMPI_PUBLIC_KEY=pub_test_e2e WOMPI_INTEGRITY_SECRET=test_integrity_e2e WOMPI_EVENTS_SECRET=test_events_e2e WOMPI_API_BASE=http://localhost:4010/v1 WOMPI_CHECKOUT_URL=http://localhost:4010/p/ CRYPTO_TREASURY_ADDRESS=0x8ba1f109551bD432803012645Ac136ddd64DBA72 CRYPTO_CONFIRMATIONS=3 BSC_RPC_URL=http://localhost:4020/rpc COINGECKO_API_BASE=http://localhost:4020/coingecko npm run dev
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-e2e MERCADOPAGO_WEBHOOK_SECRET=mp_secret_e2e MERCADOPAGO_API_BASE=http://localhost:4010 CRYPTO_TREASURY_ADDRESS=0x8ba1f109551bD432803012645Ac136ddd64DBA72 CRYPTO_CONFIRMATIONS=3 BSC_RPC_URL=http://localhost:4020/rpc COINGECKO_API_BASE=http://localhost:4020/coingecko npm run dev
 ```
 
 ```bash
-node e2e/wompi-flow.cjs && node e2e/crypto-flow.cjs && node e2e/demo-and-profile.cjs
+node e2e/mercadopago-flow.cjs && node e2e/crypto-flow.cjs && node e2e/demo-and-profile.cjs && node e2e/admin-flow.cjs
 ```
 
 ## 11. Próximos pasos
@@ -320,10 +322,10 @@ node e2e/wompi-flow.cjs && node e2e/crypto-flow.cjs && node e2e/demo-and-profile
 - **Google dice `redirect_uri_mismatch`:** el URI de redireccionamiento debe ser exactamente `http://localhost:3000/api/auth/callback/google`.
 - **No aparece mi extensión de wallet:** recarga la página con la extensión desbloqueada, o usa la wallet de demostración.
 - **Quiero empezar la demo de cero:** corre `npm run reset-demo` y vuelve a arrancar.
-- **Los pagos de Wompi quedan "en proceso" (no llega el webhook):**
-  - Revisa que la URL de eventos en Wompi sea `https://<tu-dominio>/api/webhooks/wompi`.
-  - Revisa que `WOMPI_EVENTS_SECRET` sea el secreto de eventos del mismo ambiente (pruebas o producción).
-  - Los webhooks rechazados quedan en los logs como `webhook_rechazado`.
-  - Mientras tanto, el pago se confirma cuando el usuario vuelve de Wompi, o con *Re-verificar* en Admin → Pagos.
+- **Los pagos de Mercado Pago no se confirman solos (no llegan las notificaciones):**
+  - Revisa que la URL de Webhooks en Mercado Pago sea `https://<tu-dominio>/api/webhooks/mercadopago`, con el evento **Pagos**.
+  - Revisa que `MERCADOPAGO_WEBHOOK_SECRET` sea la clave secreta de esa misma aplicación.
+  - Las notificaciones rechazadas quedan en los logs como `webhook_rechazado`.
+  - Mientras tanto, el pago se confirma cuando el usuario vuelve de Mercado Pago, o con *Re-verificar* en Admin → Pagos.
 - **"No hay precio en vivo de las criptomonedas":** CoinGecko no respondió. Si pasa seguido, agrega `COINGECKO_API_KEY` (hay un plan gratuito). Con dinero real nunca se cotiza con precios de referencia.
 - **"El nodo de BNB Chain configurado está en otra red":** `BSC_RPC_URL` apunta a una red distinta de `CRYPTO_NETWORK`, por ejemplo un nodo de testnet con `CRYPTO_NETWORK=bsc`.
