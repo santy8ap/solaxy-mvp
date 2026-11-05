@@ -1,4 +1,5 @@
 import { MarketError } from "@/lib/errors";
+import { coingecko } from "./coingecko";
 import type { CryptoAsset } from "./crypto";
 
 /**
@@ -21,10 +22,7 @@ export const NO_LIVE_PRICE = "No hay precio en vivo de las criptomonedas en este
 
 export async function liveCopPrices(deps: { fetch?: typeof fetch } = {}): Promise<Record<CryptoAsset, number> & { at: number }> {
   if (cache && Date.now() - cache.at < TTL_MS) return { ...cache.prices, at: cache.at };
-  const base = (process.env.COINGECKO_API_BASE?.trim() || "https://api.coingecko.com/api/v3").replace(/\/$/, "");
-  const headers: Record<string, string> = { accept: "application/json" };
-  const key = process.env.COINGECKO_API_KEY?.trim();
-  if (key) headers["x-cg-demo-api-key"] = key;
+  const { base, headers } = coingecko();
   let json: Record<string, { cop?: number }>;
   try {
     const res = await (deps.fetch ?? fetch)(`${base}/simple/price?ids=${Object.values(IDS).join(",")}&vs_currencies=cop`, {

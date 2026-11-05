@@ -1,4 +1,5 @@
 import "server-only";
+import { coingecko } from "@/lib/payments/coingecko";
 
 export const ASSETS = ["USDT", "BNB", "ETH", "BTC"] as const;
 export type Asset = (typeof ASSETS)[number];
@@ -25,8 +26,9 @@ let cache: { at: number; ttl: number; data: Rates } | null = null;
 export async function getRates(): Promise<Rates> {
   if (cache && Date.now() - cache.at < cache.ttl) return cache.data;
   try {
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${Object.values(IDS).join(",")}&vs_currencies=cop,usd`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(2500), headers: { accept: "application/json" } });
+    const { base, headers } = coingecko();
+    const url = `${base}/simple/price?ids=${Object.values(IDS).join(",")}&vs_currencies=cop,usd`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(2500), headers });
     if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
     const json = (await res.json()) as Record<string, { cop?: number; usd?: number }>;
     const prices = { ...REFERENCE_PRICES };
