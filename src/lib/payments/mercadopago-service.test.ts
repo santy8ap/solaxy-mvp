@@ -185,6 +185,28 @@ describe("confirmación del pago", () => {
     expect((await orderRow(o.orderId)).status).toBe("pendiente");
   });
 
+  it("un aviso IPN antiguo (topic=payment, sin firma) se responde 200 y se ignora sin consultar la API", async () => {
+    const o = await svc.createMercadoPagoOrder({ userId: "inv-037", email: "a@b.co", kw: 0.5 }, deps);
+    const p = pay(o.orderId, (await orderRow(o.orderId)).amountCop, "approved");
+    const calls: string[] = [];
+    const spy = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(String(input));
+      return fakeFetch(input, init);
+    }) as typeof fetch;
+    const ipn = { body: { resource: String(p.id), topic: "payment" }, query: new URLSearchParams({ id: String(p.id), topic: "payment" }), headers: new Headers() };
+    expect(await svc.handleMercadoPagoNotification(ipn, { fetch: spy })).toMatchObject({ status: 200 });
+    expect(calls).toHaveLength(0);
+    expect((await orderRow(o.orderId)).status).toBe("pendiente");
+  });
+
+  it("una notificación de webhook sin firma se rechaza (401)", async () => {
+    const o = await svc.createMercadoPagoOrder({ userId: "inv-037", email: "a@b.co", kw: 0.5 }, deps);
+    const p = pay(o.orderId, (await orderRow(o.orderId)).amountCop, "approved");
+    const unsigned = { ...notification(p.id), headers: new Headers() };
+    expect((await svc.handleMercadoPagoNotification(unsigned, deps)).status).toBe(401);
+    expect((await orderRow(o.orderId)).status).toBe("pendiente");
+  });
+
   it("un pago de otra integración (referencia desconocida) no hace nada", async () => {
     const p = pay("OTRA-TIENDA-1", 1000, "approved");
     expect((await svc.handleMercadoPagoNotification(notification(p.id), deps)).status).toBe(200);

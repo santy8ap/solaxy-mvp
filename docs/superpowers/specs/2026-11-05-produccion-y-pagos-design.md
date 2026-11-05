@@ -7,7 +7,7 @@
 > 1. **Orden y checkout.** El servidor crea la orden pendiente y una *preferencia* (`POST /checkout/preferences`, con el Access Token y una clave de idempotencia igual a la orden). La preferencia lleva:
 >    - el monto exacto en COP y `external_reference = orden`;
 >    - las URL de retorno a `/pagos/resultado?ref=<orden>`;
->    - la URL de notificación, solo cuando la app es https;
+>    - **sin** `notification_url`: los avisos llegan solo por el webhook de Tus integraciones, que viene firmado. Los avisos IPN antiguos (`topic=payment`, sin firma) se responden con 200 y se ignoran;
 >    - sin efectivo (`ticket` ni `atm`).
 >
 >    Con un token `TEST-` se usa `sandbox_init_point`.

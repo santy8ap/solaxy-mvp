@@ -204,8 +204,11 @@ export async function handleMercadoPagoNotification(
   const cfg = mercadoPagoConfig();
   if (!cfg.enabled) return { status: 503, message: "Mercado Pago no está configurado." };
   const body = (req.body ?? {}) as { type?: string; topic?: string; data?: { id?: string | number } };
-  const type = req.query.get("type") ?? req.query.get("topic") ?? body.type ?? body.topic;
-  const dataId = req.query.get("data.id") ?? req.query.get("id") ?? (body.data?.id != null ? String(body.data.id) : null);
+  const type = req.query.get("type") ?? body.type;
+  // Los avisos IPN antiguos (?topic=payment&id=…) no vienen firmados: se ignoran (con 200, para que no se reintenten).
+  // Los pagos llegan por el webhook firmado y se consultan al volver del checkout.
+  if (!type && (req.query.get("topic") ?? body.topic)) return { status: 200, message: "Aviso IPN ignorado: se usan los webhooks firmados" };
+  const dataId = req.query.get("data.id") ?? (body.data?.id != null ? String(body.data.id) : null);
   if (type !== "payment" || !dataId) return { status: 200, message: "Evento ignorado" };
   if (
     cfg.webhookSecret &&

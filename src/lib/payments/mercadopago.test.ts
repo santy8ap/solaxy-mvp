@@ -87,18 +87,17 @@ describe("preferencia del Checkout Pro", () => {
     expect(p.payer).toEqual({ email: "laura@correo.co", name: "Laura", surname: "Gómez Restrepo" });
   });
 
-  it("vuelve a /pagos/resultado con la referencia y avisa por webhook", () => {
+  it("vuelve a /pagos/resultado con la referencia", () => {
     const p = buildPreference(base);
     expect(p.back_urls.success).toBe("https://solaxy-mvp.vercel.app/pagos/resultado?ref=SLX-ABC1234567");
     expect(p.back_urls.pending).toBe(p.back_urls.success);
     expect(p.back_urls.failure).toBe(p.back_urls.success);
     expect(p.auto_return).toBe("approved");
-    expect(p.notification_url).toBe("https://solaxy-mvp.vercel.app/api/webhooks/mercadopago");
   });
 
-  it("en local (http) no pide webhook: Mercado Pago no puede llegar a tu computador", () => {
-    const p = buildPreference({ ...base, baseUrl: "http://localhost:3000" });
-    expect(p.notification_url).toBeUndefined();
+  it("no define notification_url: los avisos llegan por el webhook de Tus integraciones, que viene firmado", () => {
+    expect("notification_url" in buildPreference(base)).toBe(false);
+    expect("notification_url" in buildPreference({ ...base, baseUrl: "http://localhost:3000" })).toBe(false);
   });
 
   it("solo ofrece tarjetas y PSE (Nequi va por PSE): sin pagos en efectivo", () => {

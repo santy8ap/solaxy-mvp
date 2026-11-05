@@ -232,7 +232,8 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
    - Crea la cuenta en <https://www.mercadopago.com.co>. Sirve como persona natural.
    - Entra a **Tus integraciones** (<https://www.mercadopago.com.co/developers/panel/app>), pulsa **Crear aplicación** y elige pagos en línea con **Checkout Pro**.
    - En **Credenciales de prueba**, copia el **Access Token** en `MERCADOPAGO_ACCESS_TOKEN`. La Public Key no se necesita.
-   - En **Webhooks**, configura la URL `https://<tu-dominio>/api/webhooks/mercadopago` con el evento **Pagos**, y copia la **clave secreta** en `MERCADOPAGO_WEBHOOK_SECRET`.
+   - En **Webhooks → Configurar notificaciones**, pon la URL `https://<tu-dominio>/api/webhooks/mercadopago` con el evento **Pagos**. Si el panel separa el modo de prueba del productivo, pon la misma URL en los dos. Copia la **clave secreta** en `MERCADOPAGO_WEBHOOK_SECRET`.
+   - Solo cuentan esas notificaciones, que vienen firmadas: la app no pide `notification_url` por pago e ignora los avisos IPN antiguos, que no tienen firma.
    - Cuando todo funcione, activa las **credenciales de producción** y reemplaza el Access Token (y la clave secreta, si cambia).
    - Los dos valores se pegan directamente en Vercel.
 5. **Billetera de la empresa.**

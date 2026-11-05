@@ -113,8 +113,8 @@ export function buildPreference({
     external_reference: orderId,
     back_urls: { success: back, pending: back, failure: back },
     auto_return: "approved" as const,
-    // Mercado Pago solo puede avisar a una URL pública (https); en local el pago se confirma al volver.
-    ...(baseUrl.startsWith("https://") && { notification_url: `${baseUrl}/api/webhooks/mercadopago` }),
+    // Sin notification_url: los avisos llegan por el webhook configurado en Tus integraciones, que viene firmado
+    // con la clave secreta. En local, Mercado Pago no puede avisar: el pago se confirma al volver del checkout.
     statement_descriptor: "SOLAXY",
     // Tarjetas, PSE (Nequi y Daviplata aparecen dentro de PSE) y saldo de Mercado Pago. Sin efectivo.
     payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
