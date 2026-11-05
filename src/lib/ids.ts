@@ -9,9 +9,9 @@ export function newId(prefix = "") {
   return `${prefix}${crypto.randomUUID()}`;
 }
 
-/** Código corto de orden, p. ej. SLX-7F3A21 */
+/** Código de orden, p. ej. SLX-7F3A21C9B0. También es la referencia de pago en Wompi: debe ser única. */
 export function orderCode() {
-  return `SLX-${randomHex(3).toUpperCase()}`;
+  return `SLX-${randomHex(5).toUpperCase()}`;
 }
 
 /** Hash de transacción simulado con formato EVM. */

@@ -137,7 +137,8 @@ export const positionEntry = sqliteTable(
 );
 
 export const TX_KINDS = ["compra", "compra_p2p", "venta_p2p", "venta_inmediata", "retiro", "asignacion_demo", "ajuste_admin"] as const;
-export const TX_STATUSES = ["pendiente", "verificando", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada"] as const;
+/** por_reembolsar: el pago llegó pero no se pudo asignar (sin cupo, oferta vendida, monto distinto); reembolsada: el admin ya lo devolvió. */
+export const TX_STATUSES = ["pendiente", "verificando", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada", "por_reembolsar", "reembolsada"] as const;
 /** Cómo se pagó una orden: firma simulada (solo modo demo), Wompi o cripto directo a la billetera de la empresa. */
 export const PAYMENT_METHODS = ["demo", "wompi", "crypto"] as const;
 export type TxKind = (typeof TX_KINDS)[number];

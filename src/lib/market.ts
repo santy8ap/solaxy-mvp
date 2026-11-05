@@ -6,6 +6,7 @@ import { ensureReady } from "@/lib/db/init";
 import { ledgerTx, listing, positionEntry, user, walletLink } from "@/lib/db/schema";
 import { isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
+import { fulfillOrder, resolvePurchase, soldKw } from "@/lib/orders";
 import { newId, orderCode, simulatedTxHash } from "@/lib/ids";
 import { getBalances, getKwPosition, round1, toTxDTO } from "@/lib/portfolio";
 import { getRates, type Asset } from "@/lib/rates";
@@ -26,14 +27,7 @@ export const NETWORKS: Record<Asset, { network: string; chainId: number | null }
   BTC: [{ network: "Bitcoin", chainId: null }],
 };
 
-/** kW vendidos por la plataforma (suma de todas las posiciones). */
-export async function soldKw() {
-  const [r] = await db
-    .select({ kw: sql<number>`coalesce(sum(${positionEntry.kwDelta}), 0)` })
-    .from(positionEntry)
-    .where(eq(positionEntry.plantId, PLANT.id));
-  return round1(r.kw);
-}
+export { soldKw };
 
 export async function platformStats() {
   const { spec, econ, settings } = await ensureReady();
@@ -135,34 +129,15 @@ const DEMO_ONLY = "El pago simulado solo existe en modo demo. Paga con Wompi o c
 /** Orden de pago simulado (firma de la wallet, sin mover fondos). Solo en modo demo. */
 export async function createBuyOrder(input: BuyInput) {
   if (!isDemoMode()) throw new MarketError(DEMO_ONLY, 403);
-  const { spec, econ } = await ensureReady();
   const now = Date.now();
-  let kw: number;
-  let pricePerKw: number = econ.pricePerKwCop;
-
-  if (input.listingId) {
-    const [l] = await db.select().from(listing).where(eq(listing.id, input.listingId));
-    if (!l || l.status !== "activa") throw new MarketError("Esa oferta ya no está disponible", 409);
-    if (l.sellerId === input.userId) throw new MarketError("No puedes comprar tu propia oferta");
-    kw = l.kw;
-    pricePerKw = l.pricePerKwCop;
-  } else {
-    kw = round1(input.kw ?? 0);
-    if (kw < econ.minPurchaseKw || kw > econ.maxPurchaseKw) {
-      throw new MarketError(`Puedes comprar entre ${econ.minPurchaseKw} y ${econ.maxPurchaseKw} kW`);
-    }
-    const available = spec.capacityKwp - (await soldKw());
-    if (kw > available) throw new MarketError("La planta no tiene tantos kW disponibles", 409);
-  }
-
+  const p = await resolvePurchase(input.userId, { kw: input.kw, listingId: input.listingId }, now);
   const rates = await getRates();
-  const amountCop = Math.round(kw * pricePerKw);
-  const assetAmount = amountCop / rates.prices[input.asset].cop;
+  const assetAmount = p.amountCop / rates.prices[input.asset].cop;
   const code = orderCode();
   const message = buildOrderMessage({
     code,
-    kw,
-    amountCop,
+    kw: p.kw,
+    amountCop: p.amountCop,
     asset: input.asset,
     assetAmount,
     network: input.network,
@@ -172,10 +147,10 @@ export async function createBuyOrder(input: BuyInput) {
   await db.insert(ledgerTx).values({
     id: code,
     userId: input.userId,
-    kind: input.listingId ? "compra_p2p" : "compra",
+    kind: p.kind,
     status: "pendiente",
-    kw,
-    amountCop,
+    kw: p.kw,
+    amountCop: p.amountCop,
     asset: input.asset,
     assetAmount,
     network: input.network,
@@ -183,18 +158,17 @@ export async function createBuyOrder(input: BuyInput) {
     walletAddress: input.walletAddress,
     walletName: input.walletName,
     message,
-    listingId: input.listingId ?? null,
+    listingId: p.listingId,
     createdAt: now,
     method: "demo",
     expiresAt: now + ORDER_TTL_MS,
   });
-  return { orderId: code, message, kw, amountCop, assetAmount, asset: input.asset, network: input.network, expiresAt: now + ORDER_TTL_MS, rateSource: rates.source };
+  return { orderId: code, message, kw: p.kw, amountCop: p.amountCop, assetAmount, asset: input.asset, network: input.network, expiresAt: now + ORDER_TTL_MS, rateSource: rates.source };
 }
 
 export async function confirmBuyOrder(userId: string, orderId: string, proof: { signature?: string; simulated?: boolean }) {
   // Una firma no mueve dinero: con cobros reales nunca asigna kW.
   if (!isDemoMode()) throw new MarketError(DEMO_ONLY, 403);
-  const { spec } = await ensureReady();
   const now = Date.now();
   const [tx] = await db
     .select()
@@ -202,9 +176,9 @@ export async function confirmBuyOrder(userId: string, orderId: string, proof: { 
     .where(and(eq(ledgerTx.id, orderId), eq(ledgerTx.userId, userId)));
   if (!tx || (tx.kind !== "compra" && tx.kind !== "compra_p2p")) throw new MarketError("Orden no encontrada", 404);
   if (tx.status === "confirmada") return { ...toTxDTO(tx), alreadyConfirmed: true };
-  if (tx.status !== "pendiente") throw new MarketError("Esta orden ya no se puede confirmar", 409);
+  if (tx.status !== "pendiente" || (tx.method !== "demo" && tx.method !== null)) throw new MarketError("Esta orden ya no se puede confirmar", 409);
   if (now - tx.createdAt > ORDER_TTL_MS) {
-    await db.update(ledgerTx).set({ status: "fallida" }).where(eq(ledgerTx.id, orderId));
+    await db.update(ledgerTx).set({ status: "fallida", note: "La orden expiró" }).where(and(eq(ledgerTx.id, orderId), eq(ledgerTx.status, "pendiente")));
     throw new MarketError("La orden expiró. Crea una nueva.", 410);
   }
   const isQr = tx.walletName === QR_WALLET_NAME;
@@ -213,73 +187,13 @@ export async function confirmBuyOrder(userId: string, orderId: string, proof: { 
     const valid = await verifyWalletSignature({ address: tx.walletAddress ?? "", message: tx.message ?? "", signature: proof.signature ?? "" });
     if (!valid) throw new MarketError("La firma no corresponde a la wallet de la orden", 400);
   }
-  const signature = isQr ? null : (proof.signature ?? null);
 
-  const kw = tx.kw ?? 0;
-  const txHash = simulatedTxHash();
-
-  if (!tx.listingId) {
-    const available = spec.capacityKwp - (await soldKw());
-    if (kw > available) throw new MarketError("La planta se quedó sin kW disponibles", 409);
+  const r = await fulfillOrder(orderId, { signature: isQr ? null : (proof.signature ?? null), txHash: simulatedTxHash() }, { now });
+  if (r.outcome === "sin_cupo") {
+    throw new MarketError(tx.listingId ? "Esa oferta se vendió mientras firmabas" : "La planta se quedó sin kW disponibles", 409);
   }
-
-  // Reclamar la orden de forma atómica: si llegan dos confirmaciones a la vez
-  // (doble clic, reintento de red), solo una asigna los kW.
-  const claimed = await db
-    .update(ledgerTx)
-    .set({ status: "confirmada", signature, txHash, confirmedAt: now })
-    .where(and(eq(ledgerTx.id, orderId), eq(ledgerTx.status, "pendiente")))
-    .returning({ id: ledgerTx.id });
-  if (!claimed.length) {
-    const [current] = await db.select().from(ledgerTx).where(eq(ledgerTx.id, orderId));
-    if (current?.status === "confirmada") return { ...toTxDTO(current), alreadyConfirmed: true };
-    throw new MarketError("Esta orden ya no se puede confirmar", 409);
-  }
-
-  const ops = [];
-  if (tx.listingId) {
-    // La oferta también se reclama de forma atómica.
-    const [l] = await db
-      .update(listing)
-      .set({ status: "vendida", closedAt: now, buyerId: userId })
-      .where(and(eq(listing.id, tx.listingId), eq(listing.status, "activa")))
-      .returning();
-    if (!l) {
-      await db.update(ledgerTx).set({ status: "fallida" }).where(eq(ledgerTx.id, orderId));
-      throw new MarketError("Esa oferta se vendió mientras firmabas", 409);
-    }
-    const seller = await getKwPosition(l.sellerId, now);
-    const avgCost = seller.kw > 0 ? Math.round(seller.investedCop / seller.kw) : l.pricePerKwCop;
-    ops.push(
-      db.insert(positionEntry).values({ id: newId("pe-"), userId: l.sellerId, plantId: PLANT.id, kwDelta: -kw, pricePerKwCop: avgCost, ts: now, txId: tx.id }),
-      db.insert(ledgerTx).values({
-        id: newId("tx-"),
-        userId: l.sellerId,
-        kind: "venta_p2p",
-        status: "confirmada",
-        kw,
-        amountCop: tx.amountCop,
-        asset: "COP",
-        listingId: l.id,
-        txHash,
-        createdAt: now,
-        confirmedAt: now,
-      }),
-    );
-  }
-  ops.push(
-    db.insert(positionEntry).values({
-      id: newId("pe-"),
-      userId,
-      plantId: PLANT.id,
-      kwDelta: kw,
-      pricePerKwCop: Math.round(tx.amountCop / kw),
-      ts: now,
-      txId: tx.id,
-    }),
-  );
-  await db.batch(ops as [(typeof ops)[number], ...(typeof ops)[number][]]);
-  return { ...toTxDTO({ ...tx, status: "confirmada", signature, txHash, confirmedAt: now }), alreadyConfirmed: false };
+  if (r.outcome === "cerrada") throw new MarketError("Esta orden ya no se puede confirmar", 409);
+  return { ...toTxDTO(r.order), alreadyConfirmed: r.outcome === "ya_confirmada" };
 }
 
 /* ───────────── Ventas ───────────── */
