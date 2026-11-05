@@ -122,6 +122,24 @@ describe("orden con Mercado Pago", () => {
     const o = await svc.createMercadoPagoOrder({ userId: "inv-031", email: "a@b.co", kw: 0.5 }, { fetch: testFetch });
     vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", TOKEN);
     expect(o.checkoutUrl).toMatch(/^https:\/\/mp\.falso\/sandbox\?pref=/);
+    expect((await orderRow(o.orderId)).network).toBe(svc.MP_SANDBOX_NETWORK);
+  });
+
+  it("con las credenciales de prueba nuevas (APP_USR- de una cuenta de prueba) usa el checkout normal y marca la orden como de prueba", async () => {
+    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "APP_USR-cuenta-de-prueba");
+    const testUserFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (new URL(String(input)).pathname === "/users/me") return new Response(JSON.stringify({ site_id: "MCO", tags: ["test_user", "normal"] }));
+      return fakeFetch(input, { ...init, headers: { ...(init?.headers as Record<string, string>), authorization: `Bearer ${TOKEN}` } });
+    }) as typeof fetch;
+    const o = await svc.createMercadoPagoOrder({ userId: "inv-031", email: "a@b.co", kw: 0.5 }, { fetch: testUserFetch });
+    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", TOKEN);
+    expect(o.checkoutUrl).toMatch(/^https:\/\/mp\.falso\/checkout\?pref=/);
+    expect((await orderRow(o.orderId)).network).toBe(svc.MP_SANDBOX_NETWORK);
+  });
+
+  it("con credenciales de producción de una cuenta real, la orden no queda como de prueba", async () => {
+    const o = await svc.createMercadoPagoOrder({ userId: "inv-032", email: "a@b.co", kw: 0.5 }, deps);
+    expect((await orderRow(o.orderId)).network).toBe("Mercado Pago");
   });
 });
 

@@ -6,7 +6,7 @@ import { appConfig } from "@/lib/app-config";
 export async function GET() {
   try {
     await connection();
-    return Response.json(appConfig());
+    return Response.json(await appConfig());
   } catch (e) {
     return handleError(e);
   }

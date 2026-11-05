@@ -9,6 +9,7 @@ import { newId, orderCode } from "@/lib/ids";
 import { LISTING_HOLD_MS, closeOrder, fulfillOrder, getOrder, markProviderStatus, resolvePurchase, type OrderRow } from "@/lib/orders";
 import { requireCompleteProfile } from "@/lib/profile";
 import { mercadoPagoConfig } from "./config";
+import { isMercadoPagoTest } from "./mercadopago-account";
 import { payLog } from "./log";
 import { bestPayment, buildPreference, failureReason, mapMpStatus, verifyWebhookSignature, type MpOutcome, type MpPayment } from "./mercadopago";
 
@@ -53,6 +54,8 @@ async function mpRequest<T>(path: string, deps: MpDeps, init: { method?: string;
 export async function createMercadoPagoOrder(input: { userId: string; email: string; kw?: number; listingId?: string }, deps: MpDeps = {}) {
   const cfg = enabledConfig();
   const profile = await requireCompleteProfile(input.userId);
+  // Credenciales de prueba (TEST-… o APP_USR-… de una cuenta de prueba): la orden queda marcada como de prueba.
+  const testAccount = await isMercadoPagoTest(deps);
   const now = Date.now();
   const p = await resolvePurchase(input.userId, { kw: input.kw, listingId: input.listingId }, now);
   const orderId = orderCode();
@@ -65,7 +68,7 @@ export async function createMercadoPagoOrder(input: { userId: string; email: str
     amountCop: p.amountCop,
     asset: "COP",
     walletName: "Mercado Pago",
-    network: cfg.sandbox ? MP_SANDBOX_NETWORK : "Mercado Pago",
+    network: testAccount ? MP_SANDBOX_NETWORK : "Mercado Pago",
     listingId: p.listingId,
     createdAt: now,
     method: "mercadopago",
@@ -87,6 +90,7 @@ export async function createMercadoPagoOrder(input: { userId: string; email: str
     await closeOrder(orderId, "fallida", { note: "No se pudo crear el pago en Mercado Pago." });
     throw err;
   });
+  // Solo las credenciales antiguas (TEST-) usan el checkout de pruebas; las de una cuenta de prueba usan el normal.
   const checkoutUrl = cfg.sandbox ? (res.json?.sandbox_init_point ?? res.json?.init_point) : res.json?.init_point;
   if (!res.ok || !checkoutUrl) {
     payLog("preferencia_rechazada", { proveedor: "mercadopago", orderId, httpStatus: res.status, mensaje: res.json?.message });
@@ -94,7 +98,7 @@ export async function createMercadoPagoOrder(input: { userId: string; email: str
     throw new MarketError("Mercado Pago no aceptó la orden. Intenta de nuevo en un momento.", 502);
   }
   await db.update(ledgerTx).set({ message: `preferencia:${res.json?.id ?? ""}` }).where(eq(ledgerTx.id, orderId));
-  payLog("orden_creada", { proveedor: "mercadopago", orderId, userId: input.userId, kw: p.kw, amountCop: p.amountCop, pruebas: cfg.sandbox });
+  payLog("orden_creada", { proveedor: "mercadopago", orderId, userId: input.userId, kw: p.kw, amountCop: p.amountCop, pruebas: testAccount });
   return { orderId, checkoutUrl, kw: p.kw, amountCop: p.amountCop };
 }
 

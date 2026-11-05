@@ -54,6 +54,23 @@ describe("lista de configuración", () => {
     expect(byId["cripto-billetera"].state).toBe("ok");
   });
 
+  it("reconoce las credenciales de prueba nuevas (APP_USR- de una cuenta de prueba): aviso en demo, bloqueo con dinero real", async () => {
+    delete (globalThis as { __solaxyMpAccount?: unknown }).__solaxyMpAccount;
+    vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "APP_USR-cuenta-de-prueba");
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ site_id: "MCO", nickname: "TESTUSER1", tags: ["test_user"] })));
+    try {
+      let byId = Object.fromEntries((await status.configStatus()).checks.map((c) => [c.id, c]));
+      expect(byId["mp-token"]).toMatchObject({ state: "aviso" });
+      expect(byId["mp-token"].detail).toMatch(/prueba/);
+      vi.stubEnv("DEMO_MODE", "false");
+      byId = Object.fromEntries((await status.configStatus()).checks.map((c) => [c.id, c]));
+      expect(byId["mp-token"].state).toBe("falta");
+    } finally {
+      vi.unstubAllGlobals();
+      delete (globalThis as { __solaxyMpAccount?: unknown }).__solaxyMpAccount;
+    }
+  });
+
   it("con dinero real, los datos de demostración que quedan bloquean la salida en vivo", async () => {
     vi.stubEnv("DEMO_MODE", "false");
     const byId = Object.fromEntries((await status.configStatus()).checks.map((c) => [c.id, c]));

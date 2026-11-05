@@ -10,7 +10,7 @@
 >    - **sin** `notification_url`: los avisos llegan solo por el webhook de Tus integraciones, que viene firmado. Los avisos IPN antiguos (`topic=payment`, sin firma) se responden con 200 y se ignoran;
 >    - sin efectivo (`ticket` ni `atm`).
 >
->    Con un token `TEST-` se usa `sandbox_init_point`.
+>    Con un token antiguo `TEST-` se usa `sandbox_init_point`. Las credenciales de prueba nuevas (`APP_USR-` de una cuenta de prueba) usan el checkout normal (`init_point`): Checkout Pro prueba en producción con cuentas ficticias.
 > 2. **Confirmación.** La orden solo se confirma con lo que devuelve la API de Mercado Pago:
 >    - Cuando el usuario vuelve del checkout, se consulta `GET /v1/payments/{payment_id}` y luego `/v1/payments/search?external_reference=<orden>`.
 >    - En cada notificación pasa lo mismo. Las notificaciones solo sirven de aviso y se verifican con `x-signature`: HMAC-SHA256 de `id:{data.id};request-id:{x-request-id};ts:{ts};` con la clave secreta del webhook.
@@ -25,7 +25,7 @@
 > 4. **Pagos de prueba.** Los pagos de cuentas de prueba (`live_mode=false`) quedan marcados con la red "Mercado Pago (pruebas)". El borrado de los datos demo los puede eliminar y no cuentan como pagos reales. La lista de configuración del admin consulta `GET /users/me` y exige:
 >    - una cuenta de Colombia (`MCO`);
 >    - que, con dinero real, no sea una cuenta de prueba.
-> 5. **Variables.** `MERCADOPAGO_ACCESS_TOKEN` (`TEST-…` o `APP_USR-…`) y `MERCADOPAGO_WEBHOOK_SECRET`. La URL de notificaciones es `https://<dominio>/api/webhooks/mercadopago`, con el evento "Pagos".
+> 5. **Variables.** `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET`. Como las credenciales de prueba nuevas empiezan por `APP_USR-` igual que las de producción, la app consulta una vez `GET /users/me` (etiqueta `test_user`) y recuerda la respuesta 6 horas (1 minuto si no responde). Con eso marca las órdenes de prueba, muestra "modo de pruebas" al pagar y avisa en la lista de configuración. La URL de notificaciones es `https://<dominio>/api/webhooks/mercadopago`, con el evento "Pagos".
 > 6. **Pruebas.**
 >    - Unitarias: `mercadopago.test.ts` y `mercadopago-service.test.ts`.
 >    - De punta a punta, contra un Mercado Pago falso (`e2e/fake-mercadopago.mjs` y `e2e/mercadopago-flow.cjs`): aprobado, rechazado con motivo, PSE en proceso aprobado por notificación, volver sin pagar, notificación falsificada y orden ajena.

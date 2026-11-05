@@ -3,6 +3,7 @@ import { LEGAL } from "@/config/legal";
 import { adminEmails, baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
 import { rpcChainReader } from "@/lib/payments/chain";
 import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
+import { isMercadoPagoTest } from "@/lib/payments/mercadopago-account";
 import { liveCopPrices } from "@/lib/payments/prices";
 import { demoDataStats, hasDemoData } from "./demo-reset";
 
@@ -34,6 +35,8 @@ async function probe<T>(fn: () => Promise<T>, ms = 6000): Promise<T> {
 export async function configStatus({ probes = false }: { probes?: boolean } = {}) {
   const demo = isDemoMode();
   const mp = mercadoPagoConfig();
+  // Las credenciales de prueba nuevas empiezan por APP_USR- como las reales: se le pregunta a Mercado Pago.
+  const mpTest = await isMercadoPagoTest();
   const c = cryptoConfig();
   const webhookUrl = `${baseUrl()}/api/webhooks/mercadopago`;
   const checks: ConfigCheck[] = [];
@@ -112,15 +115,15 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     id: "mp-token",
     group: "Mercado Pago",
     title: "Access Token de Mercado Pago",
-    state: !mp.enabled ? "falta" : mp.sandbox ? (demo ? "aviso" : "falta") : "ok",
+    state: !mp.enabled ? "falta" : mpTest ? (demo ? "aviso" : "falta") : "ok",
     detail: !mp.accessToken
-      ? "En Mercado Pago → Tus integraciones → tu aplicación → Credenciales. TEST-… para pruebas, APP_USR-… para cobrar."
+      ? "En Mercado Pago → Tus integraciones → tu aplicación → Credenciales: las de prueba para probar, las de producción para cobrar."
       : !mp.enabled
-        ? "No parece un Access Token de Mercado Pago (empieza por TEST- o APP_USR-)."
-        : mp.sandbox
+        ? "No parece un Access Token de Mercado Pago (empieza por APP_USR- o TEST-)."
+        : mpTest
           ? demo
             ? "Son credenciales de prueba: no se cobra dinero real."
-            : "Con dinero real usa las credenciales de producción (APP_USR-…): las de prueba no cobran."
+            : "Con dinero real usa las credenciales de la pestaña Producción: las de prueba no cobran."
           : "Credenciales de producción.",
     vars: ["MERCADOPAGO_ACCESS_TOKEN"],
     required: true,

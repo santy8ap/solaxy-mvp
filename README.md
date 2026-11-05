@@ -232,6 +232,7 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
    - Crea la cuenta en <https://www.mercadopago.com.co>. Sirve como persona natural.
    - Entra a **Tus integraciones** (<https://www.mercadopago.com.co/developers/panel/app>), pulsa **Crear aplicación** y elige pagos en línea con **Checkout Pro**.
    - En **Credenciales de prueba**, copia el **Access Token** en `MERCADOPAGO_ACCESS_TOKEN`. La Public Key no se necesita.
+   - Las credenciales de prueba nuevas empiezan por `APP_USR-`, igual que las de producción. La app le pregunta a Mercado Pago si la cuenta es de prueba, marca esos pagos como de prueba y muestra "modo de pruebas" al pagar.
    - En **Webhooks → Configurar notificaciones**, pon la URL `https://<tu-dominio>/api/webhooks/mercadopago` con el evento **Pagos**. Si el panel separa el modo de prueba del productivo, pon la misma URL en los dos. Copia la **clave secreta** en `MERCADOPAGO_WEBHOOK_SECRET`.
    - Solo cuentan esas notificaciones, que vienen firmadas: la app no pide `notification_url` por pago e ignora los avisos IPN antiguos, que no tienen firma.
    - Cuando todo funcione, activa las **credenciales de producción** y reemplaza el Access Token (y la clave secreta, si cambia).
@@ -243,9 +244,9 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
 6. **Revisa la lista.** En Admin → Pagos → *Para cobrar de verdad*, pulsa **Probar conexiones**. La lista muestra el nombre exacto de cada variable que falta y prueba la cuenta de Mercado Pago (que sea de Colombia y si es de prueba), el nodo de BNB Chain y el precio de CoinGecko.
 7. **Prueba de punta a punta, sin dinero real**, todavía con `DEMO_MODE=true`:
    - **Mercado Pago de prueba:**
-     - Con las credenciales de prueba, compra 0,5 kW.
-     - Mercado Pago no deja pagarte con tu propia cuenta: en **Tus integraciones → Cuentas de prueba**, crea un comprador de prueba y paga con él.
-     - Usa las tarjetas de prueba de la documentación de Mercado Pago. El nombre del titular decide el resultado: `APRO` se aprueba y `OTHE` se rechaza.
+     - Con las credenciales de prueba, abre la app en una **ventana de incógnito** (así no se mezcla tu sesión de Mercado Pago) y compra 0,5 kW.
+     - Paga con la **tarjeta de prueba** que muestra el panel de tu aplicación en Mercado Pago (número, titular y documento). El nombre del titular decide el resultado: `APRO` se aprueba y `OTHE` se rechaza.
+     - Mercado Pago no deja pagarte con tu propia cuenta. Si te pide iniciar sesión, crea un comprador en **Cuentas de prueba** y entra con él.
    - **Cripto en testnet:**
      - Usa `CRYPTO_NETWORK=bsc-testnet` y consigue tBNB en el faucet de BNB Chain: <https://www.bnbchain.org/en/testnet-faucet>.
      - Compra 0,1 kW pagando con BNB desde MetaMask.
@@ -278,7 +279,7 @@ La planta sigue simulada en los dos modos hasta conectar sus medidores, así que
 | `ADMIN_PIN` | PIN del administrador |
 | `ADMIN_EMAILS` | Correos de los administradores. Obligatoria con `DEMO_MODE=false` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Ingreso con Google |
-| `MERCADOPAGO_ACCESS_TOKEN` | Access Token: `TEST-…` (pruebas) o `APP_USR-…` (producción) |
+| `MERCADOPAGO_ACCESS_TOKEN` | Access Token de prueba o de producción (los dos pueden empezar por `APP_USR-`; la app detecta si la cuenta es de prueba) |
 | `MERCADOPAGO_WEBHOOK_SECRET` | Clave secreta que firma las notificaciones |
 | `CRYPTO_TREASURY_ADDRESS` | Dirección pública de la billetera de la empresa |
 | `CRYPTO_NETWORK` | `bsc` o `bsc-testnet` |
