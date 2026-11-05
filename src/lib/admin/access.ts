@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { ensureReady } from "@/lib/db/init";
 import { adminEmailAllowed, adminPin, authSecret } from "@/lib/env";
-import { jsonError, unauthorized, type CurrentUser } from "@/lib/session";
+import { jsonError, knownUser, unauthorized, type CurrentUser } from "@/lib/session";
 import { createPinLimiter, pinMatches, sessionBinding, signAdminToken, verifyAdminToken } from "./token";
 
 export const ADMIN_COOKIE = "solaxy-admin";
@@ -81,7 +81,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   const h = await headers();
   await ensureReady();
   const s = await auth.api.getSession({ headers: h });
-  if (!s?.user || !s.session) return null;
+  if (!s?.user || !s.session || !(await knownUser(s.user.id))) return null;
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   // Con dinero real, además de la cookie firmada, el correo debe estar autorizado (ADMIN_EMAILS).
   const isAdmin =
