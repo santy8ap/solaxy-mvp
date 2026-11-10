@@ -7,6 +7,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { ChainReader } from "@/lib/payments/chain";
 import type { MpPayment } from "@/lib/payments/mercadopago";
 import { buildPayerProofMessage } from "@/lib/signing";
+import { createUser } from "../../../tests/helpers";
 
 process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-admpay-")), "test.db")}`;
 const TREASURY = "0x2222222222222222222222222222222222222222";
@@ -17,17 +18,15 @@ vi.stubEnv("BETTER_AUTH_SECRET", "secreto-de-prueba-suficientemente-largo-123");
 
 let payments: typeof import("@/lib/admin/payments");
 let admin: typeof import("@/lib/admin/service");
-let market: typeof import("@/lib/market");
 let mp: typeof import("@/lib/payments/mercadopago-service");
 let crypto: typeof import("@/lib/payments/crypto-service");
 let prices: typeof import("@/lib/payments/prices");
-let profile: typeof import("@/lib/profile");
-let settings: typeof import("@/lib/settings");
+let test: typeof import("@/lib/payments/test-payment");
 let dbMod: typeof import("@/lib/db");
 let schema: typeof import("@/lib/db/schema");
 let drizzle: typeof import("drizzle-orm");
 const actor = { id: "admin-test", name: "Admin de prueba" };
-const PROFILE = { fullName: "Laura Gómez", docType: "CC", docNumber: "1036123456", phone: "3001234567", city: "Medellín", acceptTerms: true };
+const MONTH_180 = 20_880_000;
 
 /** Mercado Pago falso: preferencias y pagos buscables por referencia. */
 const mpPayments: MpPayment[] = [];
@@ -71,75 +70,44 @@ async function orderRow(id: string) {
 beforeAll(async () => {
   payments = await import("@/lib/admin/payments");
   admin = await import("@/lib/admin/service");
-  market = await import("@/lib/market");
   mp = await import("@/lib/payments/mercadopago-service");
   crypto = await import("@/lib/payments/crypto-service");
   prices = await import("@/lib/payments/prices");
-  profile = await import("@/lib/profile");
-  settings = await import("@/lib/settings");
+  test = await import("@/lib/payments/test-payment");
   dbMod = await import("@/lib/db");
   schema = await import("@/lib/db/schema");
   drizzle = await import("drizzle-orm");
-  const { ensureReady } = await import("@/lib/db/init");
-  await ensureReady();
-  for (const u of ["inv-070", "inv-071", "inv-072", "inv-073"]) await profile.saveProfile(u, PROFILE);
+  for (const u of ["p1", "p2", "p3", "p4", "p5"]) await createUser(u);
 }, 120_000);
 
 afterEach(() => {
   vi.stubEnv("DEMO_MODE", "");
 });
 
-describe("retiros con dinero real", () => {
-  async function requestWithdrawal(userId: string, amountCop: number) {
-    const acct = privateKeyToAccount(generatePrivateKey());
-    const w = await market.createWithdrawal({ userId, amountCop, walletAddress: acct.address, walletName: "Trust Wallet", chainId: 56 });
-    return market.confirmWithdrawal(userId, w.withdrawalId, await acct.signMessage({ message: w.message }));
-  }
-
-  it("al aprobar exige la referencia del envío y la guarda", async () => {
-    vi.stubEnv("DEMO_MODE", "false");
-    const w = await requestWithdrawal("inv-020", 30_000);
-    await expect(admin.decideWithdrawal(actor, w.id, "aprobar")).rejects.toThrow(/referencia/i);
-    const ref = hashOf("envio-1");
-    const ok = await admin.decideWithdrawal(actor, w.id, "aprobar", "", ref);
-    expect(ok).toMatchObject({ status: "confirmada", txHash: ref });
-  });
-
-  it("en modo demo, sin referencia se genera un hash simulado", async () => {
-    const w = await requestWithdrawal("inv-031", 25_000);
-    const ok = await admin.decideWithdrawal(actor, w.id, "aprobar");
-    expect(ok.txHash).toMatch(/^0x[0-9a-f]{64}$/);
-  });
-
-  it("con dinero real no se puede apagar la aprobación de retiros", async () => {
-    vi.stubEnv("DEMO_MODE", "false");
-    const current = await settings.readSettings();
-    await expect(admin.updatePlantSettings(actor, { ...current, withdrawalApproval: false })).rejects.toThrow(/aprobación|administrador/i);
-  });
-});
-
 describe("sección Pagos del admin", () => {
-  it("lista las órdenes de pago con su método, estado y usuario", async () => {
-    const o = await mp.createMercadoPagoOrder({ userId: "inv-070", email: "a@b.co", kw: 0.5 }, { fetch: mpFetch });
+  it("lista los pagos con su método, estado, empresa y plan", async () => {
+    const o = await mp.createMercadoPagoOrder({ userId: "p1", email: "a@b.co", planId: "p180" }, { fetch: mpFetch });
     const list = await payments.listPayments({ method: "mercadopago" });
     const row = list.find((p) => p.id === o.orderId);
-    expect(row).toMatchObject({ method: "mercadopago", status: "pendiente", userName: expect.any(String) });
+    expect(row).toMatchObject({ method: "mercadopago", status: "pendiente", companyName: "Empresa p1", planName: "Plan 180", periodIndex: 1, amountCop: MONTH_180 });
+    expect(await payments.listPayments({ status: "confirmadas" })).toHaveLength(0);
   });
 
   it("re-verifica un pago de Mercado Pago buscándolo por la referencia de la orden", async () => {
-    const o = await mp.createMercadoPagoOrder({ userId: "inv-071", email: "a@b.co", kw: 0.5 }, { fetch: mpFetch });
-    // El usuario pagó pero cerró la pestaña y el webhook nunca llegó.
-    mpPayments.push({ id: 777001, status: "approved", external_reference: o.orderId, transaction_amount: (await orderRow(o.orderId)).amountCop, currency_id: "COP", live_mode: true });
+    const o = await mp.createMercadoPagoOrder({ userId: "p2", email: "a@b.co", planId: "p180" }, { fetch: mpFetch });
+    // El usuario pagó pero cerró la pestaña y la notificación nunca llegó.
+    mpPayments.push({ id: 777001, status: "approved", external_reference: o.orderId, transaction_amount: MONTH_180, currency_id: "COP", live_mode: true });
     const r = await payments.reverifyPayment(actor, o.orderId, { fetch: mpFetch });
     expect(r.status).toBe("confirmada");
+    expect((await admin.listAudit(1))[0]).toMatchObject({ action: "reverificar_pago", targetUserId: "p2" });
   });
 
   it("registra a mano el hash de un pago cripto y lo verifica", async () => {
     prices.resetPriceCache();
     const payer = privateKeyToAccount(generatePrivateKey());
     const issuedAt = Date.now();
-    const signature = await payer.signMessage({ message: buildPayerProofMessage({ userId: "inv-072", payer: payer.address, issuedAt }) });
-    const q = await crypto.createCryptoQuote({ userId: "inv-072", kw: 0.5, asset: "BNB", payer: payer.address, walletName: "MetaMask", proof: { issuedAt, signature } }, { fetch: priceFetch });
+    const signature = await payer.signMessage({ message: buildPayerProofMessage({ userId: "p3", payer: payer.address, issuedAt }) });
+    const q = await crypto.createCryptoQuote({ userId: "p3", planId: "p180", asset: "BNB", payer: payer.address, walletName: "MetaMask", proof: { issuedAt, signature } }, { fetch: priceFetch });
     const hash = hashOf("pago-cripto-admin");
     chainTxs.set(hash, { from: payer.address, value: BigInt(q.amountBaseUnits), block: latest.n - 20n });
     const r = await payments.attachCryptoHash(actor, q.orderId, hash, { reader });
@@ -147,7 +115,7 @@ describe("sección Pagos del admin", () => {
   });
 
   it("marca como reembolsado un pago por reembolsar y deja la referencia", async () => {
-    const o = await mp.createMercadoPagoOrder({ userId: "inv-073", email: "a@b.co", kw: 0.5 }, { fetch: mpFetch });
+    const o = await mp.createMercadoPagoOrder({ userId: "p4", email: "a@b.co", planId: "p180" }, { fetch: mpFetch });
     mpPayments.push({ id: 777002, status: "approved", external_reference: o.orderId, transaction_amount: 100, currency_id: "COP", live_mode: true });
     await mp.syncMercadoPagoOrder({ orderId: o.orderId }, { fetch: mpFetch });
     expect((await orderRow(o.orderId)).status).toBe("por_reembolsar");
@@ -155,5 +123,20 @@ describe("sección Pagos del admin", () => {
     expect(r).toMatchObject({ status: "reembolsada" });
     expect(r.note).toMatch(/12345/);
     await expect(payments.markRefunded(actor, o.orderId, "otra vez")).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("el recaudo cuenta solo dinero real: los pagos de prueba no suman", async () => {
+    const before = await payments.paymentSummary();
+    await test.payWithTestPayment({ userId: "p5", planId: "p180" });
+    expect((await payments.paymentSummary()).totalCop).toBe(before.totalCop);
+    await admin.registerManualPayment(actor, { userId: "p5", planId: "p360", reference: "TRANSF-9001" });
+    const after = await payments.paymentSummary();
+    expect(after.totalCop).toBe(before.totalCop + 40_800_000);
+    expect(after.todayCop).toBeGreaterThanOrEqual(40_800_000);
+  });
+
+  it("un pago de prueba no se re-verifica con un proveedor", async () => {
+    const [demo] = await payments.listPayments({ method: "demo" });
+    await expect(payments.reverifyPayment(actor, demo.id)).rejects.toMatchObject({ status: 409 });
   });
 });

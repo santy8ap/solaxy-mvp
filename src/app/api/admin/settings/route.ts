@@ -6,12 +6,9 @@ import { handleError, readJson } from "@/lib/api";
 const Body = z.object({
   name: z.string().min(1).max(60),
   location: z.string().min(1).max(80),
-  capacityKwp: z.number(),
-  pricePerKwCop: z.number(),
-  tariffDayCop: z.number(),
-  tariffPeakCop: z.number(),
-  commissionPct: z.number(),
-  withdrawalApproval: z.boolean(),
+  peakKw: z.number(),
+  saleCopPerKwh: z.number(),
+  planPrices: z.record(z.string().max(20), z.number()),
 });
 
 export async function PUT(req: Request) {

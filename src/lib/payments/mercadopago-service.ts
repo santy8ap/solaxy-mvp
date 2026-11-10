@@ -2,11 +2,11 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ledgerTx } from "@/lib/db/schema";
-import { baseUrl } from "@/lib/env";
+import { baseUrl, isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
-import { formatKw } from "@/lib/format";
 import { newId, orderCode } from "@/lib/ids";
-import { LISTING_HOLD_MS, closeOrder, fulfillOrder, getOrder, markProviderStatus, resolvePurchase, type OrderRow } from "@/lib/orders";
+import { ORDER_TTL_MS, closeOrder, fulfillOrder, getOrder, markProviderStatus, type OrderRow } from "@/lib/orders";
+import { resolvePlanPayment } from "@/lib/plans/service";
 import { requireCompleteProfile } from "@/lib/profile";
 import { mercadoPagoConfig } from "./config";
 import { isMercadoPagoTest } from "./mercadopago-account";
@@ -51,33 +51,35 @@ async function mpRequest<T>(path: string, deps: MpDeps, init: { method?: string;
 }
 
 /** Crea la orden pendiente y la preferencia del Checkout Pro; devuelve la URL a la que se redirige al usuario. */
-export async function createMercadoPagoOrder(input: { userId: string; email: string; kw?: number; listingId?: string }, deps: MpDeps = {}) {
+/** `planId` compra el primer mes de un plan nuevo; `subscriptionId` paga el mes siguiente de un plan del usuario. */
+export async function createMercadoPagoOrder(input: { userId: string; email: string; planId?: string; subscriptionId?: string }, deps: MpDeps = {}) {
   const cfg = enabledConfig();
   const profile = await requireCompleteProfile(input.userId);
   // Credenciales de prueba (TEST-… o APP_USR-… de una cuenta de prueba): la orden queda marcada como de prueba.
   const testAccount = await isMercadoPagoTest(deps);
   const now = Date.now();
-  const p = await resolvePurchase(input.userId, { kw: input.kw, listingId: input.listingId }, now);
+  const p = await resolvePlanPayment(input.userId, { planId: input.planId, subscriptionId: input.subscriptionId }, now);
   const orderId = orderCode();
   await db.insert(ledgerTx).values({
     id: orderId,
     userId: input.userId,
-    kind: p.kind,
+    kind: "plan_mes",
     status: "pendiente",
-    kw: p.kw,
     amountCop: p.amountCop,
     asset: "COP",
     walletName: "Mercado Pago",
     network: testAccount ? MP_SANDBOX_NETWORK : "Mercado Pago",
-    listingId: p.listingId,
     createdAt: now,
     method: "mercadopago",
     expectedAmount: String(p.amountCop),
-    expiresAt: now + LISTING_HOLD_MS,
+    expiresAt: now + ORDER_TTL_MS,
+    subscriptionId: p.subscriptionId,
+    periodIndex: p.periodIndex,
+    kwh: p.kwh,
   });
   const preference = buildPreference({
     orderId,
-    title: `${formatKw(p.kw, 1)} de energía solar · Solaxy`,
+    title: `${p.planName} · mes ${p.periodIndex} de ${p.months} · Solaxy`,
     amountCop: p.amountCop,
     baseUrl: baseUrl(),
     payer: { email: input.email, fullName: profile.fullName },
@@ -98,8 +100,8 @@ export async function createMercadoPagoOrder(input: { userId: string; email: str
     throw new MarketError("Mercado Pago no aceptó la orden. Intenta de nuevo en un momento.", 502);
   }
   await db.update(ledgerTx).set({ message: `preferencia:${res.json?.id ?? ""}` }).where(eq(ledgerTx.id, orderId));
-  payLog("orden_creada", { proveedor: "mercadopago", orderId, userId: input.userId, kw: p.kw, amountCop: p.amountCop, pruebas: testAccount });
-  return { orderId, checkoutUrl, kw: p.kw, amountCop: p.amountCop };
+  payLog("orden_creada", { proveedor: "mercadopago", orderId, userId: input.userId, plan: p.subscriptionId, mes: p.periodIndex, kwh: p.kwh, amountCop: p.amountCop, pruebas: testAccount });
+  return { orderId, checkoutUrl, planName: p.planName, periodIndex: p.periodIndex, amountCop: p.amountCop };
 }
 
 /** Un segundo pago aprobado para una orden ya confirmada: el dinero llegó dos veces y hay que devolverlo. */
@@ -116,8 +118,9 @@ async function recordDuplicatePayment(order: OrderRow, payment: MpPayment) {
       userId: order.userId,
       kind: order.kind,
       status: "por_reembolsar",
-      kw: 0,
       amountCop: Math.round(payment.transaction_amount ?? 0),
+      subscriptionId: order.subscriptionId,
+      periodIndex: order.periodIndex,
       asset: "COP",
       walletName: "Mercado Pago",
       network: payment.live_mode === false ? MP_SANDBOX_NETWORK : "Mercado Pago",
@@ -143,7 +146,10 @@ async function applyPayment(order: OrderRow, payment: MpPayment) {
   }
   if (outcome === "aprobada") {
     const amountOk = Math.round(payment.transaction_amount ?? -1) === order.amountCop && payment.currency_id === "COP";
-    if (!amountOk) {
+    if (payment.live_mode === false && !isDemoMode()) {
+      // Con cobros reales, un pago hecho con una cuenta o tarjeta de prueba no es dinero: no activa nada.
+      await closeOrder(order.id, "fallida", { ...proof, note: "Fue un pago de prueba de Mercado Pago: no se cobró dinero y no activa el plan." }, ["pendiente", "verificando", "fallida"]);
+    } else if (!amountOk) {
       await closeOrder(
         order.id,
         "por_reembolsar",

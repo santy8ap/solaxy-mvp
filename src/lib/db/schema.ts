@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
@@ -79,68 +79,78 @@ export const verification = sqliteTable(
 
 /* ───────────── Dominio Solaxy ───────────── */
 
+/** La planta y los precios vigentes (una sola fila). Los edita el administrador. */
 export const plant = sqliteTable("plant", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   location: text("location").notNull(),
-  capacityKwp: real("capacity_kwp").notNull(),
-  pricePerKwCop: integer("price_per_kw_cop").notNull(),
-  /** ms UTC */
-  commissionedAt: integer("commissioned_at").notNull(),
-  /** Configuración editable por el administrador */
-  tariffDayCop: integer("tariff_day_cop").notNull().default(560),
-  tariffPeakCop: integer("tariff_peak_cop").notNull().default(820),
-  /** Comisión de operación y plataforma, en % del ingreso */
-  commissionPct: real("commission_pct").notNull().default(18),
-  withdrawalApproval: integer("withdrawal_approval", { mode: "boolean" }).notNull().default(true),
+  /** Potencia máxima de la curva solar (kW) */
+  peakKw: real("peak_kw").notNull().default(8000),
+  /** Precio al que se vende toda la energía (COP por kWh) */
+  saleCopPerKwh: integer("sale_cop_per_kwh").notNull().default(400),
+  /** JSON { [idDelPlan]: precio por kWh }. Lo que falte usa el valor de config/plans.ts */
+  planPrices: text("plan_prices").notNull().default("{}"),
   updatedAt: integer("updated_at"),
 });
 
-/** Telemetría agregada cada 15 minutos. Los acumulados son al FINAL del intervalo. */
-export const telemetry = sqliteTable(
-  "telemetry",
-  {
-    plantId: text("plant_id").notNull(),
-    ts: integer("ts").notNull(),
-    day: integer("day").notNull(),
-    solarKw: real("solar_kw").notNull(),
-    batteryKw: real("battery_kw").notNull(),
-    socPct: real("soc_pct").notNull(),
-    deliveredKwh: real("delivered_kwh").notNull(),
-    irradiance: real("irradiance").notNull(),
-    moduleTempC: real("module_temp_c").notNull(),
-    ambientTempC: real("ambient_temp_c").notNull(),
-    tariffCop: real("tariff_cop").notNull(),
-    netCop: real("net_cop").notNull(),
-    cumKwh: real("cum_kwh").notNull(),
-    cumNetPerKwp: real("cum_net_per_kwp").notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.plantId, t.ts] }), index("telemetry_day_idx").on(t.plantId, t.day)],
-);
-
-export const positionEntry = sqliteTable(
-  "position_entry",
+/**
+ * Un plan de energía comprado por una empresa. Guarda las condiciones con las que se compró:
+ * un cambio de precios solo aplica a planes nuevos. Sin periodos es un borrador (no se ha pagado).
+ */
+export const planSubscription = sqliteTable(
+  "plan_subscription",
   {
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    plantId: text("plant_id").notNull(),
-    /** + compra, − venta */
-    kwDelta: real("kw_delta").notNull(),
-    /** Costo por kW (en ventas: costo promedio de los kW vendidos) */
-    pricePerKwCop: integer("price_per_kw_cop").notNull(),
-    ts: integer("ts").notNull(),
-    txId: text("tx_id"),
+    planId: text("plan_id").notNull(),
+    planName: text("plan_name").notNull(),
+    totalKwh: real("total_kwh").notNull(),
+    months: integer("months").notNull(),
+    dailyKwh: real("daily_kwh").notNull(),
+    priceCopPerKwh: integer("price_cop_per_kwh").notNull(),
+    saleCopPerKwh: integer("sale_cop_per_kwh").notNull(),
+    createdAt: integer("created_at").notNull(),
+    /** Cuándo se confirmó el primer pago */
+    startedAt: integer("started_at"),
+    /** Cierre anticipado por el administrador */
+    cancelledAt: integer("cancelled_at"),
   },
-  (t) => [index("position_user_idx").on(t.userId)],
+  (t) => [index("plan_sub_user_idx").on(t.userId)],
 );
 
-export const TX_KINDS = ["compra", "compra_p2p", "venta_p2p", "venta_inmediata", "retiro", "asignacion_demo", "ajuste_admin"] as const;
-/** por_reembolsar: el pago llegó pero no se pudo asignar (sin cupo, oferta vendida, monto distinto); reembolsada: el admin ya lo devolvió. */
+/** Un mes pagado de un plan: 30 días de energía. */
+export const planPeriod = sqliteTable(
+  "plan_period",
+  {
+    id: text("id").primaryKey(),
+    subscriptionId: text("subscription_id")
+      .notNull()
+      .references(() => planSubscription.id, { onDelete: "cascade" }),
+    /** Mes del plan: 1, 2, 3… */
+    idx: integer("idx").notNull(),
+    startsAt: integer("starts_at").notNull(),
+    endsAt: integer("ends_at").notNull(),
+    kwh: real("kwh").notNull(),
+    amountCop: integer("amount_cop").notNull(),
+    /** Pago que lo activó */
+    txId: text("tx_id").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    // Un mes no se activa dos veces, y un pago no activa dos meses.
+    uniqueIndex("plan_period_sub_idx_uq").on(t.subscriptionId, t.idx),
+    uniqueIndex("plan_period_tx_uq").on(t.txId),
+  ],
+);
+
+/** plan_mes: pago de un mes de un plan. retiro: la empresa retira su saldo. */
+export const TX_KINDS = ["plan_mes", "retiro"] as const;
+/** por_reembolsar: el pago llegó pero no se pudo activar (sin cupo, mes ya pagado, monto distinto); reembolsada: el admin ya lo devolvió. */
 export const TX_STATUSES = ["pendiente", "verificando", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada", "por_reembolsar", "reembolsada"] as const;
-/** Cómo se pagó una orden: firma simulada (solo modo demo), Mercado Pago o cripto directo a la billetera de la empresa. */
-export const PAYMENT_METHODS = ["demo", "mercadopago", "crypto"] as const;
+/** Cómo se pagó: Mercado Pago, cripto directo a la billetera de la empresa, pago registrado por el admin o pago de prueba (solo en modo de pruebas). */
+export const PAYMENT_METHODS = ["demo", "mercadopago", "crypto", "manual"] as const;
 export type TxKind = (typeof TX_KINDS)[number];
 export type TxStatus = (typeof TX_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -154,7 +164,6 @@ export const ledgerTx = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     kind: text("kind", { enum: TX_KINDS }).notNull(),
     status: text("status", { enum: TX_STATUSES }).notNull(),
-    kw: real("kw"),
     amountCop: integer("amount_cop").notNull(),
     asset: text("asset"),
     assetAmount: real("asset_amount"),
@@ -165,38 +174,53 @@ export const ledgerTx = sqliteTable(
     message: text("message"),
     signature: text("signature"),
     txHash: text("tx_hash"),
-    listingId: text("listing_id"),
-    /** Motivo de un ajuste del admin o de un rechazo */
+    /** Motivo de un rechazo o de un pago que no se pudo activar */
     note: text("note"),
     createdAt: integer("created_at").notNull(),
     confirmedAt: integer("confirmed_at"),
-    /** Pasarela de una compra (null en movimientos que no son pagos) */
+    /** Pasarela de un pago (null en los retiros) */
     method: text("method", { enum: PAYMENT_METHODS }),
-    /** Id del pago en el proveedor: pago de Mercado Pago o hash on-chain (en minúsculas) */
+    /** Id del pago en el proveedor: pago de Mercado Pago, hash on-chain (en minúsculas) o referencia del pago manual */
     providerId: text("provider_id"),
-    /** Último estado reportado por el proveedor (APPROVED, PENDING, confirmaciones…) */
+    /** Último estado reportado por el proveedor (approved, pending, confirmaciones…) */
     providerStatus: text("provider_status"),
     /** Monto exacto esperado, como texto: pesos (Mercado Pago) o wei del activo (cripto) */
     expectedAmount: text("expected_amount"),
     /** Vigencia de la cotización (ms UTC) */
     expiresAt: integer("expires_at"),
+    /** Plan y mes que paga una orden plan_mes */
+    subscriptionId: text("subscription_id"),
+    periodIndex: integer("period_index"),
+    /** Energía del mes pagado (kWh) */
+    kwh: real("kwh"),
+    /** Retiro a una cuenta bancaria a nombre de la empresa */
+    bankName: text("bank_name"),
+    bankAccountType: text("bank_account_type"),
+    bankAccountNumber: text("bank_account_number"),
   },
   (t) => [
     index("tx_user_idx").on(t.userId, t.createdAt),
     index("tx_method_status_idx").on(t.method, t.status),
-    // Un mismo pago (de Mercado Pago u hash on-chain) no puede acreditarse dos veces.
+    index("tx_subscription_idx").on(t.subscriptionId),
+    // Un mismo pago (de Mercado Pago, hash on-chain o referencia manual) no puede acreditarse dos veces.
     uniqueIndex("tx_provider_uq").on(t.method, t.providerId),
   ],
 );
 
-export const DOC_TYPES = ["CC", "CE", "PP", "NIT"] as const;
+/** Documento del representante legal. */
+export const DOC_TYPES = ["CC", "CE", "PP"] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
-/** Datos del inversionista: obligatorios antes de la primera compra real. */
-export const investorProfile = sqliteTable("investor_profile", {
+/** Datos de la empresa: obligatorios antes del primer pago. */
+export const companyProfile = sqliteTable("company_profile", {
   userId: text("user_id")
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
+  /** Razón social */
+  companyName: text("company_name").notNull(),
+  /** NIT con dígito de verificación: 900123456-8 */
+  nit: text("nit").notNull(),
+  /** Representante legal */
   fullName: text("full_name").notNull(),
   docType: text("doc_type", { enum: DOC_TYPES }).notNull(),
   docNumber: text("doc_number").notNull(),
@@ -208,26 +232,6 @@ export const investorProfile = sqliteTable("investor_profile", {
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
-
-export const LISTING_STATUSES = ["activa", "vendida", "cancelada"] as const;
-
-export const listing = sqliteTable(
-  "listing",
-  {
-    id: text("id").primaryKey(),
-    sellerId: text("seller_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    plantId: text("plant_id").notNull(),
-    kw: real("kw").notNull(),
-    pricePerKwCop: integer("price_per_kw_cop").notNull(),
-    status: text("status", { enum: LISTING_STATUSES }).notNull(),
-    createdAt: integer("created_at").notNull(),
-    closedAt: integer("closed_at"),
-    buyerId: text("buyer_id"),
-  },
-  (t) => [index("listing_status_idx").on(t.status)],
-);
 
 export const walletLink = sqliteTable("wallet_link", {
   userId: text("user_id")
@@ -244,7 +248,7 @@ export const appMeta = sqliteTable("app_meta", {
   value: text("value").notNull(),
 });
 
-export const ADMIN_ACTIONS = ["ajuste_kw", "config_planta", "aprobar_retiro", "rechazar_retiro", "reverificar_pago", "registrar_hash", "marcar_reembolso", "borrar_datos_demo"] as const;
+export const ADMIN_ACTIONS = ["config_planta", "pago_manual", "cerrar_plan", "aprobar_retiro", "rechazar_retiro", "reverificar_pago", "registrar_hash", "marcar_reembolso", "borrar_datos_prueba"] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
 /** Bitácora de todo lo que hace un administrador. */
@@ -254,7 +258,7 @@ export const adminAudit = sqliteTable(
     id: text("id").primaryKey(),
     actorUserId: text("actor_user_id").notNull(),
     actorName: text("actor_name").notNull(),
-    action: text("action", { enum: ADMIN_ACTIONS }).notNull(),
+    action: text("action").$type<AdminAction>().notNull(),
     targetUserId: text("target_user_id"),
     summary: text("summary").notNull(),
     /** JSON con el valor anterior y el nuevo */

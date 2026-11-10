@@ -1,5 +1,5 @@
 import { handleError } from "@/lib/api";
-import { getWithdrawal } from "@/lib/market";
+import { getWithdrawal } from "@/lib/withdrawals";
 import { getSessionUser, unauthorized } from "@/lib/session";
 
 /** Estado de un retiro (el navegador lo consulta mientras espera la aprobación). */

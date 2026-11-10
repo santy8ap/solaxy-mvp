@@ -1,7 +1,7 @@
 import { isAddress } from "viem";
 import { z } from "zod";
 import { handleError, readJson } from "@/lib/api";
-import { linkWallet } from "@/lib/market";
+import { linkWallet } from "@/lib/withdrawals";
 import { getSessionUser, unauthorized } from "@/lib/session";
 
 const Body = z.object({

@@ -1,18 +1,15 @@
 import "server-only";
-import { and, eq, gt, inArray, ne, sql } from "drizzle-orm";
-import { PLANT } from "@/config/plant";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { ensureReady } from "@/lib/db/init";
-import { ledgerTx, listing, positionEntry, type TxStatus } from "@/lib/db/schema";
+import { ledgerTx, type PaymentMethod, type TxStatus } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
-import { newId } from "@/lib/ids";
 import { payLog } from "@/lib/payments/log";
-import { getKwPosition, round1 } from "@/lib/portfolio";
+import { activatePeriod } from "@/lib/plans/service";
 
 /**
- * Órdenes de compra: qué se compra, y la asignación de los kW cuando el pago se confirma.
- * La asignación es idempotente: un UPDATE condicional reclama la orden, así que los kW
- * se asignan una sola vez aunque el webhook y la consulta lleguen al mismo tiempo.
+ * Órdenes de pago de un mes de un plan, y la activación de la energía cuando el pago se confirma.
+ * La activación es idempotente: un UPDATE condicional reclama la orden, así que el mes se activa
+ * una sola vez aunque la notificación y la consulta lleguen al mismo tiempo.
  */
 
 export type OrderRow = typeof ledgerTx.$inferSelect;
@@ -20,60 +17,11 @@ export type OrderRow = typeof ledgerTx.$inferSelect;
 /** Estados desde los que una orden todavía puede confirmarse. */
 const OPEN: TxStatus[] = ["pendiente", "verificando"];
 
-/** Pasarelas con dinero real (el pago simulado del modo demo no cuenta). */
-export const REAL_PAYMENT_METHODS = ["mercadopago", "crypto"] as const;
+/** Pasarelas con dinero real (el pago de prueba no cuenta). */
+export const REAL_PAYMENT_METHODS: readonly PaymentMethod[] = ["mercadopago", "crypto", "manual"];
 
-/** Mientras alguien paga una oferta P2P con Mercado Pago o cripto, queda apartada este tiempo. */
-export const LISTING_HOLD_MS = 30 * 60_000;
-
-/** kW vendidos por la plataforma (suma de todas las posiciones). */
-export async function soldKw() {
-  const [r] = await db
-    .select({ kw: sql<number>`coalesce(sum(${positionEntry.kwDelta}), 0)` })
-    .from(positionEntry)
-    .where(eq(positionEntry.plantId, PLANT.id));
-  return round1(r.kw);
-}
-
-export interface Purchase {
-  kind: "compra" | "compra_p2p";
-  kw: number;
-  pricePerKwCop: number;
-  amountCop: number;
-  listingId: string | null;
-}
-
-/** Valida qué se compra (a la planta o una oferta P2P) y calcula el precio. */
-export async function resolvePurchase(userId: string, input: { kw?: number; listingId?: string }, now = Date.now()): Promise<Purchase> {
-  const { spec, econ } = await ensureReady(now);
-  if (input.listingId) {
-    const [l] = await db.select().from(listing).where(eq(listing.id, input.listingId));
-    if (!l || l.status !== "activa") throw new MarketError("Esa oferta ya no está disponible", 409);
-    if (l.sellerId === userId) throw new MarketError("No puedes comprar tu propia oferta");
-    const [busy] = await db
-      .select({ id: ledgerTx.id })
-      .from(ledgerTx)
-      .where(
-        and(
-          eq(ledgerTx.listingId, l.id),
-          inArray(ledgerTx.status, OPEN),
-          inArray(ledgerTx.method, [...REAL_PAYMENT_METHODS]),
-          gt(ledgerTx.expiresAt, now),
-          ne(ledgerTx.userId, userId),
-        ),
-      )
-      .limit(1);
-    if (busy) throw new MarketError("Otra persona está pagando esta oferta en este momento. Intenta de nuevo en unos minutos.", 409);
-    return { kind: "compra_p2p", kw: l.kw, pricePerKwCop: l.pricePerKwCop, amountCop: Math.round(l.kw * l.pricePerKwCop), listingId: l.id };
-  }
-  const kw = round1(input.kw ?? 0);
-  if (kw < econ.minPurchaseKw || kw > econ.maxPurchaseKw) {
-    throw new MarketError(`Puedes comprar entre ${econ.minPurchaseKw} y ${econ.maxPurchaseKw} kW`);
-  }
-  const available = spec.capacityKwp - (await soldKw());
-  if (kw > available) throw new MarketError("La planta no tiene tantos kW disponibles", 409);
-  return { kind: "compra", kw, pricePerKwCop: econ.pricePerKwCop, amountCop: Math.round(kw * econ.pricePerKwCop), listingId: null };
-}
+/** Cuánto vive una orden de Mercado Pago sin pagar antes de considerarse abandonada. */
+export const ORDER_TTL_MS = 30 * 60_000;
 
 export async function getOrder(orderId: string): Promise<OrderRow | undefined> {
   const [row] = await db.select().from(ledgerTx).where(eq(ledgerTx.id, orderId));
@@ -94,7 +42,7 @@ const proofFields = (p: PaymentProof) => ({
   ...(p.signature !== undefined && { signature: p.signature }),
 });
 
-/** Cierra una orden abierta (fallida, por reembolsar…) sin asignar kW. Devuelve la fila o undefined si ya no estaba abierta. */
+/** Cierra una orden abierta (fallida, por reembolsar…) sin activar nada. Devuelve la fila o undefined si ya no estaba abierta. */
 export async function closeOrder(orderId: string, status: TxStatus, data: PaymentProof & { note: string }, from: TxStatus[] = OPEN) {
   const [row] = await db
     .update(ledgerTx)
@@ -115,10 +63,16 @@ export async function markProviderStatus(orderId: string, data: PaymentProof & {
   return row;
 }
 
-export type FulfillOutcome = "confirmada" | "ya_confirmada" | "sin_cupo" | "cerrada";
+export type FulfillOutcome = "confirmada" | "ya_confirmada" | "no_activada" | "cerrada";
+
+const NOT_ACTIVATED: Record<"sin_cupo" | "mes_pagado" | "plan_cerrado", string> = {
+  sin_cupo: "La planta se quedó sin cupo para este plan.",
+  mes_pagado: "Este mes del plan ya estaba pagado.",
+  plan_cerrado: "El plan ya estaba cerrado cuando se confirmó el pago.",
+};
 
 /**
- * Asigna los kW de una orden pagada. Idempotente.
+ * Activa el mes de energía de una orden pagada. Idempotente.
  * `reopen`: estados cerrados que un pago aprobado puede reabrir (p. ej. un intento rechazado en
  * Mercado Pago seguido de uno aprobado para la misma orden).
  */
@@ -127,25 +81,11 @@ export async function fulfillOrder(
   proof: PaymentProof = {},
   { now = Date.now(), reopen = [] as TxStatus[] } = {},
 ): Promise<{ outcome: FulfillOutcome; order: OrderRow }> {
-  const { spec } = await ensureReady(now);
   const tx = await getOrder(orderId);
-  if (!tx || (tx.kind !== "compra" && tx.kind !== "compra_p2p")) throw new MarketError("Orden no encontrada", 404);
+  if (!tx || tx.kind !== "plan_mes") throw new MarketError("Orden no encontrada", 404);
   if (tx.status === "confirmada") return { outcome: "ya_confirmada", order: tx };
   const claimable = [...OPEN, ...reopen];
   if (!claimable.includes(tx.status)) return { outcome: "cerrada", order: tx };
-
-  const kw = tx.kw ?? 0;
-  // Sin dinero de por medio (demo) basta con fallar; con un pago real hay que devolverlo.
-  const unfulfilled: TxStatus = tx.method === "mercadopago" || tx.method === "crypto" ? "por_reembolsar" : "fallida";
-  const refundNote = unfulfilled === "por_reembolsar" ? " Hay que devolver el pago." : "";
-
-  if (!tx.listingId) {
-    const available = spec.capacityKwp - (await soldKw());
-    if (kw > available + 1e-9) {
-      const closed = await closeOrder(orderId, unfulfilled, { ...proof, note: `La planta se quedó sin kW disponibles.${refundNote}` }, claimable);
-      return { outcome: closed ? "sin_cupo" : "cerrada", order: closed ?? (await getOrder(orderId)) ?? tx };
-    }
-  }
 
   const claimed = await db
     .update(ledgerTx)
@@ -158,54 +98,18 @@ export async function fulfillOrder(
   }
   const order = claimed[0];
 
-  const ops = [];
-  if (tx.listingId) {
-    // La oferta también se reclama de forma atómica.
-    const [l] = await db
-      .update(listing)
-      .set({ status: "vendida", closedAt: now, buyerId: tx.userId })
-      .where(and(eq(listing.id, tx.listingId), eq(listing.status, "activa")))
+  const activation = await activatePeriod(order, now);
+  if (activation !== "activado") {
+    // Sin dinero de por medio (pago de prueba) basta con fallar; con un pago real hay que devolverlo.
+    const real = REAL_PAYMENT_METHODS.includes(order.method as PaymentMethod);
+    const [reverted] = await db
+      .update(ledgerTx)
+      .set({ status: real ? "por_reembolsar" : "fallida", confirmedAt: null, note: `${NOT_ACTIVATED[activation]}${real ? " Hay que devolver el pago." : ""}` })
+      .where(eq(ledgerTx.id, orderId))
       .returning();
-    if (!l) {
-      const [reverted] = await db
-        .update(ledgerTx)
-        .set({ status: unfulfilled, confirmedAt: null, note: `La oferta ya no estaba disponible cuando se confirmó el pago.${refundNote}` })
-        .where(eq(ledgerTx.id, orderId))
-        .returning();
-      payLog("orden_sin_cupo", { orderId, listingId: tx.listingId, status: unfulfilled });
-      return { outcome: "sin_cupo", order: reverted };
-    }
-    const seller = await getKwPosition(l.sellerId, now);
-    const avgCost = seller.kw > 0 ? Math.round(seller.investedCop / seller.kw) : l.pricePerKwCop;
-    ops.push(
-      db.insert(positionEntry).values({ id: newId("pe-"), userId: l.sellerId, plantId: PLANT.id, kwDelta: -kw, pricePerKwCop: avgCost, ts: now, txId: tx.id }),
-      db.insert(ledgerTx).values({
-        id: newId("tx-"),
-        userId: l.sellerId,
-        kind: "venta_p2p",
-        status: "confirmada",
-        kw,
-        amountCop: tx.amountCop,
-        asset: "COP",
-        listingId: l.id,
-        txHash: order.txHash,
-        createdAt: now,
-        confirmedAt: now,
-      }),
-    );
+    payLog("orden_no_activada", { orderId, motivo: activation, status: reverted.status, proveedor: order.method });
+    return { outcome: "no_activada", order: reverted };
   }
-  ops.push(
-    db.insert(positionEntry).values({
-      id: newId("pe-"),
-      userId: tx.userId,
-      plantId: PLANT.id,
-      kwDelta: kw,
-      pricePerKwCop: Math.round(tx.amountCop / kw),
-      ts: now,
-      txId: tx.id,
-    }),
-  );
-  await db.batch(ops as [(typeof ops)[number], ...(typeof ops)[number][]]);
-  payLog("kw_asignados", { orderId, userId: tx.userId, kw, amountCop: tx.amountCop, proveedor: tx.method, providerId: order.providerId });
+  payLog("mes_activado", { orderId, userId: order.userId, plan: order.subscriptionId, mes: order.periodIndex, kwh: order.kwh, amountCop: order.amountCop, proveedor: order.method, providerId: order.providerId });
   return { outcome: "confirmada", order };
 }

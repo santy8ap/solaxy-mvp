@@ -18,3 +18,8 @@ export function orderCode() {
 export function simulatedTxHash() {
   return `0x${randomHex(32)}`;
 }
+
+/** Código de un plan comprado, p. ej. PLN-7F3A21C9. */
+export function planCode() {
+  return `PLN-${randomHex(4).toUpperCase()}`;
+}

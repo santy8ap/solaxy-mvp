@@ -4,17 +4,16 @@ import "server-only";
 export const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-  /** kW de demostración que recibe cada cuenta nueva (0 = desactivado). Solo en modo demo. */
-  starterKw: Math.max(0, Number(process.env.DEMO_STARTER_KW ?? 5) || 0),
+  /** Cuenta de pruebas: solo existe en modo de pruebas (DEMO_MODE distinto de false). */
   demoEmail: "demo@solaxy.local",
   demoPassword: process.env.DEMO_PASSWORD || "solaxy-demo-2026",
-  demoName: "Inversionista Demo",
+  demoName: "Empresa de Pruebas",
 };
 
 export const googleEnabled = Boolean(env.googleClientId && env.googleClientSecret);
 
 /**
- * Modo demo: cuenta demo, wallet demo, pagos simulados y posición de regalo.
+ * Modo de pruebas: cuenta de pruebas, pago de prueba y pagos de prueba de Mercado Pago o de testnet.
  * Activo salvo que DEMO_MODE sea "false" (o "0", "no", "off"): entonces solo se cobra de verdad.
  */
 export function isDemoMode() {

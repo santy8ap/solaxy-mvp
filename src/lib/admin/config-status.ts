@@ -19,7 +19,7 @@ export interface ConfigCheck {
   vars?: string[];
   /** Si no está en "ok" (o "aviso"), no se puede salir en vivo */
   required: boolean;
-  action?: "borrar_datos_demo";
+  action?: "borrar_datos_prueba";
 }
 
 const has = (name: string) => Boolean(process.env[name]?.trim());
@@ -45,11 +45,11 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
   add({
     id: "modo",
     group: "Modo",
-    title: demo ? "Modo demo activo" : "Cobros reales activos",
+    title: demo ? "Modo de pruebas activo" : "Cobros reales activos",
     state: demo ? "info" : "ok",
     detail: demo
-      ? "Hay cuenta demo, wallet demo y pagos simulados. Cuando todo lo de abajo esté listo, pon DEMO_MODE=false y vuelve a desplegar."
-      : "Solo se aceptan pagos con Mercado Pago y cripto real.",
+      ? "Hay cuenta de pruebas y pago de prueba, y los pagos de prueba de Mercado Pago o de testnet activan planes. Cuando todo lo de abajo esté listo, pon DEMO_MODE=false y vuelve a desplegar."
+      : "Solo activan planes los pagos con dinero real: Mercado Pago, cripto en la red principal y los que registra el administrador.",
     vars: ["DEMO_MODE"],
     required: false,
   });
@@ -87,7 +87,7 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Acceso",
     title: "Ingreso con Google",
     state: googleEnabled ? "ok" : "falta",
-    detail: googleEnabled ? "Configurado." : "Sin modo demo, es la única forma de entrar.",
+    detail: googleEnabled ? "Configurado." : "Con cobros reales es la única forma de entrar.",
     vars: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
     required: true,
   });
@@ -169,21 +169,17 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
   const stats = await demoDataStats();
   const leftovers = hasDemoData(stats);
   add({
-    id: "datos-demo",
+    id: "datos-prueba",
     group: "Datos",
-    title: "Datos de demostración",
+    title: "Datos de prueba",
     state: !leftovers ? "ok" : demo ? "info" : "falta",
     detail: !leftovers
-      ? "No quedan datos de demostración."
-      : `Quedan ${[
-          stats.fakeUsers ? `${stats.fakeUsers} inversionistas ficticios` : "",
-          stats.demoAccount ? "la cuenta demo" : "",
-          stats.simulatedTx ? `${stats.simulatedTx} pagos simulados o de prueba` : "",
-        ]
-          .filter(Boolean)
-          .join(", ")}.${demo ? " Se borran después de desactivar el modo demo." : " Bórralos antes de recibir pagos reales."}`,
+      ? "No quedan datos de prueba."
+      : `Quedan ${[stats.demoAccount ? "la cuenta de pruebas" : "", stats.testPayments ? `${stats.testPayments} pagos de prueba` : ""].filter(Boolean).join(" y ")}.${
+          demo ? " Se borran después de desactivar el modo de pruebas." : " Bórralos antes de recibir pagos reales."
+        }`,
     required: !demo,
-    ...(leftovers && !demo ? { action: "borrar_datos_demo" as const } : {}),
+    ...(leftovers && !demo ? { action: "borrar_datos_prueba" as const } : {}),
   });
 
   if (probes) {

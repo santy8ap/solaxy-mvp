@@ -5,7 +5,9 @@ import { db } from "@/lib/db";
 import { ledgerTx } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
 import { orderCode } from "@/lib/ids";
-import { closeOrder, fulfillOrder, getOrder, markProviderStatus, resolvePurchase, type OrderRow } from "@/lib/orders";
+import { isDemoMode } from "@/lib/env";
+import { closeOrder, fulfillOrder, getOrder, markProviderStatus, type OrderRow } from "@/lib/orders";
+import { resolvePlanPayment } from "@/lib/plans/service";
 import { requireCompleteProfile } from "@/lib/profile";
 import { buildPayerProofMessage, verifyWalletSignature } from "@/lib/signing";
 import { rpcChainReader, type ChainReader } from "./chain";
@@ -25,6 +27,8 @@ export interface CryptoDeps {
 function enabledConfig() {
   const cfg = cryptoConfig();
   if (!cfg.enabled || !cfg.treasury) throw new MarketError("El pago con cripto todavía no está configurado.", 503);
+  // Con cobros reales, las monedas de la red de pruebas no son dinero: no se aceptan.
+  if (cfg.network === "bsc-testnet" && !isDemoMode()) throw new MarketError("El pago con cripto está en la red de pruebas: todavía no se puede usar para cobros reales.", 503);
   return { ...cfg, treasury: cfg.treasury };
 }
 
@@ -35,8 +39,10 @@ const PROOF_TTL_MS = 10 * 60_000;
 export async function createCryptoQuote(
   input: {
     userId: string;
-    kw?: number;
-    listingId?: string;
+    /** Primer mes de un plan nuevo… */
+    planId?: string;
+    /** …o el mes siguiente de un plan del usuario */
+    subscriptionId?: string;
     asset: CryptoAsset;
     payer: string;
     walletName: string;
@@ -55,7 +61,7 @@ export async function createCryptoQuote(
     (await verifyWalletSignature({ address: input.payer, message: buildPayerProofMessage({ userId: input.userId, payer: input.payer, issuedAt: input.proof.issuedAt }), signature: input.proof.signature }));
   if (!owns) throw new MarketError("No pudimos comprobar que la wallet es tuya. Firma de nuevo desde la wallet con la que vas a pagar.", 403);
   await requireCompleteProfile(input.userId);
-  const p = await resolvePurchase(input.userId, { kw: input.kw, listingId: input.listingId }, now);
+  const p = await resolvePlanPayment(input.userId, { planId: input.planId, subscriptionId: input.subscriptionId }, now);
   const prices = await liveCopPrices(deps);
   const priceCop = prices[input.asset];
   const baseUnits = quoteBaseUnits(p.amountCop, priceCop, 18);
@@ -64,9 +70,8 @@ export async function createCryptoQuote(
   await db.insert(ledgerTx).values({
     id: orderId,
     userId: input.userId,
-    kind: p.kind,
+    kind: "plan_mes",
     status: "pendiente",
-    kw: p.kw,
     amountCop: p.amountCop,
     asset: input.asset,
     assetAmount: Number(formatUnits(baseUnits, 18)),
@@ -74,16 +79,19 @@ export async function createCryptoQuote(
     chainId: cfg.chainId,
     walletAddress: getAddress(input.payer),
     walletName: input.walletName.slice(0, 40),
-    listingId: p.listingId,
     createdAt: now,
     method: "crypto",
     expectedAmount: baseUnits.toString(),
     expiresAt,
+    subscriptionId: p.subscriptionId,
+    periodIndex: p.periodIndex,
+    kwh: p.kwh,
   });
-  payLog("orden_creada", { proveedor: "crypto", orderId, userId: input.userId, kw: p.kw, amountCop: p.amountCop, asset: input.asset, monto: formatUnits(baseUnits, 18), precioCop: priceCop, red: cfg.network });
+  payLog("orden_creada", { proveedor: "crypto", orderId, userId: input.userId, plan: p.subscriptionId, mes: p.periodIndex, kwh: p.kwh, amountCop: p.amountCop, asset: input.asset, monto: formatUnits(baseUnits, 18), precioCop: priceCop, red: cfg.network });
   return {
     orderId,
-    kw: p.kw,
+    planName: p.planName,
+    periodIndex: p.periodIndex,
     amountCop: p.amountCop,
     asset: input.asset,
     amount: formatUnits(baseUnits, 18),

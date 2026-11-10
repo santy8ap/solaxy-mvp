@@ -50,5 +50,51 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "CREATE INDEX IF NOT EXISTS `tx_method_status_idx` ON `ledger_tx` (`method`,`status`);",
       "CREATE UNIQUE INDEX IF NOT EXISTS `tx_provider_uq` ON `ledger_tx` (`method`,`provider_id`);"
     ]
+  },
+  {
+    "id": "0003_planes",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `company_profile` (\n\t`user_id` text PRIMARY KEY NOT NULL,\n\t`company_name` text NOT NULL,\n\t`nit` text NOT NULL,\n\t`full_name` text NOT NULL,\n\t`doc_type` text NOT NULL,\n\t`doc_number` text NOT NULL,\n\t`phone` text NOT NULL,\n\t`city` text NOT NULL,\n\t`terms_version` text,\n\t`terms_accepted_at` integer,\n\t`created_at` integer NOT NULL,\n\t`updated_at` integer NOT NULL,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade\n);",
+      "CREATE TABLE IF NOT EXISTS `plan_period` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`subscription_id` text NOT NULL,\n\t`idx` integer NOT NULL,\n\t`starts_at` integer NOT NULL,\n\t`ends_at` integer NOT NULL,\n\t`kwh` real NOT NULL,\n\t`amount_cop` integer NOT NULL,\n\t`tx_id` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`subscription_id`) REFERENCES `plan_subscription`(`id`) ON UPDATE no action ON DELETE cascade\n);",
+      "CREATE UNIQUE INDEX IF NOT EXISTS `plan_period_sub_idx_uq` ON `plan_period` (`subscription_id`,`idx`);",
+      "CREATE UNIQUE INDEX IF NOT EXISTS `plan_period_tx_uq` ON `plan_period` (`tx_id`);",
+      "CREATE TABLE IF NOT EXISTS `plan_subscription` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`plan_id` text NOT NULL,\n\t`plan_name` text NOT NULL,\n\t`total_kwh` real NOT NULL,\n\t`months` integer NOT NULL,\n\t`daily_kwh` real NOT NULL,\n\t`price_cop_per_kwh` integer NOT NULL,\n\t`sale_cop_per_kwh` integer NOT NULL,\n\t`created_at` integer NOT NULL,\n\t`started_at` integer,\n\t`cancelled_at` integer,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade\n);",
+      "CREATE INDEX IF NOT EXISTS `plan_sub_user_idx` ON `plan_subscription` (`user_id`);",
+      "ALTER TABLE `ledger_tx` ADD `subscription_id` text;",
+      "ALTER TABLE `ledger_tx` ADD `period_index` integer;",
+      "ALTER TABLE `ledger_tx` ADD `kwh` real;",
+      "ALTER TABLE `ledger_tx` ADD `bank_name` text;",
+      "ALTER TABLE `ledger_tx` ADD `bank_account_type` text;",
+      "ALTER TABLE `ledger_tx` ADD `bank_account_number` text;",
+      "CREATE INDEX IF NOT EXISTS `tx_subscription_idx` ON `ledger_tx` (`subscription_id`);",
+      "ALTER TABLE `plant` ADD `peak_kw` real DEFAULT 8000 NOT NULL;",
+      "ALTER TABLE `plant` ADD `sale_cop_per_kwh` integer DEFAULT 400 NOT NULL;",
+      "ALTER TABLE `plant` ADD `plan_prices` text DEFAULT '{}' NOT NULL;"
+    ]
+  },
+  {
+    "id": "0004_limpieza",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `legacy_ledger_tx` AS SELECT * FROM `ledger_tx`;",
+      "DELETE FROM `ledger_tx` WHERE coalesce(`kw`, 0) = coalesce(`kw`, 0);",
+      "DELETE FROM `session` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
+      "DELETE FROM `account` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
+      "DELETE FROM `wallet_link` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
+      "DELETE FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local';",
+      "INSERT OR IGNORE INTO `company_profile` (`user_id`, `company_name`, `nit`, `full_name`, `doc_type`, `doc_number`, `phone`, `city`, `terms_version`, `terms_accepted_at`, `created_at`, `updated_at`)\nSELECT `user_id`,\n\tCASE WHEN `doc_type` = 'NIT' THEN `full_name` ELSE '' END,\n\tCASE WHEN `doc_type` = 'NIT' THEN `doc_number` ELSE '' END,\n\tCASE WHEN `doc_type` = 'NIT' THEN '' ELSE `full_name` END,\n\tCASE WHEN `doc_type` = 'NIT' THEN 'CC' ELSE `doc_type` END,\n\tCASE WHEN `doc_type` = 'NIT' THEN '' ELSE `doc_number` END,\n\t`phone`, `city`, `terms_version`, `terms_accepted_at`, `created_at`, `updated_at`\nFROM `investor_profile`\nWHERE `user_id` NOT IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
+      "DROP TABLE `investor_profile`;",
+      "DROP TABLE `listing`;",
+      "DROP TABLE `position_entry`;",
+      "DROP TABLE `telemetry`;",
+      "ALTER TABLE `ledger_tx` DROP COLUMN `kw`;",
+      "ALTER TABLE `ledger_tx` DROP COLUMN `listing_id`;",
+      "ALTER TABLE `plant` DROP COLUMN `capacity_kwp`;",
+      "ALTER TABLE `plant` DROP COLUMN `price_per_kw_cop`;",
+      "ALTER TABLE `plant` DROP COLUMN `commissioned_at`;",
+      "ALTER TABLE `plant` DROP COLUMN `tariff_day_cop`;",
+      "ALTER TABLE `plant` DROP COLUMN `tariff_peak_cop`;",
+      "ALTER TABLE `plant` DROP COLUMN `commission_pct`;",
+      "ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;"
+    ]
   }
 ];
