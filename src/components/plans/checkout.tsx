@@ -275,7 +275,7 @@ function MercadoPagoPay({
       <p className="text-sm leading-relaxed text-fog">
         {cards
           ? "Te llevamos al pago seguro de Mercado Pago. Allí eliges PSE o tarjeta; Nequi y Daviplata aparecen dentro de PSE, con sus propios topes."
-          : `Te llevamos al pago seguro de Mercado Pago, donde pagas por PSE desde la cuenta de tu empresa: Mercado Pago recibe tarjetas solo hasta ${formatCop(cardMaxCop)}. Antes, confirma con tu banco que tengas habilitado un pago de ${formatCop(request.amountCop)} por PSE.`}{" "}
+          : `Te llevamos al pago seguro de Mercado Pago, donde pagas por PSE desde una cuenta bancaria a tu nombre: Mercado Pago recibe tarjetas solo hasta ${formatCop(cardMaxCop)}. Antes, confirma con tu banco que tengas habilitado un pago de ${formatCop(request.amountCop)} por PSE.`}{" "}
         Al terminar vuelves a {BRAND.name} y tu energía empieza a contar apenas
         el pago quede aprobado.
       </p>
