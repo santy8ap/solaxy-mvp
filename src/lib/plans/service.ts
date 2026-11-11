@@ -66,7 +66,12 @@ function reservedDailyKwhSql(now: number, excludeSubscriptionId: string) {
   return sql`(
     SELECT coalesce(sum(s.daily_kwh), 0)
     FROM plan_subscription s
-    JOIN (SELECT subscription_id, count(*) AS n, max(ends_at) AS last_end FROM plan_period GROUP BY subscription_id) p ON p.subscription_id = s.id
+    JOIN (
+      SELECT per.subscription_id, count(*) AS n,
+        max(max(per.starts_at, min(per.ends_at, coalesce(r.occurred_at, per.ends_at)))) AS last_end
+      FROM plan_period per LEFT JOIN payment_review r ON r.payment_id = per.tx_id
+      GROUP BY per.subscription_id
+    ) p ON p.subscription_id = s.id
     WHERE s.cancelled_at IS NULL
       AND s.id != ${excludeSubscriptionId}
       AND ((p.n >= s.months AND p.last_end > ${now}) OR (p.n < s.months AND p.last_end + ${GRACE_MS} >= ${now}))
@@ -344,15 +349,8 @@ export async function activatePeriod(
     : null;
   if (!sub || sub.cancelledAt != null) return "plan_cerrado";
   if (sub.reviewRequired) return "plan_en_revision";
-  // Una devolución no adelanta el calendario de otros meses ya contratados.
-  const window = nextPeriodWindow(
-    sub.periods.map((p) => ({
-      index: p.idx,
-      startsAt: p.startsAt,
-      endsAt: p.endsAt,
-    })),
-    now,
-  );
+  // Conserva las fechas de otros períodos pagados y usa el corte efectivo del período devuelto.
+  const window = nextPeriodWindow(periodsOf(sub), now);
   if (sub.periods.length >= sub.months || order.periodIndex !== window.index)
     return "mes_pagado";
 

@@ -152,7 +152,8 @@ export function subscriptionState(
   if (!periods.length) return "borrador";
   if (activePeriod(periods, now)) return "activa";
   const lastEnd = Math.max(...periods.map((p) => p.endsAt));
-  if (now < lastEnd) return "activa";
+  // Puede haber un intervalo sin generación entre un período devuelto y otro ya pagado.
+  if (now < lastEnd) return "en_pausa";
   if (periods.length >= sub.months) return "completada";
   return now <= lastEnd + GRACE_MS ? "en_pausa" : "vencida";
 }

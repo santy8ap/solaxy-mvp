@@ -39,7 +39,7 @@ npm start
 
 La confirmación de una orden, la inserción del período y el inicio del paquete se guardan en una transacción. Un fallo revierte los tres cambios y permite reintentar. Los índices únicos impiden acreditar dos veces un mes o un pago. Los pagos reales que llegan sin cupo o para un mes ya pagado quedan por reembolsar.
 
-Los webhooks de Mercado Pago consultan el pago en la API del proveedor antes de aplicarlo. Una devolución o contracargo verificado cambia el movimiento a `reembolsada` y registra una revisión auditable. Solo el período afectado deja de generar desde la detección; se conservan el historial, el calendario y los demás meses pagados. No se descuentan automáticamente rendimientos ya acumulados ni se envían reembolsos desde esta aplicación.
+Los webhooks de Mercado Pago consultan el pago en la API del proveedor antes de aplicarlo. Una devolución o contracargo verificado cambia el movimiento a `reembolsada` y registra una revisión auditable. Solo el período afectado deja de generar desde la detección; se conservan el historial y las fechas de los demás meses pagados. No se descuentan automáticamente rendimientos ya acumulados ni se envían reembolsos desde esta aplicación.
 
 Mientras exista una devolución pendiente de conciliación, se bloquean nuevos retiros, su aprobación y las renovaciones del paquete afectado. En **Admin → Pagos → Registrar conciliación**, el equipo debe registrar el acuerdo y su referencia después de revisar el saldo y los retiros con el titular. Esta acción levanta el bloqueo, conserva el corte del período devuelto y no mueve dinero. Las demás mensualidades deben resolverse según el acuerdo comercial.
 

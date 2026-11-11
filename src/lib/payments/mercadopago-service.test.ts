@@ -405,6 +405,10 @@ describe("confirmación del pago", () => {
     const periods = plans.periodsOf(sub);
     expect(periods[0].endsAt).toBeLessThan(sub.periods[0].endsAt);
     const cut = periods[0].endsAt;
+    const { getPortfolio } = await import("@/lib/portfolio");
+    expect(
+      (await getPortfolio("u10", cut + 1)).subscriptions[0].paidUntil,
+    ).toBe(cut);
     const { generatedKwh } = await import("@/lib/energy/plan-math");
     const solar = (await settings.readConfig()).solar;
     expect(generatedKwh(solar, sub.dailyKwh, periods, cut + 2 * 86400000)).toBe(
