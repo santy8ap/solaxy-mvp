@@ -46,7 +46,7 @@ test("paquete → ingreso → datos personales → resumen → pago de prueba �
   await page.goto("/planes");
   await page.locator('a[href="/comprar?plan=p180"]:visible').click();
   await expect(page).toHaveURL(/\/ingresar\?next=%2Fcomprar%3Fplan%3Dp180$/);
-  await expect(page.getByText("Plan 180", { exact: true })).toBeVisible();
+  await expect(page.locator("strong").filter({ hasText: /^Plan 180$/ })).toBeVisible();
   await page
     .getByRole("button", { name: /Entrar con la cuenta de pruebas/i })
     .click();
