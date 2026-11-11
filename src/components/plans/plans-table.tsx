@@ -36,7 +36,7 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
                 <tr key={p.id} className={`border-b border-line ${selected ? "bg-ink text-void" : ""} ${p.available ? "" : "text-dim"}`}>
                   <th scope="row" className="py-5 pl-0 pr-4 font-normal">
                     <span className={`display block text-[2.5rem] ${selected ? "pl-4" : ""}`}>{p.name}</span>
-                    {!p.available && <span className="cap mt-1 block !text-dim">Sin cupo por ahora</span>}
+                    {!p.available && <span className="cap mt-1 block g text-dim">Sin cupo por ahora</span>}
                   </th>
                   <td className="num py-5 text-right text-[1.05rem]">{formatNumber(p.totalKwh)} kWh</td>
                   <td className="num py-5 text-right text-[1.05rem]">{formatNumber(p.dailyKwh)} kWh</td>
@@ -63,7 +63,7 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
               <div className="flex items-end justify-between gap-4">
                 <h3 className="display text-[2.75rem]">{p.name}</h3>
                 <p className="text-right">
-                  <span className={`cap block ${selected ? "!text-void/70" : ""}`}>Utilidad bruta</span>
+                  <span className={`cap block ${selected ? "g text-void/70" : ""}`}>Utilidad bruta</span>
                   <span className="figure text-[2.75rem]">{pctLabel(p.profitPct)}</span>
                 </p>
               </div>
@@ -75,16 +75,16 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
                   ["Venta / kWh", formatCop(p.saleCopPerKwh)],
                 ].map(([k, v]) => (
                   <div key={k}>
-                    <dt className={`cap ${selected ? "!text-void/70" : ""}`}>{priceLabel(k)}</dt>
+                    <dt className={`cap ${selected ? "g text-void/70" : ""}`}>{priceLabel(k)}</dt>
                     <dd className="num mt-1 text-base">{v}</dd>
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <dt className={`cap ${selected ? "!text-void/70" : ""}`}>Pago mensual</dt>
+                  <dt className={`cap ${selected ? "g text-void/70" : ""}`}>Pago mensual</dt>
                   <dd className="num mt-1 text-xl">{formatCop(p.monthlyCop)}</dd>
                 </div>
               </dl>
-              {!p.available && <p className="cap mt-3 !text-dim">Sin cupo por ahora</p>}
+              {!p.available && <p className="cap mt-3 g text-dim">Sin cupo por ahora</p>}
               {action && <div className="mt-5">{action(p)}</div>}
             </li>
           );

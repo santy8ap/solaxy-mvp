@@ -65,7 +65,7 @@ export function PlansPage() {
             selectedId={checkout?.planId ?? null}
             action={(p) =>
               p.available ? (
-                <button type="button" className={`btn w-full lg:w-auto ${checkout?.planId === p.id ? "btn-ghost !border-void !text-void" : "btn-solid"}`} onClick={() => buy(p.id)}>
+                <button type="button" className={`btn w-full lg:w-auto ${checkout?.planId === p.id ? "btn-ghost !text-void" : "btn-solid"}`} onClick={() => buy(p.id)}>
                   Comprar
                 </button>
               ) : null
