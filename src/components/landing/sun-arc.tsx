@@ -1,5 +1,5 @@
 "use client";
-import { useId } from "react";
+import { useId, useState } from "react";
 import type { PlantReading } from "@/lib/sim";
 import { projectedSolarKw, solarClockAt, SOLAR_CLOCK } from "@/lib/solar-clock";
 
@@ -19,7 +19,25 @@ const curve = Array.from({ length: 157 }, (_, i) => {
 /** Fixed 06–19h projected cycle in Bogotá. Deliberately separate from metering. */
 export function SunArc({ now, compact = false }: Props) {
   const id = useId().replace(/:/g, "");
+  const [inspection, setInspection] = useState<number | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
   const current = now !== null ? solarClockAt(now) : null;
+  const selectedHour = hover ?? inspection;
+  const inspectHour = (clientX: number, bounds: DOMRect) =>
+    Math.min(
+      19,
+      Math.max(
+        6,
+        Math.round(
+          (6 +
+            ((((clientX - bounds.left) / bounds.width) * 1180 - 68) / 1040) *
+              13) *
+            4,
+        ) / 4,
+      ),
+    );
+  const labelHour = (hour: number) =>
+    `${String(Math.floor(hour)).padStart(2, "0")}:${String(Math.round((hour % 1) * 60)).padStart(2, "0")}`;
   const h = Math.min(19, Math.max(6, current?.hour ?? 6));
   return (
     <div className={`solar-clock ${compact ? "solar-clock-compact" : ""}`}>
@@ -29,6 +47,24 @@ export function SunArc({ now, compact = false }: Props) {
       </div>
       <svg
         viewBox="0 0 1180 380"
+        onPointerMove={(event) => {
+          if (event.pointerType === "mouse")
+            setHover(
+              inspectHour(
+                event.clientX,
+                event.currentTarget.getBoundingClientRect(),
+              ),
+            );
+        }}
+        onPointerLeave={() => setHover(null)}
+        onClick={(event) =>
+          setInspection(
+            inspectHour(
+              event.clientX,
+              event.currentTarget.getBoundingClientRect(),
+            ),
+          )
+        }
         role="img"
         aria-labelledby={`${id}-title ${id}-desc`}
       >
@@ -80,7 +116,9 @@ export function SunArc({ now, compact = false }: Props) {
             />
             <text
               className={
-                (hour % 2 && hour !== 19) || hour === 18 ? "solar-hour-minor" : undefined
+                (hour % 2 && hour !== 19) || hour === 18
+                  ? "solar-hour-minor"
+                  : undefined
               }
               x={x(hour)}
               y="343"
@@ -115,7 +153,64 @@ export function SunArc({ now, compact = false }: Props) {
             <circle cx={x(h)} cy={y(h)} r="4" fill="#080808" />
           </g>
         )}
+        {selectedHour !== null && (
+          <g>
+            <line
+              x1={x(selectedHour)}
+              x2={x(selectedHour)}
+              y1="35"
+              y2="310"
+              stroke="#aaa"
+              strokeDasharray="2 5"
+            />
+            <circle
+              cx={x(selectedHour)}
+              cy={y(selectedHour)}
+              r="8"
+              fill="#080808"
+              stroke="#eee"
+              strokeWidth="2"
+            />
+          </g>
+        )}
       </svg>
+      <div className="solar-inspector">
+        <label htmlFor={`${id}-hour`}>
+          Explorar una hora{" "}
+          <span className="sr-only">del ciclo solar de Colombia</span>
+        </label>
+        <input
+          id={`${id}-hour`}
+          type="range"
+          min={6}
+          max={19}
+          step={0.25}
+          value={inspection ?? h}
+          onChange={(event) => {
+            setHover(null);
+            setInspection(Number(event.target.value));
+          }}
+          aria-valuetext={`${labelHour(inspection ?? h)}, ${Math.round(projectedSolarKw(inspection ?? h)).toLocaleString("es-CO")} kW proyectados`}
+        />
+        <output className="mono" htmlFor={`${id}-hour`}>
+          {labelHour(selectedHour ?? h)} ·{" "}
+          {Math.round(projectedSolarKw(selectedHour ?? h)).toLocaleString(
+            "es-CO",
+          )}{" "}
+          kW
+        </output>
+        {inspection !== null && (
+          <button
+            type="button"
+            onClick={() => {
+              setInspection(null);
+              setHover(null);
+            }}
+          >
+            Volver a ahora
+          </button>
+        )}
+      </div>
       <div className="solar-clock-caption">
         <span>06:00 · Inicio del ciclo</span>
         <span>

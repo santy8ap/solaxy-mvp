@@ -1,47 +1,15 @@
 "use client";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Dialog } from "@/components/ui/dialog";
+import { useState, useSyncExternalStore } from "react";
 import { useAppConfig } from "@/lib/client/use-app-config";
 import { WC_PROJECT_ID, useWallet } from "@/lib/wallet/context";
 import { getWallets, subscribeWallets } from "@/lib/wallet/discovery";
 
 const EMPTY: never[] = [];
 
-export function Modal({ open, onClose, title, children, wide = false }: { open: boolean; onClose(): void; title: string; children: React.ReactNode; wide?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.activeElement as HTMLElement | null;
-    ref.current?.querySelector<HTMLElement>("button, [href], input")?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-      prev?.focus?.();
-    };
-  }, [open, onClose]);
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-silicon-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className={`panel max-h-[92dvh] w-full overflow-y-auto rounded-b-none p-6 sm:rounded-b-[var(--radius-panel)] sm:p-7 ${wide ? "sm:max-w-[560px]" : "sm:max-w-[440px]"}`}
-      >
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-silver-50">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 text-silver-400 hover:text-silver-50" aria-label="Cerrar">
-            ✕
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
+export function Modal({ open, onClose, title, children }: { open: boolean; onClose(): void; title: string; children: React.ReactNode; wide?: boolean }) {
+  return <Dialog open={open} onClose={onClose} title={title}>{children}</Dialog>;
 }
 
 function Option({ title, note, icon, onClick, disabled = false }: { title: string; note: string; icon: React.ReactNode; onClick(): void; disabled?: boolean }) {

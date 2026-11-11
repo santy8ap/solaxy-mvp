@@ -1,11 +1,11 @@
 "use client";
 import { FileCheck2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Topbar } from "@/components/panel/shell";
+import { AccountActions, Topbar } from "@/components/panel/shell";
 import { ProfileForm } from "./profile-form";
 
 const WHY = [
-  { icon: ShieldCheck, title: "Para que tus kW queden a tu nombre", text: "Tu participación en la planta se registra con tus datos, igual que en tu documento." },
+  { icon: ShieldCheck, title: "Para identificar tu cuenta", text: "Mantén los datos de tu cuenta actualizados y coherentes con tu documento." },
   { icon: FileCheck2, title: "Para procesar tus pagos", text: "Tus pagos con tarjeta, PSE o Nequi (por Mercado Pago) y tus retiros quedan a tu nombre." },
   { icon: Lock, title: "Protegidos por la ley", text: "Solo los usamos para lo que dice la Política de Tratamiento de Datos (Ley 1581 de 2012)." },
 ];
@@ -13,9 +13,9 @@ const WHY = [
 export function ProfilePage() {
   return (
     <>
-      <Topbar title="Mis datos" subtitle="Tus datos de inversionista. Los necesitamos antes de tu primera compra." />
+      <Topbar title="Los datos de tu cuenta." subtitle="Revisa y actualiza tu información de identificación." />
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <section className="panel p-6 sm:p-8" aria-label="Datos del inversionista">
+        <section className="panel p-6 sm:p-8" aria-label="Datos de tu cuenta">
           <ProfileForm onSaved={() => toast("Tus datos quedaron guardados.")} />
         </section>
         <aside className="panel cells p-6 sm:p-8" aria-label="Por qué te los pedimos">
@@ -35,6 +35,7 @@ export function ProfilePage() {
           </ul>
         </aside>
       </div>
+      <AccountActions />
     </>
   );
 }

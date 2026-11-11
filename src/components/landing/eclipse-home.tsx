@@ -5,15 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUpRight, Check, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { SunArc } from "./sun-arc";
+import { ENERGY_PLANS } from "@/config/energy-plans";
 
 const number = new Intl.NumberFormat("es-CO");
 const cop = (value: number) => `$ ${number.format(value)}`;
-const plans = [
-  { id: "01", name: "Horizonte", daily: 2000, price: 348 },
-  { id: "02", name: "Órbita", daily: 4000, price: 340 },
-  { id: "03", name: "Cénit", daily: 6000, price: 330 },
-  { id: "04", name: "Eclipse", daily: 8000, price: 320 },
-] as const;
+const plans = ENERGY_PLANS;
 const questions = [
   [
     "¿Cómo están estructurados los planes?",
@@ -287,7 +283,10 @@ export function EclipseHome() {
                 El catálogo de planes está definido. Su contratación mensual aún
                 no está habilitada en esta versión.
               </p>
-              <a className="text-link" href="#comparar">
+              <Link className="text-link" href={`/planes?plan=${plan.id}`}>
+                  Revisar plan {plan.name} <ArrowUpRight size={16} />
+                </Link>
+                <a className="text-link" href="#comparar">
                 Ver comparación completa <ArrowDown size={16} />
               </a>
             </div>

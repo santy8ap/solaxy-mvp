@@ -1,8 +1,4 @@
-import type { Metadata } from "next";
-import { Market } from "@/components/market/market";
-
-export const metadata: Metadata = { title: "Mercado" };
-
+import { redirect } from "next/navigation";
 export default function MarketPage() {
-  return <Market />;
+  redirect("/panel/planes");
 }
