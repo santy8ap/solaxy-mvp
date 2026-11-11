@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from "react";
+"use client";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 export interface ThemeMode {
   mode: "light" | "dark" | "green";
@@ -36,7 +37,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeCtx.Provider value={{ mode, setMode }}>
-      <div className={themes[mode].class}>{children}</div>
+      <div className={themes[mode.mode].class}>{children}</div>
     </ThemeCtx.Provider>
   );
 }
