@@ -394,6 +394,19 @@ export async function handleMercadoPagoNotification(
     (body.data?.id != null ? String(body.data.id) : null);
   if (type !== "payment" || !dataId)
     return { status: 200, message: "Evento ignorado" };
+  // Con dinero real, solo se atienden notificaciones firmadas: sin la clave secreta no se puede saber quién las manda.
+  if (!cfg.webhookSecret && !isDemoMode()) {
+    payLog("webhook_rechazado", {
+      proveedor: "mercadopago",
+      motivo: "sin_clave_secreta",
+      dataId,
+    });
+    return {
+      status: 401,
+      message:
+        "Falta MERCADOPAGO_WEBHOOK_SECRET: con dinero real solo se aceptan notificaciones firmadas.",
+    };
+  }
   if (
     cfg.webhookSecret &&
     !verifyWebhookSignature({

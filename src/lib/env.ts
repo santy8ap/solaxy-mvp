@@ -26,7 +26,6 @@ function strict() {
   return Boolean(process.env.VERCEL) || !isDemoMode();
 }
 
-const FALLBACK_SECRET = "iwe-pruebas-secreto-cambiar-en-produccion-7f3a9c21e8b4";
 /** Solo para `next build`: nadie inicia sesión durante el build, así que basta una clave efímera. */
 let buildSecret: string | null = null;
 
@@ -40,14 +39,18 @@ export function authSecret() {
     }
     throw new Error("Falta BETTER_AUTH_SECRET: configúrala en las variables de entorno (en local, con npm run setup).");
   }
-  return FALLBACK_SECRET;
+  // En local sin BETTER_AUTH_SECRET (npm run setup la crea): una clave aleatoria para este proceso, nunca una
+  // escrita en el código. Va en globalThis para que sea la misma aunque el módulo se cargue más de una vez.
+  const g = globalThis as unknown as { __iweDevSecret?: string };
+  g.__iweDevSecret ??= `dev-${crypto.randomUUID()}-${crypto.randomUUID()}`;
+  return g.__iweDevSecret;
 }
 
 /** PIN de administrador. null = acceso de administrador desactivado (falta ADMIN_PIN en producción). */
 export function adminPin(): string | null {
   const pin = process.env.ADMIN_PIN?.trim();
-  if (pin) return pin;
-  return strict() ? null : "2026";
+  // Sin ADMIN_PIN nadie entra al admin: no hay un PIN por defecto (npm run setup genera uno).
+  return pin || null;
 }
 
 /** Correos autorizados para el modo administrador (ADMIN_EMAILS, separados por comas). */
@@ -81,10 +84,9 @@ export function baseUrl() {
 
 export function trustedOrigins() {
   const origins = new Set<string>([baseUrl()]);
-  for (let port = 3000; port <= 3005; port++) {
-    origins.add(`http://localhost:${port}`);
-    origins.add(`http://127.0.0.1:${port}`);
-  }
+  // El puerto de desarrollo; otro puerto local entra solo si es el de BETTER_AUTH_URL.
+  origins.add("http://localhost:3000");
+  origins.add("http://127.0.0.1:3000");
   for (const v of [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]) {
     if (v) origins.add(`https://${v}`);
   }

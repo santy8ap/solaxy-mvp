@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { ensureReady } from "@/lib/db/init";
-import { adminEmailAllowed, adminPin, authSecret } from "@/lib/env";
+import { adminEmailAllowed, adminPin, authSecret, baseUrl } from "@/lib/env";
 import { jsonError, knownUser, unauthorized, type CurrentUser } from "@/lib/session";
 import { createPinLimiter, pinMatches, sessionBinding, signAdminToken, verifyAdminToken } from "./token";
 
@@ -18,7 +18,8 @@ const limiter = (g.__iwePinLimiter ??= createPinLimiter({ max: 5, windowMs: 10 *
 const cookieOptions = (maxAgeMs: number) => ({
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  // Segura en producción y siempre que la página se sirva por https.
+  secure: process.env.NODE_ENV === "production" || baseUrl().startsWith("https://"),
   path: "/",
   maxAge: Math.floor(maxAgeMs / 1000),
 });

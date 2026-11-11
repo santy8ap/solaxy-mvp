@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/payments/crypto
     const { id } = await ctx.params;
     const order = await getOrder(id);
     if (!order || order.userId !== user.id || order.method !== "crypto") return jsonError("Orden no encontrada", 404);
-    if (!syncLimiter.hit(user.id)) return jsonError("Demasiadas consultas seguidas. Espera un momento.", 429);
+    if (!(await syncLimiter.hit(user.id))) return jsonError("Demasiadas consultas seguidas. Espera un momento.", 429);
     const s = await verifyCryptoOrder(id);
     return Response.json({ order: toTxDTO(s.order), state: s.state, confirmations: s.confirmations, needed: s.needed });
   } catch (e) {

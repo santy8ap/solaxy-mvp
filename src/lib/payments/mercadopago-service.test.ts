@@ -265,6 +265,25 @@ describe("confirmación del pago", () => {
     expect((await orderRow(o.orderId)).status).toBe("pendiente");
   });
 
+  it("con dinero real y sin clave secreta configurada, las notificaciones se rechazan sin consultar la API", async () => {
+    vi.stubEnv("MERCADOPAGO_WEBHOOK_SECRET", "");
+    vi.stubEnv("DEMO_MODE", "false");
+    const calls: string[] = [];
+    const spy = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(String(input));
+      return fakeFetch(input, init);
+    }) as typeof fetch;
+    try {
+      const n = notification(424242);
+      const r = await svc.handleMercadoPagoNotification({ body: n.body, query: n.query, headers: new Headers() }, { fetch: spy });
+      expect(r.status).toBe(401);
+      expect(calls.filter((u) => u.includes("/v1/payments/"))).toEqual([]);
+    } finally {
+      vi.stubEnv("MERCADOPAGO_WEBHOOK_SECRET", SECRET);
+      vi.stubEnv("DEMO_MODE", "");
+    }
+  });
+
   it("un aviso IPN antiguo (topic=payment, sin firma) se responde 200 y se ignora sin consultar la API", async () => {
     const o = await order("u9");
     const p = pay(o.orderId, MONTH_180, "approved");

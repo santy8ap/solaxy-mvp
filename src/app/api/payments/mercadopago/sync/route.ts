@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     // Solo el dueño de la orden puede consultarla.
     const order = await getOrder(b.ref);
     if (!order || order.userId !== user.id || order.method !== "mercadopago") return jsonError("No encontramos ese pago en tu cuenta.", 404);
-    if (!syncLimiter.hit(user.id)) return jsonError("Demasiadas consultas seguidas. Espera un momento.", 429);
+    if (!(await syncLimiter.hit(user.id))) return jsonError("Demasiadas consultas seguidas. Espera un momento.", 429);
     const r = await syncMercadoPagoOrder({ orderId: b.ref, paymentId: b.paymentId });
     if (!r) return jsonError("No encontramos ese pago en tu cuenta.", 404);
     return Response.json({ order: toTxDTO(r.order), outcome: r.outcome });

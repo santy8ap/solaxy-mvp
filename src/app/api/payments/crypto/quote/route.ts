@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const user = await getSessionUser();
     if (!user) return unauthorized();
     const b = Body.parse(await readJson(req));
-    if (!orderLimiter.hit(user.id)) return jsonError(TOO_MANY_ORDERS, 429);
+    if (!(await orderLimiter.hit(user.id))) return jsonError(TOO_MANY_ORDERS, 429);
     const quote = await createCryptoQuote({ userId: user.id, ...b });
     return Response.json(quote, { status: 201 });
   } catch (e) {
