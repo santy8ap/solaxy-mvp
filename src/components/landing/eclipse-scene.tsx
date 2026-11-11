@@ -1,3 +1,5 @@
+import { Asterisk } from "lucide-react";
+
 /** Decorative, code-native eclipse: no video, image download or canvas render loop. */
 export function EclipseScene() {
   return (
@@ -26,9 +28,9 @@ export function EnergyIntro() {
           {[0, 1].map((copy) => (
             <div className="energy-ribbon-group" key={copy}>
               <span>DEL SOL A TU EMPRESA.</span>
-              <span className="energy-ribbon-spark">✳</span>
+              <span className="energy-ribbon-spark"><Asterisk strokeWidth={1.3} /></span>
               <span className="energy-ribbon-outline">ENERGÍA QUE CONECTA.</span>
-              <span className="energy-ribbon-spark">✳</span>
+              <span className="energy-ribbon-spark"><Asterisk strokeWidth={1.3} /></span>
             </div>
           ))}
         </div>

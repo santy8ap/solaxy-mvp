@@ -203,6 +203,7 @@
 .eclipse-home .energy-ribbon-group > span { font-stretch: 62%; font-size: clamp(45px, 6.4vw, 96px); line-height: 1; letter-spacing: -0.04em; white-space: nowrap; }
 .eclipse-home .energy-ribbon-group > .energy-ribbon-outline { color: transparent; -webkit-text-stroke: 1px #888; }
 .eclipse-home .energy-ribbon-group > .energy-ribbon-spark { font-size: 40px; color: #888; }
+.eclipse-home .energy-ribbon-spark svg { width: 1em; height: 1em; }
 .eclipse-home .energy-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding-block: 18px 34px; }
 .eclipse-home .energy-facts > div { display: flex; flex-direction: column-reverse; align-items: start; padding: 12px 28px; border-left: 1px solid #444; }
 .eclipse-home .energy-facts > div:first-child { padding-left: 0; border: 0; }
