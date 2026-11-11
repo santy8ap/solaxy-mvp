@@ -18,7 +18,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function alreadyApplied(statement: string, message: string) {
   if (/duplicate column name|already exists/i.test(message)) return true;
   // "INSERT OR IGNORE … SELECT" copia datos de una tabla que la misma migración elimina después.
-  const removes = /^(ALTER TABLE\s+\S+\s+(DROP COLUMN|RENAME TO)|DELETE FROM|DROP (TABLE|INDEX)|INSERT OR IGNORE INTO)/i.test(statement.trim());
+  // "CREATE TABLE IF NOT EXISTS … AS SELECT" archiva una tabla que la misma migración retira más adelante.
+  const removes = /^(ALTER TABLE\s+\S+\s+(DROP COLUMN|RENAME TO)|DELETE FROM|DROP (TABLE|INDEX)|INSERT OR IGNORE INTO|CREATE TABLE IF NOT EXISTS\s+\S+\s+AS SELECT)/i.test(statement.trim());
   return removes && /no such (column|table|index)/i.test(message);
 }
 

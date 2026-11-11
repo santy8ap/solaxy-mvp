@@ -15,7 +15,8 @@ const columns = async (table: string) => (await client.execute(`PRAGMA table_inf
 beforeAll(async () => {
   client = createClient({ url: `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-migrate-")), "old.db")}` });
   await client.execute("CREATE TABLE __solaxy_migrations (id TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)");
-  for (const m of MIGRATIONS.slice(0, 3)) {
+  // Producción tiene las tres primeras migraciones y la del límite de peticiones (0003_rate_limit).
+  for (const m of MIGRATIONS.filter((x) => /^000[0-2]_|rate_limit/.test(x.id))) {
     for (const sql of m.statements) await client.execute(sql);
     await client.execute({ sql: "INSERT INTO __solaxy_migrations (id, applied_at) VALUES (?, 1)", args: [m.id] });
   }
@@ -44,6 +45,12 @@ describe("migración del modelo de kW al de planes de energía", () => {
     await migrate(client, { localFile: true });
     expect(await count("legacy_ledger_tx")).toBe(3);
     expect(await count("ledger_tx")).toBe(0);
+  });
+
+  it("archiva las posiciones de kW antes de retirar su tabla", async () => {
+    const rows = (await client.execute("SELECT * FROM legacy_position_entry")).rows;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: "pe-1", user_id: "real-1", kw_delta: 2 });
   });
 
   it("borra la comunidad ficticia y la cuenta de pruebas de la marca anterior, y conserva las cuentas reales", async () => {
@@ -101,6 +108,9 @@ describe("migración del modelo de kW al de planes de energía", () => {
     expect(alreadyApplied("DELETE FROM `ledger_tx` WHERE coalesce(`kw`, 0) = 0;", "no such column: kw")).toBe(true);
     expect(alreadyApplied("INSERT OR IGNORE INTO `a` SELECT * FROM `b`;", "no such table: b")).toBe(true);
     expect(alreadyApplied("INSERT INTO `a` SELECT * FROM `b`;", "no such table: b")).toBe(false);
+    // Archivar una tabla que la misma migración retira después: al repetirse, la tabla ya no está.
+    expect(alreadyApplied("CREATE TABLE IF NOT EXISTS `legacy_x` AS SELECT * FROM `x`;", "no such table: x")).toBe(true);
+    expect(alreadyApplied("CREATE TABLE `y` AS SELECT * FROM `x`;", "no such table: x")).toBe(false);
     expect(alreadyApplied("CREATE INDEX `i` ON `t` (`nope`);", "no such column: nope")).toBe(false);
   });
 });

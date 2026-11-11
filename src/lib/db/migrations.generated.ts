@@ -73,9 +73,17 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
     ]
   },
   {
+    "id": "0003_rate_limit",
+    "statements": [
+      "-- Contadores de rate limiting persistentes en BD (funcionan entre instancias de Vercel).\nCREATE TABLE IF NOT EXISTS `rate_limit` (\n\t`rl_key` text NOT NULL,\n\t`window_start` integer NOT NULL,\n\t`count` integer NOT NULL DEFAULT 1,\n\tPRIMARY KEY(`rl_key`, `window_start`)\n);",
+      "CREATE INDEX IF NOT EXISTS `rate_limit_key_idx` ON `rate_limit` (`rl_key`);"
+    ]
+  },
+  {
     "id": "0004_limpieza",
     "statements": [
       "CREATE TABLE IF NOT EXISTS `legacy_ledger_tx` AS SELECT * FROM `ledger_tx`;",
+      "CREATE TABLE IF NOT EXISTS `legacy_position_entry` AS SELECT * FROM `position_entry`;",
       "DELETE FROM `ledger_tx` WHERE coalesce(`kw`, 0) = coalesce(`kw`, 0);",
       "DELETE FROM `session` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');",
       "DELETE FROM `account` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');",

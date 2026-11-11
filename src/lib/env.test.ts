@@ -81,9 +81,25 @@ describe("PIN de administrador", () => {
     expect(adminEmailAllowed("socio@inworldenergy.co")).toBe(false);
   });
 
-  it("en modo demo, sin ADMIN_EMAILS, cualquiera con el PIN puede entrar", async () => {
+  it("en modo de pruebas, la cuenta de pruebas puede administrar (con el PIN) aunque no esté en ADMIN_EMAILS", async () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "");
-    expect((await import("@/lib/env")).adminEmailAllowed("pruebas@inworldenergy.local")).toBe(true);
+    const { adminEmailAllowed } = await import("@/lib/env");
+    expect(adminEmailAllowed("pruebas@inworldenergy.local")).toBe(true);
+    // La lista de producción puede no traerla: sigue pudiendo entrar mientras dure el modo de pruebas.
+    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co");
+    expect(adminEmailAllowed("Pruebas@InWorldEnergy.local")).toBe(true);
+  });
+
+  it("en modo de pruebas, sin ADMIN_EMAILS, las demás cuentas no pueden administrar", async () => {
+    vi.stubEnv("DEMO_MODE", "");
+    vi.stubEnv("ADMIN_EMAILS", "");
+    expect((await import("@/lib/env")).adminEmailAllowed("cualquiera@gmail.com")).toBe(false);
+  });
+
+  it("con dinero real, la cuenta de pruebas no puede administrar", async () => {
+    vi.stubEnv("DEMO_MODE", "false");
+    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co");
+    expect((await import("@/lib/env")).adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
   });
 });

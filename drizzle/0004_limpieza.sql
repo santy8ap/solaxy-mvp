@@ -1,4 +1,5 @@
 CREATE TABLE IF NOT EXISTS `legacy_ledger_tx` AS SELECT * FROM `ledger_tx`;--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `legacy_position_entry` AS SELECT * FROM `position_entry`;--> statement-breakpoint
 DELETE FROM `ledger_tx` WHERE coalesce(`kw`, 0) = coalesce(`kw`, 0);--> statement-breakpoint
 DELETE FROM `session` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');--> statement-breakpoint
 DELETE FROM `account` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');--> statement-breakpoint

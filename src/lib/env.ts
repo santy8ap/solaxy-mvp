@@ -59,13 +59,14 @@ export function adminEmails() {
 }
 
 /**
- * Con dinero real, el PIN no basta: el correo debe estar en ADMIN_EMAILS.
- * En modo demo, si la lista está vacía, cualquiera con el PIN puede entrar.
+ * Quién puede entrar al modo administrador, además de saber el PIN: los correos de ADMIN_EMAILS.
+ * La cuenta de pruebas también puede, pero solo mientras el modo de pruebas esté activo.
+ * Sin ADMIN_EMAILS, ninguna otra cuenta administra.
  */
 export function adminEmailAllowed(email: string) {
-  const list = adminEmails();
-  if (list.length === 0) return isDemoMode();
-  return list.includes(email.trim().toLowerCase());
+  const normalized = email.trim().toLowerCase();
+  if (isDemoMode() && normalized === env.demoEmail) return true;
+  return adminEmails().includes(normalized);
 }
 
 /** URL pública de la app (para OAuth y cookies). */
