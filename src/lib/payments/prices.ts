@@ -18,7 +18,7 @@ export function resetPriceCache() {
   cache = null;
 }
 
-export const NO_LIVE_PRICE = "No hay precio en vivo de las criptomonedas en este momento. Intenta en unos minutos o paga con tarjeta, PSE o Nequi.";
+export const NO_LIVE_PRICE = "No hay precio en vivo de las criptomonedas en este momento. Intenta en unos minutos o paga con Mercado Pago.";
 
 export async function liveCopPrices(deps: { fetch?: typeof fetch } = {}): Promise<Record<CryptoAsset, number> & { at: number }> {
   if (cache && Date.now() - cache.at < TTL_MS) return { ...cache.prices, at: cache.at };

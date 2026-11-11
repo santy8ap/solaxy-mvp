@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mercadoPagoConfig } from "@/lib/payments/config";
-import { buildPreference, failureReason, mapMpStatus, verifyWebhookSignature } from "@/lib/payments/mercadopago";
+import { buildPreference, failureReason, isSafeCheckoutUrl, mapMpStatus, verifyWebhookSignature } from "@/lib/payments/mercadopago";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -103,5 +103,21 @@ describe("preferencia del Checkout Pro", () => {
   it("solo ofrece tarjetas y PSE (Nequi va por PSE): sin pagos en efectivo", () => {
     const p = buildPreference(base);
     expect(p.payment_methods.excluded_payment_types).toEqual([{ id: "ticket" }, { id: "atm" }]);
+  });
+
+  it("si el monto pasa el tope de las tarjetas, solo deja PSE", () => {
+    const p = buildPreference({ ...base, amountCop: 76_800_000, cards: false });
+    expect(p.payment_methods.excluded_payment_types).toEqual([{ id: "ticket" }, { id: "atm" }, { id: "credit_card" }, { id: "debit_card" }, { id: "prepaid_card" }]);
+  });
+});
+
+describe("dirección del checkout que devuelve Mercado Pago", () => {
+  it("solo se sigue si es https (o localhost en pruebas locales)", () => {
+    expect(isSafeCheckoutUrl("https://www.mercadopago.com.co/checkout/v1/redirect?pref_id=1")).toBe(true);
+    expect(isSafeCheckoutUrl("http://localhost:4010/checkout/v1/redirect?pref_id=1")).toBe(true);
+    expect(isSafeCheckoutUrl("javascript:alert(1)")).toBe(false);
+    expect(isSafeCheckoutUrl("http://sitio-falso.com/checkout")).toBe(false);
+    expect(isSafeCheckoutUrl("data:text/html,hola")).toBe(false);
+    expect(isSafeCheckoutUrl("no es una url")).toBe(false);
   });
 });

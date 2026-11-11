@@ -7,13 +7,13 @@ import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 
 const Body = z.object(planTarget).refine(onePlanTarget, PLAN_TARGET_ERROR);
 
-/** Crea la orden del mes y devuelve la URL del Checkout Pro de Mercado Pago (tarjeta, PSE o Nequi). */
+/** Crea la orden del mes y devuelve la URL del Checkout Pro de Mercado Pago (PSE o tarjeta). */
 export async function POST(req: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
     const b = Body.parse(await readJson(req));
-    if (!orderLimiter.hit(user.id)) return jsonError(TOO_MANY_ORDERS, 429);
+    if (!(await orderLimiter.hit(user.id))) return jsonError(TOO_MANY_ORDERS, 429);
     const order = await createMercadoPagoOrder({ userId: user.id, email: user.email, ...b });
     return Response.json(order, { status: 201 });
   } catch (e) {

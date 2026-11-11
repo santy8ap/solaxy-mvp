@@ -66,3 +66,45 @@ describe("PIN de administrador", () => {
     expect(limiter.allow("ip", now)).toBe(true);
   });
 });
+
+describe("PIN de administrador: 5 intentos y esperar un minuto (contado en la base)", () => {
+  it("bloquea al sexto intento, aunque el PIN sea correcto, y se libera al minuto", async () => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const path = await import("node:path");
+    const { createDb } = await import("@/lib/db/client");
+    const { migrate } = await import("@/lib/db/migrate");
+    const { client } = createDb(`file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-pin-")), "pin.db")}`);
+    await migrate(client, { localFile: true });
+    const { verifyPinAttempt } = await import("@/lib/admin/pin-attempts");
+    const t = 10_000_000;
+    const keys = ["usuario:u1", "ip:203.0.113.5"];
+    for (let i = 0; i < 5; i++) {
+      expect(await verifyPinAttempt({ pin: "000000", expected: "481516", keys, now: t + i }, client)).toMatchObject({ ok: false, locked: false });
+    }
+    const sixth = await verifyPinAttempt({ pin: "481516", expected: "481516", keys, now: t + 10 }, client);
+    expect(sixth).toMatchObject({ ok: false, locked: true });
+    // Otra cuenta desde otra IP no se ve afectada.
+    expect(await verifyPinAttempt({ pin: "481516", expected: "481516", keys: ["usuario:u2", "ip:203.0.113.9"], now: t + 10 }, client)).toMatchObject({ ok: true });
+    // Pasado un minuto desde el bloqueo, vuelve a dejar intentar.
+    expect(await verifyPinAttempt({ pin: "481516", expected: "481516", keys, now: t + 10 + 60_001 }, client)).toMatchObject({ ok: true });
+  });
+
+  it("un acierto borra los fallos de esa cuenta", async () => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const path = await import("node:path");
+    const { createDb } = await import("@/lib/db/client");
+    const { migrate } = await import("@/lib/db/migrate");
+    const { client } = createDb(`file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-pin-")), "pin.db")}`);
+    await migrate(client, { localFile: true });
+    const { verifyPinAttempt } = await import("@/lib/admin/pin-attempts");
+    const keys = ["usuario:u1", "ip:203.0.113.5"];
+    const t = 20_000_000;
+    for (let i = 0; i < 4; i++) await verifyPinAttempt({ pin: "1", expected: "481516", keys, now: t + i }, client);
+    expect(await verifyPinAttempt({ pin: "481516", expected: "481516", keys, now: t + 5 }, client)).toMatchObject({ ok: true });
+    for (let i = 0; i < 4; i++) {
+      expect(await verifyPinAttempt({ pin: "1", expected: "481516", keys: ["usuario:u1", "ip:203.0.113.6"], now: t + 10 + i }, client)).toMatchObject({ locked: false });
+    }
+  });
+});

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { ledgerTx } from "@/lib/db/schema";
 import { baseUrl, isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
+import { formatCop } from "@/lib/format";
 import { newId, orderCode } from "@/lib/ids";
 import {
   ORDER_TTL_MS,
@@ -19,10 +20,12 @@ import { requireCompleteProfile } from "@/lib/profile";
 import { recordPaymentReversal } from "./reversals";
 import { mercadoPagoConfig } from "./config";
 import { isMercadoPagoTest } from "./mercadopago-account";
+import { mercadoPagoFor, mercadoPagoLimits } from "./mercadopago-limits";
 import { payLog } from "./log";
 import { assertExpectedPayment, type ExpectedPayment } from "./plan-target";
 import {
   bestPayment,
+  isSafeCheckoutUrl,
   buildPreference,
   failureReason,
   mapMpStatus,
@@ -42,7 +45,7 @@ function enabledConfig() {
   const cfg = mercadoPagoConfig();
   if (!cfg.enabled)
     throw new MarketError(
-      "El pago con tarjeta, PSE o Nequi todavía no está configurado.",
+      "El pago con Mercado Pago todavía no está configurado.",
       503,
     );
   return cfg;
@@ -107,6 +110,15 @@ export async function createMercadoPagoOrder(
     now,
   );
   assertExpectedPayment(p, input);
+  // Mercado Pago tiene un tope por pago: por encima del de las tarjetas solo queda PSE, y por encima del de PSE no se puede.
+  const limits = await mercadoPagoLimits(deps);
+  const mpFor = mercadoPagoFor(p.amountCop, limits);
+  if (!mpFor.available) {
+    throw new MarketError(
+      `Mercado Pago recibe hasta ${formatCop(limits.pseMaxCop)} por pago y este mes cuesta ${formatCop(p.amountCop)}. Págalo con USDT o BNB, o escríbenos para pagarlo por transferencia bancaria.`,
+      409,
+    );
+  }
   const orderId = orderCode();
   await db.insert(ledgerTx).values({
     id: orderId,
@@ -131,6 +143,7 @@ export async function createMercadoPagoOrder(
     amountCop: p.amountCop,
     baseUrl: baseUrl(),
     payer: { email: input.email, fullName: profile.fullName },
+    cards: mpFor.cards,
   });
   const res = await mpRequest<{
     id?: string;
@@ -151,7 +164,7 @@ export async function createMercadoPagoOrder(
   const checkoutUrl = cfg.sandbox
     ? (res.json?.sandbox_init_point ?? res.json?.init_point)
     : res.json?.init_point;
-  if (!res.ok || !checkoutUrl) {
+  if (!res.ok || !checkoutUrl || !isSafeCheckoutUrl(checkoutUrl)) {
     payLog("preferencia_rechazada", {
       proveedor: "mercadopago",
       orderId,
@@ -178,6 +191,7 @@ export async function createMercadoPagoOrder(
     mes: p.periodIndex,
     kwh: p.kwh,
     amountCop: p.amountCop,
+    tarjetas: mpFor.cards,
     pruebas: testAccount,
   });
   return {
@@ -393,6 +407,19 @@ export async function handleMercadoPagoNotification(
     (body.data?.id != null ? String(body.data.id) : null);
   if (type !== "payment" || !dataId)
     return { status: 200, message: "Evento ignorado" };
+  // Con dinero real, solo se atienden notificaciones firmadas: sin la clave secreta no se puede saber quién las manda.
+  if (!cfg.webhookSecret && !isDemoMode()) {
+    payLog("webhook_rechazado", {
+      proveedor: "mercadopago",
+      motivo: "sin_clave_secreta",
+      dataId,
+    });
+    return {
+      status: 401,
+      message:
+        "Falta MERCADOPAGO_WEBHOOK_SECRET: con dinero real solo se aceptan notificaciones firmadas.",
+    };
+  }
   if (
     cfg.webhookSecret &&
     !verifyWebhookSignature({

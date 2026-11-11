@@ -21,9 +21,15 @@ let schema: typeof import("@/lib/db/schema");
 let drizzle: typeof import("drizzle-orm");
 
 /** Mercado Pago falso: preferencias, pagos y búsqueda por referencia. */
+const COLOMBIA_METHODS = [
+  { id: "pse", payment_type_id: "bank_transfer", status: "active", max_allowed_amount: 340_000_000 },
+  { id: "visa", payment_type_id: "credit_card", status: "active", max_allowed_amount: 50_000_000 },
+  { id: "debvisa", payment_type_id: "debit_card", status: "active", max_allowed_amount: 50_000_000 },
+];
 const mp = {
   preferences: [] as { body: Record<string, unknown> }[],
   payments: new Map<string, MpPayment>(),
+  methods: COLOMBIA_METHODS as { id: string; payment_type_id: string; status: string; max_allowed_amount: number }[],
 };
 let seq = 1000;
 const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -46,6 +52,7 @@ const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       { status: 201 },
     );
   }
+  if (url.pathname === "/v1/payment_methods") return new Response(JSON.stringify(mp.methods));
   if (url.pathname === "/v1/payments/search") {
     const ref = url.searchParams.get("external_reference");
     return new Response(
@@ -250,6 +257,41 @@ describe("orden de un mes con Mercado Pago", () => {
   });
 });
 
+describe("topes de Mercado Pago", () => {
+  const limitsCache = globalThis as unknown as { __iweMpLimits?: unknown };
+
+  it("hasta el tope de las tarjetas ofrece tarjeta y PSE", async () => {
+    await createUser("tope-1");
+    await order("tope-1", { planId: "p360" });
+    const body = mp.preferences.at(-1)!.body as { payment_methods: { excluded_payment_types: { id: string }[] } };
+    expect(body.payment_methods.excluded_payment_types.map((t) => t.id)).toEqual(["ticket", "atm"]);
+  });
+
+  it("el Plan 720 ($ 76,8 millones) pasa el tope de las tarjetas: la preferencia solo deja PSE", async () => {
+    await createUser("tope-2");
+    const o = await order("tope-2", { planId: "p720" });
+    expect(o.amountCop).toBe(76_800_000);
+    const body = mp.preferences.at(-1)!.body as { payment_methods: { excluded_payment_types: { id: string }[] } };
+    expect(body.payment_methods.excluded_payment_types.map((t) => t.id)).toEqual(["ticket", "atm", "credit_card", "debit_card", "prepaid_card"]);
+  });
+
+  it("si el mes cuesta más que el tope de PSE, no se crea la orden y se explica cómo pagar", async () => {
+    await createUser("tope-3");
+    const before = mp.preferences.length;
+    const rows = async () => (await dbMod.db.select().from(schema.ledgerTx).where(drizzle.eq(schema.ledgerTx.userId, "tope-3"))).length;
+    mp.methods = [{ id: "pse", payment_type_id: "bank_transfer", status: "active", max_allowed_amount: 10_000_000 }];
+    delete limitsCache.__iweMpLimits;
+    try {
+      await expect(order("tope-3", { planId: "p180" })).rejects.toMatchObject({ status: 409, message: expect.stringMatching(/Mercado Pago recibe hasta \$ 10\.000\.000/) });
+      expect(mp.preferences.length).toBe(before);
+      expect(await rows()).toBe(0);
+    } finally {
+      mp.methods = COLOMBIA_METHODS;
+      delete limitsCache.__iweMpLimits;
+    }
+  });
+});
+
 describe("confirmación del pago", () => {
   it("un pago aprobado activa el mes una sola vez, aunque la notificación y la consulta lleguen a la vez", async () => {
     const o = await order("u4");
@@ -357,6 +399,25 @@ describe("confirmación del pago", () => {
       ).status,
     ).toBe(401);
     expect((await orderRow(o.orderId)).status).toBe("pendiente");
+  });
+
+  it("con dinero real y sin clave secreta configurada, las notificaciones se rechazan sin consultar la API", async () => {
+    vi.stubEnv("MERCADOPAGO_WEBHOOK_SECRET", "");
+    vi.stubEnv("DEMO_MODE", "false");
+    const calls: string[] = [];
+    const spy = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(String(input));
+      return fakeFetch(input, init);
+    }) as typeof fetch;
+    try {
+      const n = notification(424242);
+      const r = await svc.handleMercadoPagoNotification({ body: n.body, query: n.query, headers: new Headers() }, { fetch: spy });
+      expect(r.status).toBe(401);
+      expect(calls.filter((u) => u.includes("/v1/payments/"))).toEqual([]);
+    } finally {
+      vi.stubEnv("MERCADOPAGO_WEBHOOK_SECRET", SECRET);
+      vi.stubEnv("DEMO_MODE", "");
+    }
   });
 
   it("un aviso IPN antiguo (topic=payment, sin firma) se responde 200 y se ignora sin consultar la API", async () => {

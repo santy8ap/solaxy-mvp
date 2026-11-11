@@ -9,7 +9,11 @@ import { TestModeBar } from "@/components/panel/shell";
 import { UserProvider } from "@/components/panel/user-context";
 import { Toaster } from "@/components/ui/toast";
 
-export const metadata: Metadata = { title: { default: "Administración", template: `%s · Admin ${BRAND.name}` } };
+export const metadata: Metadata = {
+  title: { default: "Administración", template: `%s · Admin ${BRAND.name}` },
+  // Las páginas privadas no aparecen en buscadores.
+  robots: { index: false, follow: false },
+};
 
 // Depende de la sesión y del PIN: puede esperar al servidor al navegar.
 export const instant = false;

@@ -3,22 +3,22 @@ import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { ensureReady } from "@/lib/db/init";
-import { adminEmailAllowed, adminPin, authSecret } from "@/lib/env";
+import { adminEmailAllowed, adminPin, authSecret, baseUrl } from "@/lib/env";
 import { jsonError, knownUser, unauthorized, type CurrentUser } from "@/lib/session";
-import { createPinLimiter, pinMatches, sessionBinding, signAdminToken, verifyAdminToken } from "./token";
+import { verifyPinAttempt } from "./pin-attempts";
+import { sessionBinding, signAdminToken, verifyAdminToken } from "./token";
 
 export const ADMIN_COOKIE = "iwe-admin";
 export const INTENT_COOKIE = "iwe-admin-intent";
 const ADMIN_TTL_MS = 12 * 60 * 60_000;
 const INTENT_TTL_MS = 10 * 60_000;
 
-const g = globalThis as unknown as { __iwePinLimiter?: ReturnType<typeof createPinLimiter> };
-const limiter = (g.__iwePinLimiter ??= createPinLimiter({ max: 5, windowMs: 10 * 60_000 }));
 
 const cookieOptions = (maxAgeMs: number) => ({
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  // Segura en producción y siempre que la página se sirva por https.
+  secure: process.env.NODE_ENV === "production" || baseUrl().startsWith("https://"),
   path: "/",
   maxAge: Math.floor(maxAgeMs / 1000),
 });
@@ -28,19 +28,20 @@ async function clientKey() {
   return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "local";
 }
 
-/** Verifica el PIN con límite de intentos por IP. */
-export async function checkAdminPin(pin: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key = await clientKey();
-  const now = Date.now();
+/**
+ * Verifica el PIN: 5 intentos fallidos por minuto, por cuenta y por IP, y luego un minuto de espera.
+ * `account` identifica a quién se le prueba el PIN (la cuenta con sesión, o la de pruebas).
+ */
+export async function checkAdminPin(pin: string, account?: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const expected = adminPin();
   if (!expected) return { ok: false, error: "El acceso de administrador no está configurado (falta ADMIN_PIN)." };
-  if (!limiter.allow(key, now)) return { ok: false, error: "Demasiados intentos. Espera 10 minutos e inténtalo de nuevo." };
-  if (!pinMatches(pin, expected)) {
-    limiter.fail(key, now);
-    return { ok: false, error: "El PIN no es correcto." };
-  }
-  limiter.reset(key);
-  return { ok: true };
+  await ensureReady();
+  // Antes de iniciar sesión (camino de Google) solo se conoce la IP.
+  const ip = `ip:${await clientKey()}`;
+  const r = await verifyPinAttempt({ pin, expected, keys: account ? [`cuenta:${account}`, ip] : [ip] });
+  if (r.ok) return { ok: true };
+  if (r.locked) return { ok: false, error: `Demasiados intentos. Espera ${r.retryAfterSec ?? 60} segundos e inténtalo de nuevo.` };
+  return { ok: false, error: "El PIN no es correcto." };
 }
 
 /** Activa el modo administrador para esta sesión (cookie firmada y atada a la sesión). */

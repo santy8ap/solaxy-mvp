@@ -7,6 +7,7 @@ import {
   reconcilePayment,
 } from "@/lib/admin/payments";
 import { handleError, readJson } from "@/lib/api";
+import { safeText } from "@/lib/security/text";
 
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reverificar") }),
@@ -18,14 +19,11 @@ const Body = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("reembolsado"),
-    reference: z
-      .string()
-      .min(4, "Escribe la referencia del reembolso")
-      .max(160),
+    reference: safeText(160, { min: 4, label: "La referencia del reembolso" }),
   }),
   z.object({
     action: z.literal("conciliar"),
-    reference: z.string().trim().min(12).max(500),
+    reference: safeText(500, { min: 12, label: "La conciliación" }),
   }),
 ]);
 

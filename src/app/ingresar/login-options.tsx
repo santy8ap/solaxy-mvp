@@ -29,12 +29,15 @@ const ROLES: { id: Role; title: string; note: string }[] = [
 export function LoginOptions({
   googleEnabled,
   demoMode,
+  testAdmin = false,
   defaultRole = "user",
   planId,
   returnTo,
 }: {
   googleEnabled: boolean;
   demoMode: boolean;
+  /** ¿La cuenta de pruebas puede administrar? Solo si su correo está en ADMIN_EMAILS. */
+  testAdmin?: boolean;
   defaultRole?: Role;
   planId?: string;
   returnTo?: string;
@@ -151,7 +154,7 @@ export function LoginOptions({
           <GoogleG />
           {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
         </button>
-        {demoMode && (
+        {demoMode && (role !== "admin" || testAdmin) && (
           <form action={formAction}>
             <input type="hidden" name="role" value={role} />
             <input type="hidden" name="pin" value={pin} />
