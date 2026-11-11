@@ -45,6 +45,8 @@ const child = spawn(
       SUPPORT_EMAIL: "",
       SUPPORT_WHATSAPP: "",
       CRON_SECRET: "",
+      RESEND_API_KEY: "",
+      ALERT_EMAIL: "",
       NEXT_PUBLIC_REOWN_PROJECT_ID: "",
       ALLOW_PREVIEW_MIGRATIONS: "",
     },

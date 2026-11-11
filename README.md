@@ -63,17 +63,19 @@ Consulta [.env.example](.env.example) y **Admin → Pagos → Para cobrar de ver
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Ingreso de cuentas reales |
 | `ADMIN_PIN`, `ADMIN_EMAILS` | Acceso administrativo |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Persistencia en Vercel |
+| `PREVIEW_TURSO_DATABASE_URL`, `PREVIEW_TURSO_AUTH_TOKEN` | Base propia de las vistas previas (Preview), separada de producción |
 | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Checkout y notificaciones firmadas |
 | `CRYPTO_TREASURY_ADDRESS`, `CRYPTO_NETWORK`, `CRYPTO_CONFIRMATIONS` | Destino público y verificación de pagos cripto |
 | `BSC_RPC_URL`, `USDT_CONTRACT`, `COINGECKO_API_KEY` | Ajustes opcionales de red y precios |
 | `NEXT_PUBLIC_REOWN_PROJECT_ID` | Conexión de wallet por QR |
 | `CRON_SECRET` | Autenticación de verificaciones programadas |
+| `RESEND_API_KEY`, `ALERT_EMAIL`, `ALERT_FROM` | Alertas por correo al administrador (pagos, transferencias, retiros, devoluciones y fallas) |
 | `SUPPORT_EMAIL`, `SUPPORT_WHATSAPP` | Contactos oficiales; también se guardan desde el admin |
 | `DEMO_MODE` | `true`: pruebas; `false`: pagos reales y sin cuenta de pruebas |
 
 El webhook de Mercado Pago debe apuntar a `https://tu-dominio/api/webhooks/mercadopago`, con el evento Pagos. Google usa `https://tu-dominio/api/auth/callback/google` como URI de redirección.
 
-Vercel despliega al actualizar `main`. Las migraciones se aplican al iniciar el servicio; las nuevas tablas de soporte, conciliación y trabajos son aditivas. Una vista previa con migraciones pendientes se bloquea para no cambiar la base de producción. `ALLOW_PREVIEW_MIGRATIONS=true` solo corresponde a un entorno Preview con base aislada.
+Vercel despliega al actualizar `main`. Las migraciones se aplican al iniciar el servicio; las nuevas tablas de soporte, conciliación y trabajos son aditivas. Las vistas previas nunca usan la base de producción: se conectan a la suya (`PREVIEW_TURSO_DATABASE_URL`) y allí aplican sus migraciones; sin ella usan un archivo temporal. `ALLOW_PREVIEW_MIGRATIONS=true` solo corresponde a una vista previa con otra base remota aislada.
 
 Publicar el código no activa cobros reales. Faltan los datos y la revisión del responsable en `src/config/legal.ts`, el contacto oficial, las credenciales reales y la configuración operativa. La lista del admin mantiene esos pendientes visibles y no considera lista la operación mientras permanezca en modo de pruebas o falte la revisión legal.
 

@@ -1,6 +1,8 @@
 import "server-only";
 import { LEGAL } from "@/config/legal";
 import { databaseTarget } from "@/lib/db/target";
+import { alertConfig } from "@/lib/alerts";
+import { getTransferAccount } from "@/lib/payments/transfer";
 import { adminEmails, baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
 import { rpcChainReader } from "@/lib/payments/chain";
 import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
@@ -22,7 +24,9 @@ export interface ConfigCheck {
     | "Cripto"
     | "Legal"
     | "Datos"
-    | "Soporte";
+    | "Soporte"
+    | "Transferencia"
+    | "Alertas";
   title: string;
   state: CheckState;
   detail: string;
@@ -233,6 +237,32 @@ export async function configStatus({
       : "Configura CRON_SECRET (32 caracteres o más) y vuelve a desplegar para verificar pagos sin visitas al panel.",
     vars: ["CRON_SECRET"],
     required: c.enabled,
+  });
+
+  const alerts = alertConfig();
+  const transfer = await getTransferAccount();
+  add({
+    id: "transferencia",
+    group: "Transferencia",
+    title: "Cuenta para transferencias",
+    state: transfer ? "ok" : "aviso",
+    detail: transfer
+      ? `Las empresas ven la cuenta ${transfer.accountType} de ${transfer.bank} terminada en ${transfer.accountNumber.slice(-4)}.`
+      : "Sin ella no aparece el pago por transferencia, y los planes de más de $ 50.000.000 al mes solo se pagan por PSE o cripto. Guárdala en Admin → Planta.",
+    required: false,
+  });
+  add({
+    id: "alertas",
+    group: "Alertas",
+    title: "Alertas por correo",
+    state: alerts.enabled ? "ok" : "aviso",
+    detail: alerts.enabled
+      ? `Llegan a ${alerts.to.length === 1 ? "1 correo" : `${alerts.to.length} correos`}. Pruébalas desde Admin → Planta.`
+      : process.env.RESEND_API_KEY?.trim()
+        ? "Falta a quién enviarlas: agrega tu correo a ALERT_EMAIL o a ADMIN_EMAILS."
+        : "Crea una clave en resend.com y guárdala en Vercel como RESEND_API_KEY (Production, Sensitive). Sin ella no se envían correos.",
+    vars: ["RESEND_API_KEY", "ALERT_EMAIL"],
+    required: false,
   });
 
   const stats = await demoDataStats();

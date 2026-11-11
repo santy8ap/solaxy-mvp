@@ -20,6 +20,7 @@ import { SolarClock } from "@/components/solar/solar-clock";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { AdminTopbar } from "./shell";
+import { AlertSettings } from "./alert-settings";
 import { SupportSettingsForm } from "./support-settings";
 import { TransferSettingsForm } from "./transfer-settings";
 import type { OverviewDTO } from "./types";
@@ -341,6 +342,7 @@ export function AdminPlant() {
       )}
       <TransferSettingsForm />
       <SupportSettingsForm />
+      <AlertSettings />
     </>
   );
 }

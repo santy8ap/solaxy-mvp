@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { alertReversal } from "@/lib/alerts";
 import { writeTransaction } from "@/lib/db/transaction";
 import {
   adminAudit,
@@ -31,14 +32,17 @@ export async function requireNoPaymentReview(userId: string) {
     );
 }
 
-/** Solo recibe estados devueltos obtenidos de la API autenticada del proveedor. */
+/**
+ * Solo recibe estados devueltos obtenidos de la API autenticada del proveedor.
+ * Avisa al admin por correo la primera vez que el pago pasa a devuelto (los reintentos no repiten el aviso).
+ */
 export async function recordPaymentReversal(
   orderId: string,
   providerId: string,
   providerStatus: string,
   now = Date.now(),
 ) {
-  return writeTransaction(async (session) => {
+  const result = await writeTransaction(async (session) => {
     const [order] = await session
       .select()
       .from(ledgerTx)
@@ -63,7 +67,8 @@ export async function recordPaymentReversal(
       .update(ledgerTx)
       .set({ status: "reembolsada", providerId, providerStatus, note })
       .where(eq(ledgerTx.id, order.id));
-    if (!period || !order.subscriptionId) return;
+    const changed = order.status !== "reembolsada";
+    if (!period || !order.subscriptionId) return { order, changed, stoppedEnergy: false };
     const [inserted] = await session
       .insert(paymentReview)
       .values({
@@ -91,7 +96,10 @@ export async function recordPaymentReversal(
         }),
         createdAt: now,
       });
+    return { order, changed, stoppedEnergy: true };
   });
+  if (result?.changed) alertReversal(result.order, providerStatus, result.stoppedEnergy);
+  return result;
 }
 
 /** Constancia de una conciliación hecha por el equipo; no envía dinero ni modifica rendimientos pasados. */

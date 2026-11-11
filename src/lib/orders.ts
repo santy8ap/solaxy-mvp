@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, inArray } from "drizzle-orm";
+import { alertPaymentConfirmed, alertPaymentToRefund } from "@/lib/alerts";
 import { db, type DbSession } from "@/lib/db";
 import { writeTransaction } from "@/lib/db/transaction";
 import { ledgerTx, type PaymentMethod, type TxStatus } from "@/lib/db/schema";
@@ -176,6 +177,8 @@ export async function fulfillOrder(
     },
   );
   const { order } = result;
+  if (result.outcome === "confirmada") alertPaymentConfirmed(order);
+  else if (result.outcome === "no_activada" && order.status === "por_reembolsar") alertPaymentToRefund(order);
   if (result.outcome === "confirmada")
     payLog("mes_activado", {
       orderId,

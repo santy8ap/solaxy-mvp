@@ -7,6 +7,7 @@ import { newId } from "@/lib/ids";
 import { payLog } from "@/lib/payments/log";
 import { reconcileMercadoPago } from "./reconcile-mercadopago";
 import { reconcilePayments } from "./reconcile-payments";
+import { alertFailure } from "@/lib/alerts";
 
 const TICK_ID = "reconcile-tick";
 /** Como máximo una pasada cada 2 minutos en todo el sitio, sin importar cuántas visitas lleguen. */
@@ -56,10 +57,12 @@ export async function maybeReconcile({ clock = Date.now, run = frequentPass }: {
       await run();
     } catch (error) {
       payLog("conciliacion_visitas_fallida", { error: String(error).slice(0, 200) });
+      alertFailure("conciliacion-visitas", "la conciliación automática de pagos", String(error));
     }
     return true;
   } catch (error) {
     payLog("conciliacion_visitas_fallida", { error: String(error).slice(0, 200) });
+    alertFailure("conciliacion-visitas", "la conciliación automática de pagos", String(error));
     return false;
   }
 }

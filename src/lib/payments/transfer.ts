@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { audit, type Actor } from "@/lib/admin/service";
+import { alertTransferReported } from "@/lib/alerts";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
 import { ledgerTx, serviceSetting } from "@/lib/db/schema";
@@ -169,6 +170,7 @@ export async function reportTransfer(input: TransferTarget & { receipt: string }
     })
     .returning();
   payLog("transferencia_reportada", { orderId, userId: input.userId, plan: p.subscriptionId, mes: p.periodIndex, amountCop: p.amountCop });
+  alertTransferReported(row);
   return { order: toTxDTO(row), created: true };
 }
 

@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { alertFailure } from "@/lib/alerts";
 import { handleError } from "@/lib/api";
 import { authorizedCron } from "@/lib/jobs/auth";
 import { reconcileMercadoPago } from "@/lib/jobs/reconcile-mercadopago";
@@ -19,6 +20,12 @@ export async function GET(request: Request) {
     // Pasada completa: cripto en verificación, Mercado Pago pendiente y devoluciones de los últimos 180 días.
     const crypto = await reconcilePayments();
     const mercadopago = await reconcileMercadoPago({ mode: "completo" });
+    if (crypto.failed || mercadopago.failed)
+      alertFailure(
+        "cron-conciliacion",
+        "la conciliación diaria de pagos",
+        `No se pudieron revisar ${crypto.failed} pagos con cripto y ${mercadopago.failed} de Mercado Pago. Se reintentan solos en la próxima pasada.`,
+      );
     return Response.json({ crypto, mercadopago }, { headers });
   } catch (error) {
     return handleError(error);

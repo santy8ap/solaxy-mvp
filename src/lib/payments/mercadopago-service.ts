@@ -1,4 +1,5 @@
 import "server-only";
+import { alertFailure } from "@/lib/alerts";
 import { and, eq } from "drizzle-orm";
 import { BRAND } from "@/config/brand";
 import { db } from "@/lib/db";
@@ -79,12 +80,17 @@ async function mpRequest<T>(
       path,
       error: String(err).slice(0, 200),
     });
+    alertFailure("mp-api", "Mercado Pago no responde", `No se pudo conectar con Mercado Pago (${path.split("?")[0]}): ${String(err).slice(0, 200)}`);
     throw new MarketError(
       "No pudimos conectarnos con Mercado Pago. Intenta de nuevo en un momento.",
       502,
     );
   }
   const json = (await res.json().catch(() => null)) as T | null;
+  if (res.status === 401 || res.status === 403)
+    alertFailure("mp-credenciales", "Mercado Pago rechaza las credenciales", `Mercado Pago respondió ${res.status} en ${path.split("?")[0]}. Revisa MERCADOPAGO_ACCESS_TOKEN en Vercel.`);
+  else if (res.status >= 500)
+    alertFailure("mp-api", "Mercado Pago no responde", `Mercado Pago respondió ${res.status} en ${path.split("?")[0]}.`);
   return { status: res.status, ok: res.ok, json };
 }
 

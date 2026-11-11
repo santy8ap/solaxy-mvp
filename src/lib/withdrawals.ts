@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, sql } from "drizzle-orm";
+import { alertWithdrawalRequested } from "@/lib/alerts";
 import { db } from "@/lib/db";
 import { ledgerTx, walletLink } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
@@ -80,6 +81,7 @@ export async function createBankWithdrawal(input: {
   `);
   if (!res.rowsAffected)
     throw new MarketError("No tienes saldo suficiente para ese retiro.", 409);
+  alertWithdrawalRequested({ id, userId: input.userId, amountCop, bankName: dest.value.bank });
   return getWithdrawal(input.userId, id);
 }
 
@@ -164,6 +166,7 @@ export async function confirmWalletWithdrawal(
     if (current.status === "por_aprobar") return current;
     throw new MarketError("No tienes saldo suficiente para ese retiro.", 409);
   }
+  alertWithdrawalRequested({ id: withdrawalId, userId, amountCop: tx.amountCop, bankName: null });
   return getWithdrawal(userId, withdrawalId);
 }
 

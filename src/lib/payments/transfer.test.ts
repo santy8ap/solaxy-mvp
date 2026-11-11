@@ -141,3 +141,34 @@ describe("el admin confirma o rechaza", () => {
     expect((await payments.paymentSummary()).totalCop).toBe(before.totalCop + MONTH_180);
   });
 });
+
+describe("aviso al administrador", () => {
+  it("al reportar una transferencia llega un correo con la referencia y el comprobante; reportarla otra vez no repite el aviso", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_clave_de_prueba");
+    vi.stubEnv("ADMIN_EMAILS", "admin@empresa.co");
+    const sent: { to: string[]; subject: string; text: string }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+        sent.push(JSON.parse(String(init?.body)));
+        return new Response(JSON.stringify({ id: "email-1" }));
+      }),
+    );
+    try {
+      const alerts = await import("@/lib/alerts");
+      const first = await transfer.reportTransfer({ userId: "t2", planId: "p540", receipt: "COMP-8001" });
+      const again = await transfer.reportTransfer({ userId: "t2", planId: "p540", receipt: "COMP-8001" });
+      expect(again.created).toBe(false);
+      await alerts.flushAlerts();
+      expect(sent).toHaveLength(1);
+      expect(sent[0].to).toEqual(["admin@empresa.co"]);
+      expect(sent[0].subject).toMatch(/Transferencia por confirmar/);
+      expect(sent[0].text).toContain(transfer.transferReference(first.order.subscriptionId!, 1));
+      expect(sent[0].text).toContain("COMP-8001");
+      expect(sent[0].text).toContain("Empresa t2");
+    } finally {
+      vi.stubEnv("RESEND_API_KEY", "");
+      vi.unstubAllGlobals();
+    }
+  });
+});
