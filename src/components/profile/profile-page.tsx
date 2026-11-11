@@ -1,41 +1,101 @@
 "use client";
-import { FileCheck2, Lock, ShieldCheck } from "lucide-react";
-import { toast } from "@/components/ui/toast";
+import {
+  ArrowUpRight,
+  Building2,
+  Check,
+  FileText,
+  ShieldCheck,
+} from "lucide-react";
+import Link from "next/link";
 import { AccountActions, Topbar } from "@/components/panel/shell";
-import { ProfileForm } from "./profile-form";
-
-const WHY = [
-  { icon: ShieldCheck, title: "Para identificar tu cuenta", text: "Mantén los datos de tu cuenta actualizados y coherentes con tu documento." },
-  { icon: FileCheck2, title: "Para procesar tus pagos", text: "Tus pagos con tarjeta, PSE o Nequi (por Mercado Pago) y tus retiros quedan a tu nombre." },
-  { icon: Lock, title: "Protegidos por la ley", text: "Solo los usamos para lo que dice la Política de Tratamiento de Datos (Ley 1581 de 2012)." },
-];
+import { useUser } from "@/components/panel/user-context";
+import { toast } from "@/components/ui/toast";
+import { ProfileForm, useProfile } from "./profile-form";
 
 export function ProfilePage() {
+  const user = useUser();
+  const { data, loaded } = useProfile();
+  const complete = Boolean(data?.profile?.complete);
+  const name = data?.profile?.fullName || user.name;
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
   return (
-    <>
-      <Topbar title="Los datos de tu cuenta." subtitle="Revisa y actualiza tu información de identificación." />
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <section className="panel p-6 sm:p-8" aria-label="Datos de tu cuenta">
-          <ProfileForm onSaved={() => toast("Tus datos quedaron guardados.")} />
-        </section>
-        <aside className="panel cells p-6 sm:p-8" aria-label="Por qué te los pedimos">
-          <h2 className="text-lg font-semibold text-silver-50">Por qué te los pedimos</h2>
-          <ul className="mt-5 space-y-5">
-            {WHY.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex gap-3">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-none bg-sun-400/10 text-sun-300">
-                  <Icon size={18} />
-                </span>
-                <div>
-                  <p className="font-medium text-silver-50">{title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-silver-400">{text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+    <div className="panel-view">
+      <Topbar
+        title="Tu cuenta, al día."
+        subtitle="La información que identifica a tu empresa y sus operaciones."
+      />
+      <div className="profile-layout">
+        <aside className="profile-identity">
+          <span className="eyebrow">IN WORLD ENERGY / IDENTIDAD</span>
+          <div className="profile-monogram" aria-hidden="true">
+            {initials}
+          </div>
+          <h2>{name}</h2>
+          <p className="profile-email">{user.email}</p>
+          <span className={`profile-status ${complete ? "is-complete" : ""}`}>
+            {complete ? <Check size={14} /> : <Building2 size={14} />}{" "}
+            {loaded
+              ? complete
+                ? "Datos completos"
+                : "Datos por completar"
+              : "Cargando datos"}
+          </span>
+          <dl className="profile-facts">
+            <div>
+              <dt>Documento</dt>
+              <dd>{data?.profile?.docType ?? "Por registrar"}</dd>
+            </div>
+            <div>
+              <dt>Ciudad</dt>
+              <dd>{data?.profile?.city ?? "Por registrar"}</dd>
+            </div>
+          </dl>
+          <Link href="/panel/movimientos" className="text-link">
+            Ver mi actividad <ArrowUpRight size={14} />
+          </Link>
         </aside>
+        <section
+          className="account-section profile-form-section"
+          aria-labelledby="profile-form-title"
+        >
+          <div className="account-section-heading">
+            <div>
+              <span className="eyebrow">01 / INFORMACIÓN DE LA CUENTA</span>
+              <h2 id="profile-form-title">Tus datos, con claridad.</h2>
+            </div>
+            <FileText size={20} aria-hidden="true" />
+          </div>
+          <p className="section-note">
+            Para una empresa, selecciona NIT y registra su razón social. Revisa
+            los datos antes de guardarlos.
+          </p>
+          <ProfileForm
+            submitLabel="Guardar información"
+            onSaved={() => toast("La información de tu cuenta quedó guardada.")}
+          />
+        </section>
+      </div>
+      <div className="profile-notes">
+        <div>
+          <ShieldCheck size={19} />
+          <p>
+            <strong>Información bajo tu control.</strong>
+            <span>
+              Puedes consultar y actualizar estos datos desde tu cuenta.
+            </span>
+          </p>
+        </div>
+        <Link href="/privacidad" className="text-link">
+          Política de tratamiento de datos <ArrowUpRight size={14} />
+        </Link>
       </div>
       <AccountActions />
-    </>
+    </div>
   );
 }

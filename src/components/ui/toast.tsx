@@ -1,4 +1,5 @@
 "use client";
+import { Check, CircleAlert, Info, X } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
 type Tone = "ok" | "error" | "info";
@@ -7,50 +8,57 @@ interface Toast {
   message: string;
   tone: Tone;
 }
-
 let toasts: Toast[] = [];
 let seq = 0;
 const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
-
+const emit = () => listeners.forEach((listener) => listener());
+function dismiss(id: number) {
+  toasts = toasts.filter((item) => item.id !== id);
+  emit();
+}
 export function toast(message: string, tone: Tone = "ok") {
   const id = ++seq;
-  toasts = [...toasts, { id, message, tone }];
+  toasts = [...toasts, { id, message, tone }].slice(-4);
   emit();
-  setTimeout(() => {
-    toasts = toasts.filter((t) => t.id !== id);
-    emit();
-  }, 4800);
+  setTimeout(() => dismiss(id), 6000);
 }
-
 const EMPTY: Toast[] = [];
-
 export function Toaster() {
   const list = useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
+    (callback) => {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
     },
     () => toasts,
     () => EMPTY,
   );
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[70] flex flex-col items-center gap-2 px-4" aria-live="polite">
-      {list.map((t) => (
-        <div
-          key={t.id}
-          role={t.tone === "error" ? "alert" : "status"}
-          className={`pointer-events-auto max-w-[480px] rounded-none border px-4 py-3 text-sm shadow-2xl backdrop-blur ${
-            t.tone === "error"
-              ? "border-alert-400/50 bg-silicon-950/95 text-alert-400"
-              : t.tone === "info"
-                ? "border-silicon-500 bg-silicon-950/95 text-silver-100"
-                : "border-leaf-400/50 bg-silicon-950/95 text-leaf-300"
-          }`}
-        >
-          {t.message}
-        </div>
-      ))}
+    <div className="toast-stack" aria-live="polite">
+      {list.map((item) => {
+        const Icon =
+          item.tone === "ok"
+            ? Check
+            : item.tone === "error"
+              ? CircleAlert
+              : Info;
+        return (
+          <div
+            key={item.id}
+            className={`eclipse-toast ${item.tone === "ok" ? "is-success" : ""}`}
+            role={item.tone === "error" ? "alert" : "status"}
+          >
+            <Icon size={18} aria-hidden="true" />
+            <p>{item.message}</p>
+            <button
+              type="button"
+              aria-label="Cerrar notificación"
+              onClick={() => dismiss(item.id)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

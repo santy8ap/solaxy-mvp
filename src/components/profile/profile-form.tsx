@@ -39,7 +39,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
   const p = initial.profile;
   const [form, setForm] = useState({
     fullName: p?.fullName ?? "",
-    docType: (p?.docType ?? "CC") as DocTypeId,
+    docType: (p?.docType ?? "NIT") as DocTypeId,
     docNumber: p?.docNumber ?? "",
     phone: p?.phone ?? "",
     city: p?.city ?? "",
@@ -108,7 +108,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
             </select>
           )}
         </Field>
-        <Field label="Número de documento" error={errors.docNumber}>
+        <Field label={isCompany ? "NIT de la empresa" : "Número de documento"} error={errors.docNumber}>
           {(id, aria) => (
             <input id={id} {...aria} value={form.docNumber} onChange={(e) => set("docNumber", e.target.value)} inputMode={form.docType === "CC" ? "numeric" : "text"} placeholder={PLACEHOLDER[form.docType]} className="field num" />
           )}
@@ -128,7 +128,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
       <div>
         <label className="flex cursor-pointer items-start gap-3 rounded-none border border-silicon-600/70 p-4 text-sm leading-relaxed text-silver-300 hover:border-silicon-500">
           <input type="checkbox" checked={form.acceptTerms} onChange={(e) => set("acceptTerms", e.target.checked)} className="peer sr-only" aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? "terms-error" : undefined} />
-          <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-silicon-500 text-silicon-950 transition-colors peer-checked:border-sun-400 peer-checked:bg-sun-400 peer-focus-visible:ring-2 peer-focus-visible:ring-sun-300">
+          <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-none border border-silicon-500 text-silicon-950 transition-colors peer-checked:border-sun-400 peer-checked:bg-sun-400 peer-focus-visible:ring-2 peer-focus-visible:ring-sun-300">
             {form.acceptTerms && <Check size={14} strokeWidth={3} />}
           </span>
           <span>

@@ -2017,5 +2017,398 @@
     display: none !important;
   }
 }
-.account-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; padding-top: 24px; border-top: 1px solid #333; }
-.account-actions .btn { font-size: 9px; }
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #333;
+}
+.account-actions .btn {
+  font-size: 9px;
+}
+
+/* Account, wallet and route states complete the Eclipse workspace. */
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.6fr);
+  gap: 28px;
+}
+.profile-identity {
+  padding: 30px;
+  border: 1px solid #444;
+  align-self: start;
+  min-width: 0;
+}
+.profile-identity > .eyebrow {
+  color: #aaa;
+  font-size: 8px;
+}
+.profile-monogram {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-top: 38px;
+  background: #eee;
+  color: #080808;
+  font-size: 34px;
+  font-stretch: 75%;
+  letter-spacing: -0.04em;
+}
+.profile-identity h2 {
+  margin-top: 28px;
+  font-size: 23px;
+  font-weight: 400;
+  font-stretch: 75%;
+  overflow-wrap: anywhere;
+}
+.profile-email {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #aaa;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 24px;
+  padding: 8px 10px;
+  border: 1px solid #666;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.profile-status.is-complete {
+  background: #eee;
+  border-color: #eee;
+  color: #080808;
+}
+.profile-facts {
+  margin-top: 28px;
+}
+.profile-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-block: 16px;
+  border-bottom: 1px solid #333;
+  font-size: 11px;
+}
+.profile-facts dt {
+  color: #aaa;
+}
+.profile-facts dd {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.profile-form-section .field {
+  min-height: 48px;
+  font-size: 14px;
+}
+.profile-form-section form {
+  margin-top: 30px;
+}
+.profile-notes {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 28px;
+  margin-top: 28px;
+  padding-block: 24px;
+  border-block: 1px solid #333;
+}
+.profile-notes > div {
+  display: flex;
+  align-items: start;
+  gap: 14px;
+}
+.profile-notes p {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.profile-notes strong {
+  font-weight: 400;
+}
+.profile-notes p span {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #aaa;
+}
+.profile-notes .text-link {
+  margin-top: 0;
+  font-size: 10px;
+}
+.wallet-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 28px;
+}
+.wallet-balance-card,
+.wallet-connection-card {
+  padding: 30px;
+  border: 1px solid #444;
+  min-width: 0;
+}
+.wallet-balance-card {
+  background: #101010;
+}
+.wallet-balance-card > .eyebrow {
+  font-size: 9px;
+  color: #aaa;
+}
+.wallet-balance-card h2 {
+  font-stretch: 62%;
+  font-size: 40px;
+  font-weight: 400;
+  margin-top: 34px;
+}
+.wallet-currency {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #aaa;
+  margin-top: 16px;
+}
+.wallet-balance-breakdown {
+  margin-block: 32px;
+}
+.wallet-balance-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #333;
+  padding-block: 14px;
+  font-size: 11px;
+}
+.wallet-balance-breakdown span {
+  color: #aaa;
+}
+.wallet-balance-breakdown strong {
+  font:
+    12px ui-monospace,
+    monospace;
+  white-space: nowrap;
+}
+.wallet-balance-card > .btn {
+  width: 100%;
+  justify-content: space-between;
+  font-size: 10px;
+}
+.wallet-balance-card > .section-note {
+  margin-top: 18px;
+}
+.wallet-connection-card .detail-list {
+  margin-top: 36px;
+}
+.wallet-connection-card .detail-list > div {
+  grid-template-columns: 0.7fr 1.3fr;
+}
+.wallet-connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+.wallet-connection-actions .btn {
+  font-size: 9px;
+}
+.wallet-connection-actions .text-link {
+  margin-top: 0;
+  font-size: 10px;
+}
+.wallet-connect-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding-top: 24px;
+}
+.wallet-orbit {
+  width: 100px;
+  height: 100px;
+  border: 1px solid #777;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  margin: 10px 10px 36px;
+}
+.wallet-orbit::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 1px solid #333;
+  border-radius: 50%;
+  transform: scaleX(0.55) rotate(45deg);
+}
+.wallet-connect-empty h3 {
+  font-weight: 400;
+  font-size: 20px;
+}
+.wallet-connect-empty > p {
+  color: #aaa;
+  font-size: 12px;
+  line-height: 1.9;
+  margin-top: 16px;
+  max-width: 34ch;
+}
+.wallet-connect-empty .btn {
+  margin-top: 28px;
+  font-size: 10px;
+}
+.wallet-history {
+  margin-top: 28px;
+}
+.route-state {
+  width: min(1280px, calc(100% - 64px));
+  margin-inline: auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-block: 36px;
+}
+.route-state-content {
+  position: relative;
+  isolation: isolate;
+  padding-block: 80px;
+}
+.route-state-content > .eyebrow {
+  color: #aaa;
+}
+.route-state h1,
+.workspace-error h1 {
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-stretch: 62%;
+  font-weight: 350;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  margin-top: 28px;
+}
+.route-state-content > p:not(.route-state-code),
+.workspace-error > p {
+  color: #aaa;
+  font-size: 14px;
+  line-height: 1.9;
+  max-width: 48ch;
+  margin-top: 28px;
+}
+.route-state-code {
+  position: absolute;
+  z-index: -1;
+  right: 5%;
+  top: 40px;
+  color: #191919;
+  font: 350 clamp(8rem, 26vw, 24rem) / 1 var(--font-sans);
+  font-stretch: 62%;
+  letter-spacing: -0.07em;
+}
+.route-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 36px;
+}
+.workspace-error {
+  padding: 48px 0;
+}
+.workspace-error > svg {
+  margin-top: 40px;
+}
+.toast-stack {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: min(440px, calc(100% - 48px));
+  z-index: 80;
+  display: grid;
+  gap: 12px;
+  pointer-events: none;
+}
+.eclipse-toast {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  border: 1px solid #888;
+  padding: 18px;
+  color: #eee;
+  background: #101010;
+  pointer-events: auto;
+  box-shadow: 0 16px 36px #0005;
+}
+.eclipse-toast > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.eclipse-toast p {
+  font-size: 12px;
+  line-height: 1.8;
+  flex: 1;
+}
+.eclipse-toast button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 28px;
+  margin: -4px -4px 0 0;
+}
+.eclipse-toast.is-success {
+  background: #eee;
+  color: #080808;
+  border-color: #eee;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .eclipse-toast {
+    animation: eclipse-rise 0.25s ease-out;
+  }
+}
+@media (max-width: 900px) {
+  .profile-layout,
+  .wallet-layout {
+    grid-template-columns: 1fr;
+  }
+  .profile-identity {
+    display: block;
+  }
+  .profile-monogram {
+    width: 72px;
+    height: 72px;
+    margin-top: 24px;
+  }
+}
+@media (max-width: 600px) {
+  .profile-identity,
+  .wallet-balance-card,
+  .wallet-connection-card {
+    padding: 24px 20px;
+  }
+  .profile-notes {
+    flex-direction: column;
+  }
+  .route-state {
+    width: calc(100% - 40px);
+    padding-block: 24px;
+  }
+  .route-state-code {
+    right: 0;
+    top: 80px;
+  }
+  .route-state-actions .btn {
+    flex: 1;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+  .toast-stack {
+    top: 16px;
+    right: 16px;
+    width: calc(100% - 32px);
+  }
+  .eclipse-toast button {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}

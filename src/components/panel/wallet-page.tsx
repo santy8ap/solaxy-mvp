@@ -1,5 +1,5 @@
 "use client";
-import { Loader2 } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Loader2, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { PortfolioDTO } from "@/lib/portfolio";
 import { useAppConfig } from "@/lib/client/use-app-config";
@@ -33,6 +33,7 @@ function WithdrawDialog({
   const [hash, setHash] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [rejection, setRejection] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Mientras el administrador decide, se consulta el estado cada 2,5 s.
   useEffect(() => {
@@ -72,6 +73,7 @@ function WithdrawDialog({
     )
       return;
     try {
+      setSubmitError(null);
       setPhase("signing");
       const w = await postJson<{ withdrawalId: string; message: string }>(
         "/api/withdrawals",
@@ -97,7 +99,7 @@ function WithdrawDialog({
       setHash(res.txHash);
       setPhase("done");
     } catch (e) {
-      toast((e as Error).message, "error");
+      setSubmitError((e as Error).message || "No se pudo enviar la solicitud. Inténtalo de nuevo.");
       setPhase("form");
     }
   };
@@ -108,6 +110,7 @@ function WithdrawDialog({
     setHash(null);
     setPendingId(null);
     setRejection(null);
+    setSubmitError(null);
     onClose();
   };
 
@@ -244,6 +247,7 @@ function WithdrawDialog({
         </div>
       ) : (
         <div>
+          {submitError && <p role="alert" className="checkout-notice mb-5">{submitError}</p>}
           <label htmlFor="wd-amount" className="text-sm text-silver-400">
             Monto en pesos (disponible {formatCop(max)})
           </label>
@@ -313,8 +317,6 @@ function WithdrawDialog({
 }
 
 export function WalletPage() {
-  const { config } = useAppConfig();
-  const demo = config?.demoMode ?? false;
   const {
     data: p,
     error,
@@ -323,12 +325,12 @@ export function WalletPage() {
   const wallet = useWallet();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const liveBalance = p?.balanceCop ?? 0;
-
+  const connected = wallet.status === "connected";
   return (
-    <>
+    <div className="panel-view">
       <Topbar
-        title="Billetera"
-        subtitle="Tu wallet conectada, tu saldo en In World Energy y todos tus movimientos."
+        title="Tu billetera, en orden."
+        subtitle="Saldo, solicitudes y movimientos en un solo lugar."
       />
       {error && (
         <DataError
@@ -337,122 +339,158 @@ export function WalletPage() {
           onRetry={() => void reload()}
         />
       )}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="wallet-layout">
         <section
-          className="panel cells p-6 sm:p-8"
-          aria-labelledby="balance-title"
+          className="wallet-balance-card"
+          aria-labelledby="wallet-balance-title"
         >
-          <h2 id="balance-title" className="text-sm text-silver-400">
-            Saldo disponible en In World Energy
-          </h2>
-          <div className="mt-3 text-[clamp(1.6rem,6.4vw,3.2rem)]">
+          <span className="eyebrow">IN WORLD ENERGY / DISPONIBLE</span>
+          <h2 id="wallet-balance-title">TU SALDO.</h2>
+          <div className="balance-number">
             {p ? (
               <Odometer
                 value={liveBalance}
                 decimals={2}
-                prefix={"$ "}
-                className="display text-silver-50"
+                prefix="$ "
+                className="mono"
               />
             ) : (
-              <span aria-label="Cargando saldo">$ —</span>
+              <span>$ —</span>
             )}
           </div>
-          <p className="mt-3 text-sm text-silver-400">
-            Ganancias {p ? formatCop(p.earnedCop) : "—"} + ventas{" "}
-            {p ? formatCop(p.saleProceedsCop) : "—"} − retiros{" "}
-            {p ? formatCop(p.withdrawnCop) : "—"}
-            {p && p.reservedCop > 0
-              ? ` − en aprobación ${formatCop(p.reservedCop)}`
-              : ""}
-          </p>
+          <p className="wallet-currency">PESOS COLOMBIANOS · COP</p>
+          <div className="wallet-balance-breakdown">
+            <div>
+              <span>Ingresos estimados</span>
+              <strong>{p ? formatCop(p.earnedCop) : "—"}</strong>
+            </div>
+            <div>
+              <span>Ventas registradas</span>
+              <strong>{p ? formatCop(p.saleProceedsCop) : "—"}</strong>
+            </div>
+            <div>
+              <span>Reservado para revisión</span>
+              <strong>{p ? formatCop(p.reservedCop) : "—"}</strong>
+            </div>
+          </div>
           <button
             type="button"
-            className="btn btn-sun mt-7"
+            className="btn btn-sun"
             disabled={!p || Boolean(error) || p.balanceCop < 20000}
             onClick={() =>
-              wallet.status === "connected"
-                ? setWithdrawOpen(true)
-                : wallet.openConnect()
+              connected ? setWithdrawOpen(true) : wallet.openConnect()
             }
           >
-            {wallet.status === "connected"
-              ? "Retirar a mi wallet"
-              : "Conectar wallet para retirar"}
+            {connected ? "Solicitar un retiro" : "Conectar wallet para retirar"}
+            <ArrowUpRight size={16} />
           </button>
+          <p className="section-note">
+            Solicitud mínima: $ 20.000 COP. Cada retiro requiere tu firma y la
+            revisión de la plataforma.
+          </p>
         </section>
-
-        <section className="panel p-6 sm:p-8" aria-labelledby="w-title">
-          <h2 id="w-title" className="text-sm text-silver-400">
-            Wallet conectada
-          </h2>
-          {wallet.status === "connected" ? (
-            <div className="mt-4">
-              <div className="text-xl font-semibold text-silver-50">
-                {wallet.name}
-              </div>
-              <dl className="mt-4 space-y-2.5 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-silver-400">Dirección</dt>
-                  <dd className="num break-all text-right text-silver-100">
-                    {wallet.address}
-                  </dd>
+        <section
+          className="wallet-connection-card"
+          aria-labelledby="wallet-connection-title"
+        >
+          <div className="account-section-heading">
+            <div>
+              <span className="eyebrow">TU CONEXIÓN</span>
+              <h2 id="wallet-connection-title">
+                {connected ? wallet.name : "Conecta tu wallet."}
+              </h2>
+            </div>
+            <Wallet size={24} />
+          </div>
+          {connected ? (
+            <>
+              <span className="payment-status">
+                <Check size={13} /> Wallet conectada
+              </span>
+              <dl className="detail-list">
+                <div>
+                  <dt>Dirección</dt>
+                  <dd>{wallet.address}</dd>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-silver-400">Red</dt>
-                  <dd className="text-silver-100">
-                    {chainName(wallet.chainId)}
-                  </dd>
+                <div>
+                  <dt>Red</dt>
+                  <dd>{chainName(wallet.chainId)}</dd>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-silver-400">Saldo en la wallet</dt>
-                  <dd className="num text-silver-100">
-                    {wallet.balance ?? "no disponible"}
-                  </dd>
+                <div>
+                  <dt>Saldo externo</dt>
+                  <dd>{wallet.balance ?? "No disponible"}</dd>
                 </div>
               </dl>
-              <button
-                type="button"
-                className="btn btn-ghost mt-6 !py-2.5 text-sm"
-                onClick={() => void wallet.disconnect()}
-              >
-                Desconectar
-              </button>
-            </div>
+              <div className="wallet-connection-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(wallet.address ?? "");
+                      toast("Dirección copiada.");
+                    } catch {
+                      toast("No se pudo copiar la dirección.", "error");
+                    }
+                  }}
+                >
+                  <Copy size={14} /> Copiar dirección
+                </button>
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={() => void wallet.disconnect()}
+                >
+                  Desconectar <ArrowUpRight size={14} />
+                </button>
+              </div>
+            </>
           ) : (
-            <div className="mt-4">
-              <p className="text-silver-300">
-                {demo
-                  ? "Conecta Trust Wallet, MetaMask o la wallet de demostración para comprar y retirar."
-                  : "Conecta Trust Wallet o MetaMask para pagar con cripto y recibir tus retiros."}
+            <div className="wallet-connect-empty">
+              <div className="wallet-orbit" aria-hidden="true">
+                <Wallet size={35} />
+              </div>
+              <h3>Elige cómo conectarte.</h3>
+              <p>
+                Conecta una wallet compatible para consultar su dirección y
+                gestionar tus solicitudes de retiro.
               </p>
               <button
                 type="button"
-                className="btn btn-sun mt-6"
+                className="btn btn-ghost"
                 onClick={wallet.openConnect}
+                disabled={wallet.status === "connecting"}
               >
-                Conectar wallet
+                {wallet.status === "connecting"
+                  ? "Conectando…"
+                  : "Conectar wallet"}
+                <ArrowUpRight size={16} />
               </button>
             </div>
           )}
         </section>
       </div>
-
-      <section className="panel mt-5 p-5 sm:p-7" aria-labelledby="hist-title">
-        <h2 id="hist-title" className="text-lg font-semibold text-silver-50">
-          Historial
-        </h2>
+      <section
+        className="account-section wallet-history"
+        aria-labelledby="wallet-history-title"
+      >
+        <div className="account-section-heading">
+          <div>
+            <span className="eyebrow">EL REGISTRO DE TU CUENTA</span>
+            <h2 id="wallet-history-title">Cada operación tiene su historia.</h2>
+          </div>
+        </div>
         {p ? (
           <Transactions transactions={p.transactions} />
         ) : (
-          <DataSkeleton label="Cargando movimientos" />
+          !error && <DataSkeleton label="Cargando movimientos" />
         )}
       </section>
-
       <WithdrawDialog
         open={withdrawOpen}
         onClose={() => setWithdrawOpen(false)}
         max={liveBalance}
       />
-    </>
+    </div>
   );
 }
