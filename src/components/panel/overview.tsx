@@ -6,6 +6,7 @@ import { useJson } from "@/lib/client/use-json";
 import { formatCop, formatDateTime, formatNumber } from "@/lib/format";
 import { useClock } from "@/lib/client/use-clock";
 import { SunArc } from "@/components/landing/sun-arc";
+import { PrivateAmount } from "@/components/ui/amount-privacy";
 import { Odometer } from "@/components/ui/odometer";
 import {
   DataError,
@@ -45,12 +46,14 @@ export function Overview() {
               <span className="eyebrow">IN WORLD ENERGY / TU CUENTA</span>
               <h2 id="balance-title">SALDO DISPONIBLE</h2>
               <div className="balance-number">
-                <Odometer
-                  value={p.balanceCop}
-                  decimals={2}
-                  prefix="$ "
-                  className="mono"
-                />
+                <PrivateAmount>
+                  <Odometer
+                    value={p.balanceCop}
+                    decimals={2}
+                    prefix="$ "
+                    className="mono"
+                  />
+                </PrivateAmount>
               </div>
               <p>Pesos colombianos · Actualizado {formatDateTime(p.asOf)}</p>
               <Link href="/panel/billetera" className="text-link">
@@ -97,7 +100,13 @@ export function Overview() {
             ].map(([label, value, note]) => (
               <div key={label}>
                 <dt>{label}</dt>
-                <dd>{value}</dd>
+                <dd>
+                  {label.startsWith("Energía") ? (
+                    value
+                  ) : (
+                    <PrivateAmount>{value}</PrivateAmount>
+                  )}
+                </dd>
                 <span>{note}</span>
               </div>
             ))}

@@ -16,6 +16,7 @@ import { signOut } from "@/app/ingresar/actions";
 import { formatClock, shortAddress } from "@/lib/format";
 import { useClock } from "@/lib/client/use-clock";
 import { useWallet } from "@/lib/wallet/context";
+import { PrivacyToggle } from "@/components/ui/amount-privacy";
 import { Logo } from "@/components/ui/logo";
 
 export const NAV = [
@@ -52,6 +53,12 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="sidebar-bottom">
+        <Link href="/ayuda">
+          Centro de ayuda <ArrowUpRight size={13} />
+        </Link>
+        <Link href="/planta">
+          La planta <ArrowUpRight size={13} />
+        </Link>
         <Link href="/admin">
           <ShieldCheck size={16} />
           Administración <ArrowUpRight size={13} />
@@ -137,6 +144,7 @@ export function Topbar({
         {subtitle && <p>{subtitle}</p>}
       </div>
       <div className="topbar-actions">
+        <PrivacyToggle />
         <div className="topbar-clock">
           <span className="eyebrow">HORA DE COLOMBIA</span>
           <span className="mono">{now ? formatClock(now) : "—:—:—"}</span>
@@ -149,5 +157,26 @@ export function Topbar({
 
 export function AccountActions() {
   const [pending, start] = useTransition();
-  return <div className="account-actions"><Link href="/admin" className="btn btn-ghost"><ShieldCheck size={15}/> Administración</Link><button type="button" className="btn btn-ghost" disabled={pending} onClick={() => start(() => signOut())}><LogOut size={15}/>{pending ? "Cerrando sesión…" : "Cerrar sesión"}</button></div>;
+  return (
+    <div className="account-actions">
+      <Link href="/ayuda" className="btn btn-ghost">
+        Centro de ayuda <ArrowUpRight size={13} />
+      </Link>
+      <Link href="/planta" className="btn btn-ghost">
+        La planta <ArrowUpRight size={13} />
+      </Link>
+      <Link href="/admin" className="btn btn-ghost">
+        <ShieldCheck size={15} /> Administración
+      </Link>
+      <button
+        type="button"
+        className="btn btn-ghost"
+        disabled={pending}
+        onClick={() => start(() => signOut())}
+      >
+        <LogOut size={15} />
+        {pending ? "Cerrando sesión…" : "Cerrar sesión"}
+      </button>
+    </div>
+  );
 }

@@ -85,6 +85,8 @@ export function EclipseHome() {
     ["#planta", "Ciclo solar"],
     ["#planes", "Planes de energía"],
     ["#como-funciona", "Cómo funciona"],
+    ["/planta", "La planta"],
+    ["/ayuda", "Ayuda"],
   ];
   const time =
     now === null
@@ -420,6 +422,8 @@ export function EclipseHome() {
           <p>Energía solar. Visión empresarial.</p>
         </div>
         <div>
+          <Link href="/ayuda">Centro de ayuda ↗</Link>
+          <Link href="/planta">Conoce la planta ↗</Link>
           <Link href="/terminos">Términos y condiciones ↗</Link>
           <Link href="/privacidad">Política de privacidad ↗</Link>
         </div>

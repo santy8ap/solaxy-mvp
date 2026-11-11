@@ -7,6 +7,8 @@ import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { formatCop, shortAddress } from "@/lib/format";
 import { useWallet } from "@/lib/wallet/context";
 import { chainName } from "@/lib/wallet/types";
+import { useAmountPrivacy } from "@/lib/client/use-amount-privacy";
+import { PrivateAmount } from "@/components/ui/amount-privacy";
 import { Odometer } from "@/components/ui/odometer";
 import { toast } from "@/components/ui/toast";
 import { Modal } from "@/components/wallet/connect-dialog";
@@ -24,6 +26,7 @@ function WithdrawDialog({
   max: number;
 }) {
   const wallet = useWallet();
+  const { hidden } = useAmountPrivacy();
   const { config } = useAppConfig();
   const demo = config?.demoMode ?? false;
   const [amount, setAmount] = useState(100_000);
@@ -99,7 +102,10 @@ function WithdrawDialog({
       setHash(res.txHash);
       setPhase("done");
     } catch (e) {
-      setSubmitError((e as Error).message || "No se pudo enviar la solicitud. Inténtalo de nuevo.");
+      setSubmitError(
+        (e as Error).message ||
+          "No se pudo enviar la solicitud. Inténtalo de nuevo.",
+      );
       setPhase("form");
     }
   };
@@ -128,7 +134,12 @@ function WithdrawDialog({
               : "Retirar a tu wallet"
       }
     >
-      {phase === "waiting" ? (
+      {hidden ? (
+        <p className="section-note">
+          Los importes están ocultos. Cierra esta ventana y usa «Mostrar
+          importes» para continuar.
+        </p>
+      ) : phase === "waiting" ? (
         <div>
           <div className="flex items-center gap-3 rounded-none border border-dusk-400/40 bg-dusk-400/10 p-4">
             <Loader2
@@ -247,7 +258,11 @@ function WithdrawDialog({
         </div>
       ) : (
         <div>
-          {submitError && <p role="alert" className="checkout-notice mb-5">{submitError}</p>}
+          {submitError && (
+            <p role="alert" className="checkout-notice mb-5">
+              {submitError}
+            </p>
+          )}
           <label htmlFor="wd-amount" className="text-sm text-silver-400">
             Monto en pesos (disponible {formatCop(max)})
           </label>
@@ -323,6 +338,7 @@ export function WalletPage() {
     reload,
   } = useJson<PortfolioDTO>("/api/portfolio", { refreshMs: 30_000 });
   const wallet = useWallet();
+  const { hidden } = useAmountPrivacy();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const liveBalance = p?.balanceCop ?? 0;
   const connected = wallet.status === "connected";
@@ -348,12 +364,14 @@ export function WalletPage() {
           <h2 id="wallet-balance-title">TU SALDO.</h2>
           <div className="balance-number">
             {p ? (
-              <Odometer
-                value={liveBalance}
-                decimals={2}
-                prefix="$ "
-                className="mono"
-              />
+              <PrivateAmount>
+                <Odometer
+                  value={liveBalance}
+                  decimals={2}
+                  prefix="$ "
+                  className="mono"
+                />
+              </PrivateAmount>
             ) : (
               <span>$ —</span>
             )}
@@ -362,21 +380,33 @@ export function WalletPage() {
           <div className="wallet-balance-breakdown">
             <div>
               <span>Ingresos estimados</span>
-              <strong>{p ? formatCop(p.earnedCop) : "—"}</strong>
+              <strong>
+                <PrivateAmount>
+                  {p ? formatCop(p.earnedCop) : "—"}
+                </PrivateAmount>
+              </strong>
             </div>
             <div>
               <span>Ventas registradas</span>
-              <strong>{p ? formatCop(p.saleProceedsCop) : "—"}</strong>
+              <strong>
+                <PrivateAmount>
+                  {p ? formatCop(p.saleProceedsCop) : "—"}
+                </PrivateAmount>
+              </strong>
             </div>
             <div>
               <span>Reservado para revisión</span>
-              <strong>{p ? formatCop(p.reservedCop) : "—"}</strong>
+              <strong>
+                <PrivateAmount>
+                  {p ? formatCop(p.reservedCop) : "—"}
+                </PrivateAmount>
+              </strong>
             </div>
           </div>
           <button
             type="button"
             className="btn btn-sun"
-            disabled={!p || Boolean(error) || p.balanceCop < 20000}
+            disabled={hidden || !p || Boolean(error) || p.balanceCop < 20000}
             onClick={() =>
               connected ? setWithdrawOpen(true) : wallet.openConnect()
             }
@@ -418,7 +448,11 @@ export function WalletPage() {
                 </div>
                 <div>
                   <dt>Saldo externo</dt>
-                  <dd>{wallet.balance ?? "No disponible"}</dd>
+                  <dd>
+                    <PrivateAmount>
+                      {wallet.balance ?? "No disponible"}
+                    </PrivateAmount>
+                  </dd>
                 </div>
               </dl>
               <div className="wallet-connection-actions">

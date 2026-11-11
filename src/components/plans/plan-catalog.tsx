@@ -17,6 +17,7 @@ import { formatCop, formatNumber } from "@/lib/format";
 import { nitCheckDigit } from "@/lib/profile-schema";
 import { Dialog } from "@/components/ui/dialog";
 import { PlanCards } from "./plan-cards";
+import { PlanComparator } from "./plan-comparator";
 
 interface CompanyDraft {
   company: string;
@@ -317,6 +318,12 @@ export function PlanCatalog({
           Consultar términos <ArrowUpRight size={14} />
         </Link>
       </div>
+      <PlanComparator
+        onSelect={(plan) => {
+          setSelected(plan);
+          setReview(true);
+        }}
+      />
       <Dialog
         open={review}
         onClose={() => setReview(false)}

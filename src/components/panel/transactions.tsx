@@ -9,9 +9,13 @@ import {
   Search,
   X,
   RotateCcw,
+  Printer,
 } from "lucide-react";
 import type { TxDTO } from "@/lib/portfolio";
 import { formatCop, formatDateTime, formatNumber } from "@/lib/format";
+import { PrivateAmount } from "@/components/ui/amount-privacy";
+import { useAmountPrivacy } from "@/lib/client/use-amount-privacy";
+import { printTransaction } from "./transaction-print";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/data-state";
 import { toast } from "@/components/ui/toast";
@@ -62,6 +66,7 @@ export function Transactions({
   transactions: readonly TxDTO[];
   compact?: boolean;
 }) {
+  const { hidden } = useAmountPrivacy();
   const [filter, setFilter] = useState<TransactionFilter>({
     search: "",
     status: "",
@@ -136,7 +141,12 @@ export function Transactions({
           <button
             type="button"
             className="btn btn-ghost"
-            disabled={!rows.length || invalidDates}
+            disabled={hidden || !rows.length || invalidDates}
+            title={
+              hidden
+                ? "Muestra los importes para exportar"
+                : "Exportar los movimientos filtrados"
+            }
             onClick={() =>
               download(
                 transactionsCsv(rows),
@@ -184,7 +194,7 @@ export function Transactions({
                   <PaymentStatus status={tx.status} />
                 </td>
                 <td className={`transaction-amount ${txAmount(tx).tone}`}>
-                  {txAmount(tx).text}
+                  <PrivateAmount>{txAmount(tx).text}</PrivateAmount>
                 </td>
                 <td>
                   <button
@@ -250,7 +260,9 @@ export function Transactions({
           <>
             <div className="transaction-detail-summary">
               <PaymentStatus status={selected.status} />
-              <p>{formatCop(selected.amountCop)}</p>
+              <p>
+                <PrivateAmount>{formatCop(selected.amountCop)}</PrivateAmount>
+              </p>
               <span>{txTitle(selected)}</span>
             </div>
             <dl className="detail-list">
@@ -288,7 +300,7 @@ export function Transactions({
                 </div>
               )}
             </dl>
-            {txDetail(selected) && (
+            {!hidden && txDetail(selected) && (
               <p className="table-note">{txDetail(selected)}</p>
             )}
             <div className="dialog-actions">
@@ -311,7 +323,16 @@ export function Transactions({
               </button>
               <button
                 type="button"
+                className="btn btn-ghost"
+                disabled={hidden}
+                onClick={() => printTransaction(selected)}
+              >
+                <Printer size={14} /> Imprimir / PDF
+              </button>
+              <button
+                type="button"
                 className="btn btn-sun"
+                disabled={hidden}
                 onClick={() =>
                   download(
                     transactionsCsv([selected]),
