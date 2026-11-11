@@ -104,4 +104,9 @@ describe("preferencia del Checkout Pro", () => {
     const p = buildPreference(base);
     expect(p.payment_methods.excluded_payment_types).toEqual([{ id: "ticket" }, { id: "atm" }]);
   });
+
+  it("si el monto pasa el tope de las tarjetas, solo deja PSE", () => {
+    const p = buildPreference({ ...base, amountCop: 76_800_000, cards: false });
+    expect(p.payment_methods.excluded_payment_types).toEqual([{ id: "ticket" }, { id: "atm" }, { id: "credit_card" }, { id: "debit_card" }, { id: "prepaid_card" }]);
+  });
 });

@@ -26,13 +26,27 @@ interface Method {
   note: string;
 }
 
-function methodsFrom(config: AppConfigDTO | null): Method[] {
+/** ¿Mercado Pago recibe este monto, y con tarjeta? Los topes los da el servidor (lib/payments/mercadopago-limits). */
+function mercadoPagoFor(config: AppConfigDTO, amountCop: number) {
+  const available =
+    config.mercadopago.enabled && amountCop <= config.mercadopago.pseMaxCop;
+  return {
+    available,
+    cards: available && amountCop <= config.mercadopago.cardMaxCop,
+  };
+}
+
+function methodsFrom(
+  config: AppConfigDTO | null,
+  amountCop: number,
+): Method[] {
   if (!config) return [];
   const list: Method[] = [];
-  if (config.mercadopago.enabled) {
+  const mp = mercadoPagoFor(config, amountCop);
+  if (mp.available) {
     list.push({
       id: "mercadopago",
-      label: "Tarjeta, PSE o Nequi",
+      label: mp.cards ? "PSE o tarjeta" : "PSE",
       note: config.mercadopago.sandbox
         ? "Mercado Pago, en modo de pruebas"
         : "Con Mercado Pago",
@@ -114,7 +128,12 @@ export function CheckoutPayment({
   onBusy,
 }: PayProps) {
   const { config } = useAppConfig();
-  const methods = methodsFrom(config);
+  const methods = methodsFrom(config, request.amountCop);
+  // Mercado Pago está configurado pero no recibe un pago tan grande: se dice por qué no aparece.
+  const overMercadoPago =
+    !!config &&
+    config.mercadopago.enabled &&
+    !mercadoPagoFor(config, request.amountCop).available;
   const [chosen, setChosen] = useState<MethodId | null>(null);
   const [locked, setLocked] = useState(false);
   const method = methods.find((m) => m.id === chosen) ?? methods[0] ?? null;
@@ -172,7 +191,20 @@ export function CheckoutPayment({
           </label>
         ))}
       </fieldset>
-      {method.id === "mercadopago" && <MercadoPagoPay {...props} />}
+      {overMercadoPago && (
+        <p className="mt-4 text-sm leading-relaxed text-mute">
+          Mercado Pago recibe hasta {formatCop(config.mercadopago.pseMaxCop)}{" "}
+          por pago: este mes págalo con cripto, o escríbenos para pagarlo por
+          transferencia bancaria.
+        </p>
+      )}
+      {method.id === "mercadopago" && (
+        <MercadoPagoPay
+          {...props}
+          cards={mercadoPagoFor(config, request.amountCop).cards}
+          cardMaxCop={config.mercadopago.cardMaxCop}
+        />
+      )}
       {method.id === "test" && <TestPay {...props} />}
       {(method.id === "USDT" || method.id === "BNB") && (
         <CryptoPay
@@ -207,9 +239,15 @@ interface PayProps {
   onConfirmed?(order: TxDTO): void;
 }
 
-/* ───────────── Mercado Pago: tarjeta, PSE o Nequi ───────────── */
+/* ───────────── Mercado Pago: PSE o tarjeta ───────────── */
 
-function MercadoPagoPay({ request, onClose, onBusy }: PayProps) {
+function MercadoPagoPay({
+  request,
+  onClose,
+  onBusy,
+  cards,
+  cardMaxCop,
+}: PayProps & { cards: boolean; cardMaxCop: number }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -235,10 +273,11 @@ function MercadoPagoPay({ request, onClose, onBusy }: PayProps) {
   return (
     <div className="mt-6">
       <p className="text-sm leading-relaxed text-fog">
-        Te llevamos al pago seguro de Mercado Pago. Allí eliges tarjeta o PSE;
-        para pagar con Nequi o Daviplata, elige PSE y luego tu billetera. Al
-        terminar vuelves a {BRAND.name} y tu energía empieza a contar apenas el
-        pago quede aprobado.
+        {cards
+          ? "Te llevamos al pago seguro de Mercado Pago. Allí eliges PSE o tarjeta; Nequi y Daviplata aparecen dentro de PSE, con sus propios topes."
+          : `Te llevamos al pago seguro de Mercado Pago, donde pagas por PSE desde la cuenta de tu empresa: Mercado Pago recibe tarjetas solo hasta ${formatCop(cardMaxCop)}. Antes, confirma con tu banco que tengas habilitado un pago de ${formatCop(request.amountCop)} por PSE.`}{" "}
+        Al terminar vuelves a {BRAND.name} y tu energía empieza a contar apenas
+        el pago quede aprobado.
       </p>
       {error && <ErrorNote className="mt-5">{error}</ErrorNote>}
       <div className="mt-7 flex flex-wrap justify-end gap-3">

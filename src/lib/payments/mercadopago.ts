@@ -98,12 +98,15 @@ export function buildPreference({
   amountCop,
   baseUrl,
   payer,
+  cards = true,
 }: {
   orderId: string;
   title: string;
   amountCop: number;
   baseUrl: string;
   payer?: { email: string; fullName: string };
+  /** false cuando el monto pasa el tope de las tarjetas: así Mercado Pago solo muestra PSE. */
+  cards?: boolean;
 }) {
   const back = `${baseUrl}/pagos/resultado?ref=${encodeURIComponent(orderId)}`;
   const [name, ...rest] = (payer?.fullName ?? "").trim().split(/\s+/);
@@ -117,7 +120,9 @@ export function buildPreference({
     // con la clave secreta. En local, Mercado Pago no puede avisar: el pago se confirma al volver del checkout.
     statement_descriptor: "X GREEN ENERGY",
     // Tarjetas, PSE (Nequi y Daviplata aparecen dentro de PSE) y saldo de Mercado Pago. Sin efectivo.
-    payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
+    payment_methods: {
+      excluded_payment_types: [{ id: "ticket" }, { id: "atm" }, ...(cards ? [] : [{ id: "credit_card" }, { id: "debit_card" }, { id: "prepaid_card" }])],
+    },
   };
 }
 

@@ -7,7 +7,7 @@ import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 
 const Body = z.object(planTarget).refine(onePlanTarget, PLAN_TARGET_ERROR);
 
-/** Crea la orden del mes y devuelve la URL del Checkout Pro de Mercado Pago (tarjeta, PSE o Nequi). */
+/** Crea la orden del mes y devuelve la URL del Checkout Pro de Mercado Pago (PSE o tarjeta). */
 export async function POST(req: Request) {
   try {
     const user = await getSessionUser();

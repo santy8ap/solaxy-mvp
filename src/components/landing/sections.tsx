@@ -5,6 +5,7 @@ import { SOLAR } from "@/config/solar";
 import { DAYS_PER_MONTH, GRACE_DAYS } from "@/lib/energy/plan-math";
 import { isDemoMode } from "@/lib/env";
 import { formatCop, formatHourLabel, formatNumber } from "@/lib/format";
+import { DEFAULT_MP_LIMITS } from "@/lib/payments/mercadopago-limits";
 import { MIN_WITHDRAWAL_COP } from "@/lib/withdrawal-schema";
 import { Logo } from "@/components/ui/logo";
 import { CatalogValue } from "./catalog-value";
@@ -82,7 +83,7 @@ const STEPS: { title: string; text: React.ReactNode }[] = [
   },
   {
     title: "Elige un plan y paga el primer mes",
-    text: "Con tarjeta, PSE o Nequi a través de Mercado Pago, o con USDT o BNB desde tu wallet. La energía empieza a contar cuando el pago queda confirmado.",
+    text: `Por PSE o con tarjeta a través de Mercado Pago (con tarjeta, hasta ${formatCop(DEFAULT_MP_LIMITS.cardMaxCop)} por pago), o con USDT o BNB desde tu wallet. La energía empieza a contar cuando el pago queda confirmado.`,
   },
   {
     title: "Mira tu energía y retira",
