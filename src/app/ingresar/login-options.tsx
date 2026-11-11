@@ -1,36 +1,24 @@
 "use client";
-import { KeyRound, LineChart } from "lucide-react";
 import { useActionState, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { prepareGoogleLogin, signInDemo } from "./actions";
 
 function GoogleG() {
   return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="currentColor" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5zM46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65zM10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19zM24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
     </svg>
   );
 }
 
 type Role = "user" | "admin";
 
-const ROLES: { id: Role; title: string; note: string; icon: typeof LineChart }[] = [
-  { id: "user", title: "Inversionista", note: "Tus kW, ganancias y telemetría", icon: LineChart },
-  { id: "admin", title: "Administrador", note: "Usuarios, planta y retiros", icon: KeyRound },
+const ROLES: { id: Role; title: string; note: string }[] = [
+  { id: "user", title: "Empresa", note: "Tus planes, tu energía y tus retiros" },
+  { id: "admin", title: "Administrador", note: "Clientes, pagos y retiros" },
 ];
 
-export function LoginOptions({
-  googleEnabled,
-  demoMode,
-  defaultRole = "user",
-}: {
-  googleEnabled: boolean;
-  demoMode: boolean;
-  defaultRole?: Role;
-}) {
+export function LoginOptions({ googleEnabled, demoMode, defaultRole = "user", planId }: { googleEnabled: boolean; demoMode: boolean; defaultRole?: Role; planId?: string }) {
   const [role, setRole] = useState<Role>(defaultRole);
   const [pin, setPin] = useState("");
   const [state, formAction, pending] = useActionState(signInDemo, undefined);
@@ -42,8 +30,8 @@ export function LoginOptions({
     if (!googleEnabled) {
       setNotice(
         demoMode
-          ? "El ingreso con Google aún no está configurado en este equipo. Agrega GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET (ver README). Mientras tanto, entra con la cuenta demo."
-          : "El ingreso con Google aún no está configurado. El administrador debe agregar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.",
+          ? "El ingreso con Google todavía no está configurado en este equipo (faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET). Mientras tanto, entra con la cuenta de pruebas."
+          : "El ingreso con Google todavía no está configurado. Escríbenos para avisarnos.",
       );
       return;
     }
@@ -60,74 +48,45 @@ export function LoginOptions({
     }
     const { error } = await authClient.signIn.social({
       provider: "google",
-      callbackURL: role === "admin" ? "/api/admin/activar" : "/panel",
+      callbackURL: role === "admin" ? "/api/admin/activar" : planId ? `/panel/planes?plan=${planId}` : "/panel",
     });
     if (error) {
       setGoogleLoading(false);
-      setNotice(error.message ?? (demoMode ? "No se pudo conectar con Google. Intenta de nuevo o usa la cuenta demo." : "No se pudo conectar con Google. Intenta de nuevo."));
+      setNotice(error.message ?? "No se pudo conectar con Google. Intenta de nuevo.");
     }
   };
 
   const error = notice ?? state?.error ?? null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       <fieldset>
-        <legend className="mb-2.5 text-sm text-silver-400">Entrar como</legend>
-        <div className="grid grid-cols-2 gap-2" role="radiogroup">
-          {ROLES.map(({ id, title, note, icon: Icon }) => {
+        <legend className="cap mb-3">Entrar como</legend>
+        <div className="grid grid-cols-2 border border-line-strong">
+          {ROLES.map(({ id, title, note }) => {
             const active = role === id;
             return (
-              <label
-                key={id}
-                className={`relative flex cursor-pointer flex-col gap-1.5 rounded-2xl border p-3.5 transition-all duration-200 ${
-                  active
-                    ? id === "admin"
-                      ? "border-dusk-400/80 bg-dusk-400/10 shadow-[0_0_0_1px_rgb(166_139_255/0.35)]"
-                      : "border-sun-400/80 bg-sun-400/10 shadow-[0_0_0_1px_rgb(246_183_60/0.35)]"
-                    : "border-silicon-600/70 hover:border-silicon-500"
-                }`}
-              >
+              <label key={id} className={`flex cursor-pointer flex-col gap-1 p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${id === "admin" ? "border-l border-line-strong" : ""} ${active ? "bg-ink text-void" : "hover:bg-ink/5"}`}>
                 <input type="radio" name="role-choice" value={id} checked={active} onChange={() => setRole(id)} className="sr-only" />
-                <Icon size={18} className={active ? (id === "admin" ? "text-dusk-300" : "text-sun-300") : "text-silver-400"} />
-                <span className="font-semibold text-silver-50">{title}</span>
-                <span className="text-xs leading-snug text-silver-400">{note}</span>
+                <span className="font-medium">{title}</span>
+                <span className={`text-xs leading-snug ${active ? "text-void/70" : "text-mute"}`}>{note}</span>
               </label>
             );
           })}
         </div>
       </fieldset>
 
-      <div
-        className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
-        style={{ gridTemplateRows: role === "admin" ? "1fr" : "0fr", opacity: role === "admin" ? 1 : 0 }}
-        aria-hidden={role !== "admin"}
-      >
-        <div className="overflow-hidden">
-          <label htmlFor="admin-pin" className="text-sm text-silver-400">
+      {role === "admin" && (
+        <div>
+          <label htmlFor="admin-pin" className="cap">
             PIN de administrador
           </label>
-          <input
-            id="admin-pin"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            tabIndex={role === "admin" ? 0 : -1}
-            placeholder="••••"
-            className="field mt-2 tracking-[0.4em]"
-          />
+          <input id="admin-pin" type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="••••••" className="field num mt-1 tracking-[0.4em]" />
         </div>
-      </div>
+      )}
 
       <div className="space-y-3">
-        <button
-          type="button"
-          onClick={onGoogle}
-          disabled={googleLoading || pending}
-          className="btn w-full !justify-center bg-silver-50 !py-3.5 text-silicon-950 hover:bg-white"
-        >
+        <button type="button" onClick={onGoogle} disabled={googleLoading || pending} className="btn btn-solid w-full">
           <GoogleG />
           {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
         </button>
@@ -135,15 +94,16 @@ export function LoginOptions({
           <form action={formAction}>
             <input type="hidden" name="role" value={role} />
             <input type="hidden" name="pin" value={pin} />
-            <button type="submit" disabled={pending || googleLoading} className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}>
-              {pending ? "Entrando…" : role === "admin" ? "Entrar como administrador (demo)" : "Entrar con la cuenta demo"}
+            <input type="hidden" name="plan" value={planId ?? ""} />
+            <button type="submit" disabled={pending || googleLoading} className="btn btn-ghost w-full">
+              {pending ? "Entrando…" : role === "admin" ? "Entrar como administrador de pruebas" : "Entrar con la cuenta de pruebas"}
             </button>
           </form>
         )}
       </div>
 
       {error && (
-        <p role="alert" className="rounded-xl border border-sun-400/40 bg-sun-400/10 p-3 text-sm leading-relaxed text-sun-200">
+        <p role="alert" className="border-l-2 border-ink pl-4 text-sm leading-relaxed text-fog">
           {error}
         </p>
       )}

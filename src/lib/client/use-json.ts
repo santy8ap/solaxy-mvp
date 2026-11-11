@@ -1,13 +1,18 @@
 "use client";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
-interface Entry {
+interface Snapshot {
   data?: unknown;
   error?: string;
   loading: boolean;
+  /** Hora de este dispositivo cuando llegó la respuesta: sirve para sincronizar con el reloj del servidor. */
+  receivedAt?: number;
+}
+
+interface Entry extends Snapshot {
   inflight?: Promise<void>;
   listeners: Set<() => void>;
-  snapshot: { data?: unknown; error?: string; loading: boolean };
+  snapshot: Snapshot;
 }
 
 const entries = new Map<string, Entry>();
@@ -22,7 +27,7 @@ function entry(url: string): Entry {
 }
 
 function publish(e: Entry) {
-  e.snapshot = { data: e.data, error: e.error, loading: e.loading };
+  e.snapshot = { data: e.data, error: e.error, loading: e.loading, receivedAt: e.receivedAt };
   for (const l of e.listeners) l();
 }
 
@@ -39,6 +44,7 @@ export function refetch(url: string): Promise<void> {
       }
       if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status}`);
       e.data = json;
+      e.receivedAt = Date.now();
       e.error = undefined;
     })
     .catch((err: Error) => {
@@ -79,6 +85,7 @@ export function useJson<T>(url: string, { refreshMs }: { refreshMs?: number } = 
 
   return {
     data: snap.data as T | undefined,
+    receivedAt: snap.receivedAt,
     error: snap.error,
     loading: snap.loading,
     reload: () => refetch(url),

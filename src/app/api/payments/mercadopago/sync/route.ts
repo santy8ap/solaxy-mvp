@@ -7,7 +7,7 @@ import { syncLimiter } from "@/lib/security/limits";
 import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 
 const Body = z.object({
-  ref: z.string().regex(/^SLX-[0-9A-F]{6,12}$/, "Orden inválida"),
+  ref: z.string().regex(/^IWE-[0-9A-F]{6,12}$/, "Orden inválida"),
   paymentId: z.string().regex(/^\d{1,20}$/).optional(),
 });
 

@@ -3,62 +3,57 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { BRAND } from "@/config/brand";
+import { PLANS } from "@/config/plans";
 import { googleEnabled, isDemoMode } from "@/lib/env";
+import { LoginClock } from "@/components/landing/login-clock";
 import { Logo } from "@/components/ui/logo";
-import { LiveMini } from "@/components/live/live-mini";
 import { LoginOptions } from "./login-options";
 
 export const metadata: Metadata = { title: "Ingresar" };
 
-async function Options({ searchParams }: { searchParams: Promise<{ rol?: string }> }) {
+type Params = { rol?: string; plan?: string };
+
+async function Options({ searchParams }: { searchParams: Promise<Params> }) {
   // Se lee al momento de la visita: si agregas las credenciales de Google no hace falta recompilar.
   await connection();
-  const { rol } = await searchParams;
-  return <LoginOptions googleEnabled={googleEnabled} demoMode={isDemoMode()} defaultRole={rol === "admin" ? "admin" : "user"} />;
-}
-
-async function DemoNote() {
-  await connection();
-  if (!isDemoMode()) return null;
+  const { rol, plan } = await searchParams;
+  const chosen = PLANS.find((p) => p.id === plan);
   return (
-    <p className="mt-6 text-xs leading-relaxed text-silver-500">
-      {BRAND.demoBadge}. Las cuentas nuevas reciben una posición de demostración para explorar el panel.
-    </p>
+    <>
+      {chosen && (
+        <p className="mb-7 border-l-2 border-ink pl-4 text-sm leading-relaxed text-fog">
+          Elegiste el <strong className="font-medium text-ink">{chosen.name}</strong>. Entra para registrar tu empresa y pagar el primer mes.
+        </p>
+      )}
+      <LoginOptions googleEnabled={googleEnabled} demoMode={isDemoMode()} defaultRole={rol === "admin" ? "admin" : "user"} planId={chosen?.id} />
+      {isDemoMode() && <p className="mt-7 text-xs leading-relaxed text-mute">Página en modo de pruebas: la cuenta de pruebas y sus pagos no mueven dinero real.</p>}
+    </>
   );
 }
 
 export default function LoginPage({ searchParams }: PageProps<"/ingresar">) {
   return (
-    <main className="relative flex min-h-dvh flex-col">
-      <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-5 py-5 sm:px-8">
+    <main className="flex min-h-dvh flex-col">
+      <div className="mx-auto flex h-[72px] w-full max-w-[1240px] items-center justify-between px-5 sm:px-8">
         <Link href="/" aria-label={`${BRAND.name}, inicio`}>
           <Logo />
         </Link>
-        <Link href="/" className="text-sm text-silver-400 hover:text-silver-50">
+        <Link href="/" className="link text-sm text-fog">
           Volver al inicio
         </Link>
       </div>
-      <div className="mx-auto grid w-full max-w-[1100px] flex-1 items-center gap-10 px-5 pb-16 sm:px-8 lg:grid-cols-[1fr_1fr]">
+      <div className="mx-auto grid w-full max-w-[1240px] flex-1 items-center gap-16 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div className="hidden lg:block">
-          <h1 className="display max-w-[12ch] text-[clamp(2.6rem,4.6vw,4.2rem)] text-silver-50">Tu parte del sol te espera.</h1>
-          <p className="mt-5 max-w-[42ch] text-lg text-silver-300">
-            Entra para ver tus kW, la telemetría de la planta y tus ganancias creciendo en tiempo real.
-          </p>
-          <div className="mt-10 max-w-[380px]">
-            <LiveMini />
-          </div>
+          <LoginClock />
+          <p className="mt-12 max-w-[44ch] leading-relaxed text-mute">Entra para ver la energía de tus planes, pagar el mes siguiente y retirar tu saldo.</p>
         </div>
-        <div className="panel cells mx-auto w-full max-w-[440px] p-7 sm:p-9">
-          <h2 className="text-2xl font-semibold text-silver-50">Ingresar a {BRAND.name}</h2>
-          <p className="mt-2 text-silver-400">Elige cómo quieres entrar y continúa con tu cuenta.</p>
-          <div className="mt-8">
-            <Suspense fallback={<div className="h-[260px] animate-pulse rounded-2xl bg-silicon-700/50" />}>
-              <Options searchParams={searchParams as Promise<{ rol?: string }>} />
+        <div className="mx-auto w-full max-w-[440px]">
+          <h1 className="display text-[clamp(3.5rem,9vw,5.5rem)]">Ingresar</h1>
+          <div className="mt-10">
+            <Suspense fallback={<div className="skeleton h-[280px]" />}>
+              <Options searchParams={searchParams as Promise<Params>} />
             </Suspense>
           </div>
-          <Suspense fallback={null}>
-            <DemoNote />
-          </Suspense>
         </div>
       </div>
     </main>

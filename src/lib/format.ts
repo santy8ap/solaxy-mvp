@@ -53,6 +53,7 @@ export function formatAsset(amount: number, asset: string) {
 
 const dt = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short" });
 const dOnly = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short" });
+const dYear = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short", year: "numeric" });
 const tOnly = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit", hour12: true });
 const tSec = new Intl.DateTimeFormat("es-CO", {
   timeZone: "America/Bogota",
@@ -64,6 +65,8 @@ const tSec = new Intl.DateTimeFormat("es-CO", {
 
 export const formatDateTime = (ts: number) => dt.format(ts);
 export const formatDay = (ts: number) => dOnly.format(ts);
+/** 10 nov 2026 */
+export const formatDate = (ts: number) => dYear.format(ts);
 export const formatTime = (ts: number) => tOnly.format(ts);
 export const formatClock = (ts: number) => tSec.format(ts);
 

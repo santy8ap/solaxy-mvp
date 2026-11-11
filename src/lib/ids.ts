@@ -9,9 +9,9 @@ export function newId(prefix = "") {
   return `${prefix}${crypto.randomUUID()}`;
 }
 
-/** Código de orden, p. ej. SLX-7F3A21C9B0. También es la referencia del pago en Mercado Pago: debe ser única. */
+/** Código de orden, p. ej. IWE-7F3A21C9B0. También es la referencia del pago en Mercado Pago: debe ser única. */
 export function orderCode() {
-  return `SLX-${randomHex(5).toUpperCase()}`;
+  return `IWE-${randomHex(5).toUpperCase()}`;
 }
 
 /** Hash de transacción simulado con formato EVM. */

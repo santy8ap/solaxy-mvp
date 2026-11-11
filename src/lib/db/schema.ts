@@ -77,7 +77,7 @@ export const verification = sqliteTable(
   (t) => [index("verification_identifier_idx").on(t.identifier)],
 );
 
-/* ───────────── Dominio Solaxy ───────────── */
+/* ───────────── Dominio: planes de energía ───────────── */
 
 /** La planta y los precios vigentes (una sola fila). Los edita el administrador. */
 export const plant = sqliteTable("plant", {

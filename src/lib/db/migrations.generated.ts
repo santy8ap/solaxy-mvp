@@ -94,7 +94,8 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "ALTER TABLE `plant` DROP COLUMN `tariff_day_cop`;",
       "ALTER TABLE `plant` DROP COLUMN `tariff_peak_cop`;",
       "ALTER TABLE `plant` DROP COLUMN `commission_pct`;",
-      "ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;"
+      "ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;",
+      "UPDATE `plant` SET `name` = 'Planta Solar I' WHERE `name` = 'Solaxy Solar I';"
     ]
   }
 ];

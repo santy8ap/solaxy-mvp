@@ -64,7 +64,8 @@ describe("migración del modelo de kW al de planes de energía", () => {
     expect(ledger).toEqual(expect.arrayContaining(["subscription_id", "period_index", "kwh", "bank_name", "bank_account_type", "bank_account_number"]));
     expect(await columns("plant")).toEqual(["id", "name", "location", "updated_at", "peak_kw", "sale_cop_per_kwh", "plan_prices"]);
     const plant = (await client.execute("SELECT * FROM plant")).rows[0];
-    expect(plant).toMatchObject({ name: "Solaxy Solar I", peak_kw: 8000, sale_cop_per_kwh: 400, plan_prices: "{}" });
+    // El nombre inicial ya no lleva la marca anterior.
+    expect(plant).toMatchObject({ name: "Planta Solar I", peak_kw: 8000, sale_cop_per_kwh: 400, plan_prices: "{}" });
   });
 
   it("volver a migrar no hace nada", async () => {

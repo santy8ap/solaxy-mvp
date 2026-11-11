@@ -26,4 +26,5 @@ ALTER TABLE `plant` DROP COLUMN `commissioned_at`;--> statement-breakpoint
 ALTER TABLE `plant` DROP COLUMN `tariff_day_cop`;--> statement-breakpoint
 ALTER TABLE `plant` DROP COLUMN `tariff_peak_cop`;--> statement-breakpoint
 ALTER TABLE `plant` DROP COLUMN `commission_pct`;--> statement-breakpoint
-ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;
+ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;--> statement-breakpoint
+UPDATE `plant` SET `name` = 'Planta Solar I' WHERE `name` = 'Solaxy Solar I';

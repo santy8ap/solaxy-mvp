@@ -108,14 +108,14 @@ export function buildPreference({
   const back = `${baseUrl}/pagos/resultado?ref=${encodeURIComponent(orderId)}`;
   const [name, ...rest] = (payer?.fullName ?? "").trim().split(/\s+/);
   return {
-    items: [{ id: "kw-solaxy", title, quantity: 1, currency_id: "COP", unit_price: Math.round(amountCop) }],
+    items: [{ id: "plan-energia", title, quantity: 1, currency_id: "COP", unit_price: Math.round(amountCop) }],
     ...(payer && { payer: { email: payer.email, name: name ?? "", surname: rest.join(" ") } }),
     external_reference: orderId,
     back_urls: { success: back, pending: back, failure: back },
     auto_return: "approved" as const,
     // Sin notification_url: los avisos llegan por el webhook configurado en Tus integraciones, que viene firmado
     // con la clave secreta. En local, Mercado Pago no puede avisar: el pago se confirma al volver del checkout.
-    statement_descriptor: "SOLAXY",
+    statement_descriptor: "IN WORLD ENERGY",
     // Tarjetas, PSE (Nequi y Daviplata aparecen dentro de PSE) y saldo de Mercado Pago. Sin efectivo.
     payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
   };

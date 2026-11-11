@@ -105,9 +105,9 @@ describe("borrar los datos de prueba", () => {
   it("no se puede si ya hay pagos reales", async () => {
     vi.stubEnv("DEMO_MODE", "false");
     const { db } = dbMod;
-    await db.insert(schema.ledgerTx).values({ id: "SLX-REAL000001", userId: "real-1", kind: "plan_mes", status: "confirmada", amountCop: 20_880_000, createdAt: Date.now(), method: "manual", providerId: "TRANSF-REAL-1" });
+    await db.insert(schema.ledgerTx).values({ id: "IWE-REAL000001", userId: "real-1", kind: "plan_mes", status: "confirmada", amountCop: 20_880_000, createdAt: Date.now(), method: "manual", providerId: "TRANSF-REAL-1" });
     await expect(reset.resetDemoData(actor, PHRASE)).rejects.toMatchObject({ status: 409 });
-    await db.delete(schema.ledgerTx).where(drizzle.eq(schema.ledgerTx.id, "SLX-REAL000001"));
+    await db.delete(schema.ledgerTx).where(drizzle.eq(schema.ledgerTx.id, "IWE-REAL000001"));
   });
 
   it("borra la cuenta de pruebas, los planes y los movimientos, y conserva las cuentas reales con los datos de su empresa", async () => {

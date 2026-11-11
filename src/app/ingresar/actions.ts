@@ -6,15 +6,21 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensureReady } from "@/lib/db/init";
 import { ensureDemoAccount } from "@/lib/db/seed";
+import { PLANS } from "@/config/plans";
 import { adminEmailAllowed, env, isDemoMode } from "@/lib/env";
 
 export type ActionState = { error?: string } | undefined;
 
 const NOT_ALLOWED = "Tu cuenta no está autorizada como administradora. Pide que agreguen tu correo a ADMIN_EMAILS.";
 
-/** Cuenta demo, como inversionista o como administrador (con PIN). */
+/** A dónde va una empresa al entrar: al plan que eligió en el inicio, o a su panel. */
+function panelDestination(planId: unknown) {
+  return PLANS.some((p) => p.id === planId) ? `/panel/planes?plan=${planId}` : "/panel";
+}
+
+/** Cuenta de pruebas, como empresa o como administrador (con PIN). Solo en modo de pruebas. */
 export async function signInDemo(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  if (!isDemoMode()) return { error: "La cuenta demo está desactivada. Ingresa con tu cuenta de Google." };
+  if (!isDemoMode()) return { error: "La cuenta de pruebas está desactivada. Ingresa con tu cuenta de Google." };
   const asAdmin = formData.get("role") === "admin";
   if (asAdmin) {
     const pin = await checkAdminPin(String(formData.get("pin") ?? ""));
@@ -28,7 +34,7 @@ export async function signInDemo(_prev: ActionState, formData: FormData): Promis
   });
   if (asAdmin) await grantAdmin(res.user.id, res.token);
   else await clearAdmin();
-  redirect(asAdmin ? "/admin" : "/panel");
+  redirect(asAdmin ? "/admin" : panelDestination(formData.get("plan")));
 }
 
 /** Antes de abrir Google: valida el PIN (si eligió administrador) o limpia un rol anterior. */

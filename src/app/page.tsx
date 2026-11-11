@@ -1,26 +1,22 @@
-import { Hero } from "@/components/landing/hero";
-import { Ownership } from "@/components/landing/ownership";
-import { PlantToday } from "@/components/landing/plant-today";
-import { Faq, FinalCta, Footer, HowItWorks, LandingNav, Payments } from "@/components/landing/sections";
-import { Simulator } from "@/components/landing/simulator";
-import { PresenterControl } from "@/components/live/presenter";
+import { ClockSection } from "@/components/landing/clock-section";
+import { PlansSection } from "@/components/landing/plans-section";
+import { Faq, FinalCta, Footer, Hero, HowItWorks, LandingNav } from "@/components/landing/sections";
 
-export default function Home() {
+export default function HomePage() {
   return (
     <>
       <LandingNav />
-      <main>
-        <Hero />
-        <Ownership />
+      <main className="space-y-24 pb-8 sm:space-y-32">
+        <div>
+          <Hero />
+          <ClockSection />
+        </div>
+        <PlansSection />
         <HowItWorks />
-        <PlantToday />
-        <Simulator />
-        <Payments />
         <Faq />
         <FinalCta />
       </main>
       <Footer />
-      <PresenterControl />
     </>
   );
 }
