@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUpRight, Check, Menu, X } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ArrowDown, ArrowUpRight, Check, Menu, Pause, Play, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { SunArc } from "./sun-arc";
 import { ENERGY_PLANS } from "@/config/energy-plans";
+import { EclipseScene, EnergyIntro } from "./eclipse-scene";
+import { useHomeMotion } from "./use-home-motion";
+import "./eclipse-motion.css";
 
 const number = new Intl.NumberFormat("es-CO");
 const cop = (value: number) => `$ ${number.format(value)}`;
@@ -34,6 +37,8 @@ export function EclipseHome() {
   const [menu, setMenu] = useState(false);
   const [selected, setSelected] = useState(3);
   const [now, setNow] = useState<number | null>(null);
+  const [animationsPaused, setAnimationsPaused] = useState(false);
+  useHomeMotion(root, animationsPaused);
   useEffect(() => {
     const tick = () => setNow(Date.now());
     tick();
@@ -48,37 +53,6 @@ export function EclipseHome() {
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, [menu]);
-  useEffect(() => {
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (motion.matches || !("IntersectionObserver" in window)) return;
-    const elements = root.current?.querySelectorAll(
-      ".section-heading, .plan-grid, .plan-detail, .steps-grid li, .faq-section, .closing",
-    );
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-revealed");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.08 },
-    );
-    elements?.forEach((element) => {
-      if (element.getBoundingClientRect().top > window.innerHeight) {
-        element.classList.add("reveal-on-scroll");
-        observer.observe(element);
-      }
-    });
-    const showAll = () =>
-      elements?.forEach((element) => element.classList.add("is-revealed"));
-    motion.addEventListener("change", showAll);
-    return () => {
-      observer.disconnect();
-      motion.removeEventListener("change", showAll);
-    };
-  }, []);
   const plan = plans[selected];
   const monthly = plan.daily * 30;
   const links = [
@@ -99,11 +73,12 @@ export function EclipseHome() {
           hourCycle: "h23",
         }).format(now);
   return (
-    <div className="eclipse-home" ref={root}>
+    <div className="eclipse-home" ref={root} data-motion={animationsPaused ? "paused" : "ready"}>
       <a className="skip-link" href="#contenido">
         Saltar al contenido
       </a>
       <header className="eclipse-header">
+        <div className="home-scroll-progress" aria-hidden="true" />
         <nav className="eclipse-wrap eclipse-navigation" aria-label="Principal">
           <Link href="/" aria-label="In World Energy, inicio">
             <Logo />
@@ -116,6 +91,16 @@ export function EclipseHome() {
             ))}
           </div>
           <div className="nav-actions">
+            <button
+              type="button"
+              className="motion-toggle"
+              onClick={() => setAnimationsPaused((value) => !value)}
+              aria-label={animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
+              aria-pressed={animationsPaused}
+              title={animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
+            >
+              {animationsPaused ? <Play size={14} /> : <Pause size={14} />}
+            </button>
             <Link href="/ingresar" className="btn btn-ghost">
               Ingresar <ArrowUpRight size={15} />
             </Link>
@@ -142,12 +127,22 @@ export function EclipseHome() {
                 <ArrowUpRight size={16} />
               </a>
             ))}
+            <button
+              type="button"
+              className="mobile-motion-toggle"
+              aria-pressed={animationsPaused}
+              onClick={() => setAnimationsPaused((value) => !value)}
+            >
+              {animationsPaused ? <Play size={14} /> : <Pause size={14} />}
+              {animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
+            </button>
           </nav>
         )}
       </header>
       <main id="contenido">
         <section
           className="eclipse-wrap eclipse-hero"
+          data-in-view="true"
           aria-labelledby="hero-title"
         >
           <div className="eyebrow hero-eyebrow">
@@ -155,15 +150,11 @@ export function EclipseHome() {
             <span>COLOMBIA · 06° N / 75° O</span>
           </div>
           <div className="hero-layout">
-            <div className="hero-orbit" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
-            <h1 id="hero-title">
-              EL FUTURO
-              <br />
-              TIENE <span>ENERGÍA.</span>
+            <EclipseScene />
+            <h1 id="hero-title" aria-label="El futuro tiene energía.">
+              <span className="hero-title-mask"><span className="hero-title-line">EL FUTURO</span></span>
+              <span className="hero-title-mask"><span className="hero-title-line">TIENE</span></span>
+              <span className="hero-title-mask"><span className="hero-title-line hero-title-energy">ENERGÍA.</span></span>
             </h1>
             <div className="hero-aside">
               <span className="eyebrow">IN WORLD ENERGY / 01</span>
@@ -180,11 +171,13 @@ export function EclipseHome() {
           </div>
           <div className="hero-baseline">
             <span>EL SOL MARCA EL RITMO. TÚ ELIGES EL PLAN.</span>
-            <a href="#planta" aria-label="Explorar el ciclo solar">
+            <a href="#planta" aria-label="Explorar el ciclo solar" className="hero-scroll-cue">
+              <span>EXPLORAR</span>
               <ArrowDown size={19} />
             </a>
           </div>
         </section>
+        <EnergyIntro />
         <section
           id="planta"
           className="eclipse-wrap eclipse-section clock-section"
@@ -234,7 +227,11 @@ export function EclipseHome() {
               </span>
             </p>
           </div>
-          <fieldset className="plan-grid">
+          <fieldset className="plan-grid" style={{
+            "--selected-plan": selected,
+            "--selected-column": selected % 2,
+            "--selected-row": Math.floor(selected / 2),
+          } as CSSProperties}>
             <legend className="sr-only">
               Selecciona un plan para consultar sus valores
             </legend>
@@ -242,6 +239,7 @@ export function EclipseHome() {
               <label
                 className={`plan-card ${i === selected ? "selected" : ""}`}
                 key={p.id}
+                data-plan-number={p.id}
               >
                 <input
                   type="radio"

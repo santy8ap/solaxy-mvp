@@ -1,0 +1,346 @@
+/* Eclipse / motion edition. Every effect decorates existing, readable content. */
+.eclipse-home {
+  --page-progress: 0;
+  --hero-scroll: 0;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-x: clip;
+}
+.eclipse-home .eclipse-header {
+  background: #080808e8;
+  backdrop-filter: blur(16px);
+}
+.eclipse-home .home-scroll-progress {
+  position: absolute;
+  height: 2px;
+  inset: 0 0 auto;
+  background: linear-gradient(90deg, #777, #fff);
+  transform: scaleX(var(--page-progress));
+  transform-origin: left;
+  pointer-events: none;
+}
+.eclipse-home .motion-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #444;
+  color: #bbb;
+  transition: border-color 180ms, color 180ms;
+}
+.eclipse-home .motion-toggle:hover { border-color: #eee; color: #fff; }
+.eclipse-home .mobile-motion-toggle { display: none; }
+.eclipse-home .desktop-links a {
+  position: relative;
+  padding-block: 12px;
+  text-decoration: none;
+}
+.eclipse-home .desktop-links a::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #ddd;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 350ms var(--motion-ease);
+}
+.eclipse-home .desktop-links a:hover::after,
+.eclipse-home .desktop-links a:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+.eclipse-home .eclipse-hero { position: relative; }
+.eclipse-home .hero-layout {
+  grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+  min-height: 590px;
+  padding-block: 66px 56px;
+  gap: 40px;
+}
+.eclipse-home .hero-layout h1 {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(5rem, 12.1vw, 11rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  animation: none;
+}
+.eclipse-home h1 .hero-title-mask {
+  display: block;
+  overflow: clip;
+  padding-block: 0.025em;
+  margin-block: -0.025em;
+  color: inherit;
+}
+.eclipse-home h1 .hero-title-line {
+  display: block;
+  color: #efefef;
+  white-space: nowrap;
+}
+.eclipse-home h1 .hero-title-energy {
+  color: #a8a8a8;
+  background: linear-gradient(110deg, #fff 4%, #a8a8a8 43%, #6f6f6f 72%, #ddd);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.eclipse-home .hero-aside {
+  position: relative;
+  z-index: 1;
+  padding: 0 0 8px 24px;
+  border-left: 1px solid #555;
+}
+.eclipse-home .hero-aside > p { font-size: 18px; }
+.eclipse-home .hero-aside > p.muted { font-size: 13px; }
+.eclipse-home .hero-baseline { position: relative; }
+.eclipse-home .hero-scroll-cue {
+  width: auto;
+  display: flex;
+  gap: 20px;
+  color: #ddd;
+}
+.eclipse-home .hero-scroll-cue span { font-size: 8px; }
+.eclipse-home .eclipse-scene {
+  position: absolute;
+  z-index: -1;
+  top: -40px;
+  left: 39%;
+  width: clamp(310px, 40vw, 570px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  transform: translate3d(0, calc(var(--hero-scroll) * -95px), 0);
+}
+.eclipse-home .eclipse-scene-depth {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--pointer-x, 0) * 18px), calc(var(--pointer-y, 0) * 14px), 0);
+  transition: transform 650ms var(--motion-ease);
+}
+.eclipse-home .eclipse-starfield {
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(circle at 13% 36%, #fff9 0 1px, transparent 1.6px),
+    radial-gradient(circle at 37% 12%, #fffa 0 1px, transparent 1.5px),
+    radial-gradient(circle at 80% 27%, #fff6 0 1px, transparent 1.5px),
+    radial-gradient(circle at 64% 77%, #fff8 0 1px, transparent 1.5px),
+    radial-gradient(circle at 22% 75%, #fff5 0 1px, transparent 1.5px),
+    radial-gradient(circle at 91% 64%, #fffa 0 1px, transparent 1.5px),
+    radial-gradient(circle at 55% 5%, #fff6 0 1px, transparent 1.5px);
+  opacity: 0.65;
+}
+.eclipse-home .eclipse-corona {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: conic-gradient(from 35deg, #fff0, #fff2 12%, #fffa 18%, #fff1 25%, #fff4 40%, #fff0 48%, #fff9 65%, #fff1 75%, #fff6 90%, #fff0);
+  mask-image: radial-gradient(circle, transparent 48%, #000 51%, #0008 58%, transparent 72%);
+  filter: blur(8px);
+}
+.eclipse-home .eclipse-corona-inner {
+  position: absolute;
+  inset: 18%;
+  border: 1px solid #f8f8f8;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #fffc, 0 0 24px #fff8, 0 0 64px #fff4, 0 0 110px #fff2;
+}
+.eclipse-home .eclipse-disc {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 26%, #171717, #090909 45%, #030303 78%);
+  box-shadow: inset -8px -5px 20px #000, inset 2px 1px 5px #fff1;
+  transform: translate3d(calc(var(--pointer-x, 0) * -5px), calc(var(--pointer-y, 0) * -4px), 0);
+  transition: transform 800ms var(--motion-ease);
+}
+.eclipse-home .eclipse-diamond {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: white;
+  top: 24%;
+  right: 31%;
+  box-shadow: 0 0 12px 3px #fff, 0 0 36px 9px #fff7;
+}
+.eclipse-home .eclipse-diamond::after {
+  content: "";
+  position: absolute;
+  left: -34px;
+  top: 4px;
+  width: 78px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, white, transparent);
+  transform: rotate(-28deg);
+}
+.eclipse-home .eclipse-orbit-track {
+  position: absolute;
+  inset: -7%;
+  border: 1px solid #ffffff20;
+  border-radius: 50%;
+}
+.eclipse-home .eclipse-orbit-track-one { transform: rotate(-27deg) scaleY(0.4); }
+.eclipse-home .eclipse-orbit-track-two { transform: rotate(43deg) scaleY(0.5); border-color: #ffffff12; }
+.eclipse-home .eclipse-orbit-track i {
+  position: absolute;
+  top: 18%;
+  left: 10%;
+  width: 5px;
+  height: 5px;
+  background: #ddd;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #fff8;
+}
+.eclipse-home .eclipse-crosshair { position: absolute; left: 50%; width: 1px; height: 22px; background: #ffffff45; }
+.eclipse-home .eclipse-crosshair::after { content: ""; position: absolute; top: 10px; left: -4px; height: 1px; width: 9px; background: #ffffff70; }
+.eclipse-home .eclipse-crosshair-top { top: 3%; }
+.eclipse-home .eclipse-crosshair-bottom { bottom: 3%; }
+.eclipse-home .eclipse-scene-caption { position: absolute; top: 103%; left: 18%; color: #777; font-size: 8px; letter-spacing: 0.12em; }
+.eclipse-home .energy-intro { padding-top: 32px; border-top: 1px solid #333; }
+.eclipse-home .energy-ribbon { overflow: hidden; padding-block: 10px 28px; }
+.eclipse-home .energy-ribbon-track { display: flex; width: max-content; }
+.eclipse-home .energy-ribbon-group { display: flex; align-items: center; gap: 48px; padding-right: 48px; }
+.eclipse-home .energy-ribbon-group > span { font-stretch: 62%; font-size: clamp(45px, 6.4vw, 96px); line-height: 1; letter-spacing: -0.04em; white-space: nowrap; }
+.eclipse-home .energy-ribbon-group > .energy-ribbon-outline { color: transparent; -webkit-text-stroke: 1px #888; }
+.eclipse-home .energy-ribbon-group > .energy-ribbon-spark { font-size: 40px; color: #888; }
+.eclipse-home .energy-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding-block: 18px 34px; }
+.eclipse-home .energy-facts > div { display: flex; flex-direction: column-reverse; align-items: start; padding: 12px 28px; border-left: 1px solid #444; }
+.eclipse-home .energy-facts > div:first-child { padding-left: 0; border: 0; }
+.eclipse-home .energy-facts dt { color: #aaa; font-size: 10px; line-height: 1.8; margin-top: 10px; }
+.eclipse-home .energy-facts dd { font-size: 28px; letter-spacing: -0.04em; }
+.eclipse-home .energy-facts dd span { font-size: 11px; color: #aaa; letter-spacing: 0; }
+.eclipse-home .clock-section { position: relative; }
+.eclipse-home .solar-clock { border: 1px solid #333; padding: 24px; background: linear-gradient(180deg, #111, #080808); }
+.eclipse-home .solar-inspector { padding-bottom: 8px; }
+.eclipse-home .solar-sun-aura { transform-box: fill-box; transform-origin: center; }
+.eclipse-home .plan-grid { position: relative; isolation: isolate; }
+.eclipse-home .plan-grid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25%;
+  height: 100%;
+  background: #efefef;
+  z-index: -1;
+  transform: translateX(calc(var(--selected-plan, 3) * 100%));
+  transition: transform 550ms var(--motion-ease);
+}
+.eclipse-home .plan-card { overflow: clip; transition: color 300ms, background 300ms; background: transparent; }
+.eclipse-home .plan-card.selected { background: transparent; }
+.eclipse-home .plan-card:not(.selected):hover { background: #ffffff09; }
+.eclipse-home .plan-card::after {
+  content: attr(data-plan-number);
+  position: absolute;
+  right: -4px;
+  top: 35px;
+  z-index: -1;
+  font-size: 130px;
+  line-height: 1;
+  font-stretch: 62%;
+  letter-spacing: -0.08em;
+  opacity: 0.04;
+  transform: translateY(14px);
+  transition: opacity 400ms, transform 600ms var(--motion-ease);
+  pointer-events: none;
+}
+.eclipse-home .plan-card:hover::after,
+.eclipse-home .plan-card.selected::after { opacity: 0.1; transform: translateY(0); }
+.eclipse-home .plan-card .plan-top > span { transition: transform 350ms var(--motion-ease); }
+.eclipse-home .plan-card.selected .plan-top > span { transform: rotate(360deg); }
+.eclipse-home .plan-detail-note .btn { margin-top: 22px; width: 100%; justify-content: space-between; }
+.eclipse-home .steps-grid li { position: relative; }
+.eclipse-home .steps-grid li::before { content: ""; position: absolute; top: -1px; left: 0; width: 0; height: 1px; background: #eee; transition: width 700ms var(--motion-ease); }
+.eclipse-home .steps-grid li:hover::before { width: 100%; }
+.eclipse-home .faq-section summary > span { transition: transform 350ms var(--motion-ease); }
+.eclipse-home .faq-section details[open] summary > span { transform: rotate(135deg); }
+.eclipse-home .closing { position: relative; overflow: clip; }
+.eclipse-home .closing::before { content: ""; position: absolute; z-index: 0; width: 430px; height: 430px; border: 1px solid #ffffff20; border-radius: 50%; right: -160px; top: -100px; box-shadow: 0 0 0 60px #ffffff04, 0 0 0 120px #ffffff02; pointer-events: none; }
+.eclipse-home .closing > * { position: relative; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .eclipse-home .hero-title-line { animation: home-title-enter 1.2s var(--motion-ease) both; }
+  .eclipse-home .hero-title-mask:nth-child(2) .hero-title-line { animation-delay: 100ms; }
+  .eclipse-home .hero-title-mask:nth-child(3) .hero-title-line { animation-delay: 220ms; }
+  .eclipse-home .eclipse-scene { animation: home-eclipse-enter 1.9s var(--motion-ease) both; }
+  .eclipse-home .eclipse-corona { animation: home-corona-turn 48s linear infinite; }
+  .eclipse-home .eclipse-corona-inner { animation: home-corona-breathe 8s ease-in-out infinite alternate; }
+  .eclipse-home .eclipse-starfield { animation: home-corona-turn 150s linear infinite; }
+  .eclipse-home .eclipse-diamond { animation: home-diamond-breathe 6s ease-in-out infinite alternate; }
+  .eclipse-home .hero-scroll-cue svg { animation: home-scroll-cue 2.8s ease-in-out infinite; }
+  .eclipse-home .energy-ribbon-track { animation: home-ribbon-travel 48s linear infinite; }
+  .eclipse-home .energy-intro:hover .energy-ribbon-track { animation-play-state: paused; }
+  .eclipse-home .energy-intro.is-revealed .energy-facts > div { animation: eclipse-rise 800ms var(--motion-ease) both; }
+  .eclipse-home .energy-intro.is-revealed .energy-facts > div:nth-child(2) { animation-delay: 100ms; }
+  .eclipse-home .energy-intro.is-revealed .energy-facts > div:nth-child(3) { animation-delay: 200ms; }
+  .eclipse-home .solar-clock svg { animation: none; }
+  .eclipse-home .solar-clock.is-revealed .solar-curve-intro { stroke-dasharray: 1; animation: home-solar-draw 2s var(--motion-ease) both; }
+  .eclipse-home .solar-clock.is-revealed .solar-area-fill { animation: home-area-enter 1.8s ease-out both; }
+  .eclipse-home .solar-sun-aura { animation: home-sun-breathe 3.5s ease-in-out infinite alternate; }
+  .eclipse-home .plan-grid.is-revealed .plan-card > span { animation: eclipse-rise 700ms var(--motion-ease) both; }
+  .eclipse-home .plan-grid.is-revealed .plan-card:nth-of-type(2) > span { animation-delay: 80ms; }
+  .eclipse-home .plan-grid.is-revealed .plan-card:nth-of-type(3) > span { animation-delay: 160ms; }
+  .eclipse-home .plan-grid.is-revealed .plan-card:nth-of-type(4) > span { animation-delay: 240ms; }
+  .eclipse-home .faq-section details[open] > p { animation: eclipse-rise 350ms var(--motion-ease) both; }
+  .eclipse-home .mobile-links { animation: eclipse-rise 250ms var(--motion-ease) both; }
+}
+@keyframes home-title-enter { from { transform: translate3d(0, 110%, 0) rotate(2deg); } to { transform: translate3d(0, 0, 0) rotate(0); } }
+@keyframes home-eclipse-enter { from { opacity: 0; scale: 0.84; } to { opacity: 1; scale: 1; } }
+@keyframes home-corona-turn { to { rotate: 360deg; } }
+@keyframes home-corona-breathe { from { opacity: 0.6; scale: 0.98; } to { opacity: 1; scale: 1.02; } }
+@keyframes home-diamond-breathe { from { opacity: 0.6; scale: 0.85; } to { opacity: 1; scale: 1.12; } }
+@keyframes home-scroll-cue { 0%, 70%, 100% { transform: translateY(0); } 35% { transform: translateY(6px); } }
+@keyframes home-ribbon-travel { to { transform: translateX(-50%); } }
+@keyframes home-solar-draw { from { stroke-dashoffset: 1; opacity: 0.9; } to { stroke-dashoffset: 0; opacity: 0.6; } }
+@keyframes home-area-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes home-sun-breathe { from { scale: 0.9; opacity: 0.08; } to { scale: 1.5; opacity: 0.16; } }
+@media (max-width: 1000px) {
+  .eclipse-home .hero-layout { gap: 28px; min-height: 540px; }
+  .eclipse-home .hero-layout h1 { font-size: clamp(5rem, 11.7vw, 8rem); }
+  .eclipse-home .hero-aside { padding-left: 18px; }
+  .eclipse-home .hero-aside > p { font-size: 16px; }
+  .eclipse-home .desktop-links { gap: 14px; font-size: 10px; }
+  .eclipse-home .eclipse-navigation { gap: 16px; }
+}
+@media (max-width: 760px) {
+  .eclipse-home .motion-toggle { display: none; }
+  .eclipse-home .mobile-motion-toggle { display: flex; align-items: center; gap: 12px; min-height: 44px; color: #bbb; font-size: 12px; border-top: 1px solid #333; width: 100%; }
+  .eclipse-home .hero-layout { grid-template-columns: minmax(0, 1fr); min-height: 0; gap: 36px; padding-block: 56px 36px; }
+  .eclipse-home .hero-layout h1 { font-size: clamp(4.4rem, 17.2vw, 7rem); }
+  .eclipse-home .eclipse-scene { width: clamp(270px, 70vw, 420px); top: -12px; left: 31%; opacity: 0.8; }
+  .eclipse-home .hero-aside { padding: 0; border: 0; max-width: 340px; }
+  .eclipse-home .hero-aside > p { font-size: 16px; }
+  .eclipse-home .hero-aside > p.muted { font-size: 12px; }
+  .eclipse-home .hero-aside .btn { width: 100%; }
+  .eclipse-home .eclipse-scene-caption { display: none; }
+  .eclipse-home .hero-scroll-cue { gap: 10px; }
+  .eclipse-home .hero-scroll-cue span { display: none; }
+  .eclipse-home .energy-intro { padding-top: 22px; }
+  .eclipse-home .energy-ribbon-group { gap: 28px; padding-right: 28px; }
+  .eclipse-home .energy-ribbon-group > .energy-ribbon-spark { font-size: 28px; }
+  .eclipse-home .energy-facts { padding-block: 8px 24px; }
+  .eclipse-home .energy-facts > div { padding-inline: 14px; }
+  .eclipse-home .energy-facts dd { font-size: 21px; }
+  .eclipse-home .energy-facts dd span { display: block; font-size: 9px; margin-top: 4px; }
+  .eclipse-home .energy-facts dt { font-size: 9px; }
+  .eclipse-home .solar-clock { padding: 20px 12px; }
+  .eclipse-home .plan-grid::before { width: 50%; height: 50%; transform: translate(calc(var(--selected-column, 1) * 100%), calc(var(--selected-row, 1) * 100%)); }
+  .eclipse-home .plan-card { border-right: 1px solid #444; }
+  .eclipse-home .plan-card:nth-of-type(2n) { border-right: 0; }
+  .eclipse-home .plan-card:nth-of-type(-n + 2) { border-bottom: 1px solid #444; }
+  .eclipse-home .plan-card:nth-of-type(n + 3) { border-bottom: 0; }
+  .eclipse-home .closing::before { width: 300px; height: 300px; right: -160px; }
+}
+.eclipse-home[data-motion="paused"] *,
+.eclipse-home[data-motion="paused"] *::before,
+.eclipse-home[data-motion="paused"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.eclipse-home[data-motion="paused"] .reveal-on-scroll { opacity: 1; transform: none; }
+.eclipse-home[data-motion-visibility="hidden"] *,
+.eclipse-home [data-in-view="false"] * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .eclipse-home *, .eclipse-home *::before, .eclipse-home *::after { animation: none !important; transition: none !important; }
+  .eclipse-home .reveal-on-scroll { opacity: 1; transform: none; }
+}

@@ -104,7 +104,7 @@ export function SunArc({ now, compact = false }: Props) {
             </text>
           </g>
         ))}
-        <path d={`${curve} L1108,310 L68,310 Z`} fill={`url(#${id}-fill)`} />
+        <path className="solar-area-fill" d={`${curve} L1108,310 L68,310 Z`} fill={`url(#${id}-fill)`} />
         {Array.from({ length: 14 }, (_, i) => i + 6).map((hour) => (
           <g key={hour}>
             <line
@@ -131,6 +131,7 @@ export function SunArc({ now, compact = false }: Props) {
           </g>
         ))}
         <path d={curve} fill="none" stroke="#555" strokeWidth="1.5" />
+        <path className="solar-curve-intro" d={curve} pathLength="1" fill="none" stroke="#eee" strokeWidth="2" opacity="0" />
         <path
           d={curve}
           fill="none"
@@ -148,7 +149,7 @@ export function SunArc({ now, compact = false }: Props) {
               stroke="#ddd"
               strokeDasharray="3 5"
             />
-            <circle cx={x(h)} cy={y(h)} r="19" fill="#fff" opacity=".08" />
+            <circle className="solar-sun-aura" cx={x(h)} cy={y(h)} r="19" fill="#fff" opacity=".08" />
             <circle cx={x(h)} cy={y(h)} r="10" fill="#f4f4f1" />
             <circle cx={x(h)} cy={y(h)} r="4" fill="#080808" />
           </g>
