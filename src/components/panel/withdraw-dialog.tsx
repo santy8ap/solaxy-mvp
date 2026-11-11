@@ -2,7 +2,7 @@
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { refetch } from "@/lib/client/use-json";
+import { invalidateJson, refetch } from "@/lib/client/use-json";
 import { formatCop, formatNumber, shortAddress } from "@/lib/format";
 import type { ProfileDTO } from "@/lib/profile";
 import { useWallet } from "@/lib/wallet/context";
@@ -41,6 +41,7 @@ export function WithdrawDialog({ open, onClose, balanceCop, profile }: { open: b
     onClose();
   };
   const finish = () => {
+    invalidateJson("/api/transactions");
     void refetch("/api/portfolio");
     toast("Retiro solicitado. Lo revisamos y te pagamos.");
     setAmount("");

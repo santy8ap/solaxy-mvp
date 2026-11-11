@@ -1,5 +1,13 @@
 "use client";
-import { ArrowLeftRight, Building2, LayoutDashboard, LogOut, ShieldCheck, SunMedium } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Building2,
+  LayoutDashboard,
+  LogOut,
+  LifeBuoy,
+  ShieldCheck,
+  SunMedium,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
@@ -10,6 +18,7 @@ import { usePlantNow } from "@/lib/client/use-catalog";
 import { formatClock } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
 import { useUser } from "./user-context";
+import { NotificationsLink } from "./notifications-link";
 
 export const NAV = [
   { href: "/panel", label: "Resumen", icon: LayoutDashboard },
@@ -38,7 +47,12 @@ export function Sidebar() {
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(path, href);
           return (
-            <Link key={href} href={href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={itemClass(active)}
+            >
               <Icon size={17} strokeWidth={1.5} />
               {label}
             </Link>
@@ -46,13 +60,21 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col border-t border-line pt-4">
+        <Link href="/ayuda" className={itemClass(false)}>
+          <LifeBuoy size={17} /> Centro de ayuda
+        </Link>
         {user.canAdmin && (
           <Link href="/admin" className={itemClass(false)}>
             <ShieldCheck size={17} strokeWidth={1.5} />
             Administración
           </Link>
         )}
-        <button type="button" disabled={pending} onClick={() => start(() => signOut())} className={`${itemClass(false)} text-left`}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => start(() => signOut())}
+          className={`${itemClass(false)} text-left`}
+        >
           <LogOut size={17} strokeWidth={1.5} />
           {pending ? "Saliendo…" : "Salir"}
         </button>
@@ -64,15 +86,24 @@ export function Sidebar() {
 export function BottomNav() {
   const path = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line-strong bg-void/95 backdrop-blur-md lg:hidden" aria-label="Panel">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line-strong bg-void/95 backdrop-blur-md lg:hidden"
+      aria-label="Panel"
+    >
       <ul className="mx-auto grid max-w-[560px] grid-cols-4">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(path, href);
           return (
             <li key={href} className="min-w-0">
-              <Link href={href} aria-current={active ? "page" : undefined} className={`flex flex-col items-center gap-1.5 border-t-2 pb-2.5 pt-2.5 text-[0.68rem] ${active ? "border-ink text-ink" : "border-transparent text-mute"}`}>
+              <Link
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center gap-1.5 border-t-2 pb-2.5 pt-2.5 text-[0.68rem] ${active ? "border-ink text-ink" : "border-transparent text-mute"}`}
+              >
                 <Icon size={19} strokeWidth={1.5} />
-                <span className="max-w-full break-words px-1 text-center">{label}</span>
+                <span className="max-w-full break-words px-1 text-center">
+                  {label}
+                </span>
               </Link>
             </li>
           );
@@ -91,13 +122,19 @@ export function MobileBar() {
       <Link href="/" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
-      <div className="flex items-center gap-5 text-sm text-mute">
+      <div className="flex items-center gap-4 text-sm text-mute">
+        <NotificationsLink />
         {user.canAdmin && (
           <Link href="/admin" className="hover:text-ink">
             Admin
           </Link>
         )}
-        <button type="button" disabled={pending} onClick={() => start(() => signOut())} className="hover:text-ink">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => start(() => signOut())}
+          className="hover:text-ink"
+        >
           {pending ? "Saliendo…" : "Salir"}
         </button>
       </div>
@@ -109,10 +146,20 @@ export function MobileBar() {
 export function TestModeBar() {
   const { config } = useAppConfig();
   if (!config?.demoMode) return null;
-  return <p className="border-b border-line bg-ink px-4 py-1.5 text-center text-xs font-medium text-void">Modo de pruebas: los pagos y los saldos no son dinero real.</p>;
+  return (
+    <p className="border-b border-line bg-ink px-4 py-1.5 text-center text-xs font-medium text-void">
+      Modo de pruebas: los pagos y los saldos no son dinero real.
+    </p>
+  );
 }
 
-export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
+export function Topbar({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
   const now = usePlantNow(1000);
   return (
     <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 pb-8">
@@ -120,10 +167,21 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
         <h1 className="display text-[clamp(2.75rem,6vw,4.25rem)]">{title}</h1>
         {subtitle && <p className="mt-3 max-w-[60ch] text-fog">{subtitle}</p>}
       </div>
-      <p className="flex items-center gap-3 text-sm text-mute" aria-label="Hora en la planta">
-        <span className="live-dot" />
-        <span className="num">{now ? formatClock(now) : " "}</span>
-      </p>
+      <div className="flex items-center gap-4">
+        <Link href="/ayuda" className="link text-sm text-mute">
+          Ayuda
+        </Link>
+        <span className="hidden lg:block">
+          <NotificationsLink />
+        </span>
+        <p
+          className="flex items-center gap-3 text-sm text-mute"
+          aria-label="Hora en la planta"
+        >
+          <span className="live-dot" />
+          <span className="num">{now ? formatClock(now) : " "}</span>
+        </p>
+      </div>
     </header>
   );
 }

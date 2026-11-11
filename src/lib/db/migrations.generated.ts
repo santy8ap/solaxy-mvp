@@ -105,5 +105,11 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;",
       "UPDATE `plant` SET `name` = 'Planta Solar I' WHERE `name` = 'Solaxy Solar I';"
     ]
+  },
+  {
+    "id": "0005_customer_support",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `service_setting` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`value` text NOT NULL,\n\t`updated_at` integer NOT NULL\n);"
+    ]
   }
 ];

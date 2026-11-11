@@ -1,14 +1,9 @@
 "use client";
+import Link from "next/link";
+import { renewalCheckoutHref } from "@/lib/navigation";
 import { formatCop, formatDate, formatNumber } from "@/lib/format";
 import type { SubscriptionDTO } from "@/lib/portfolio";
 import { PLAN_STATE, Status } from "@/components/ui/status";
-import type { CheckoutRequest } from "./checkout";
-
-/** La orden para pagar el mes siguiente de un plan del usuario. */
-export function nextMonthRequest(s: SubscriptionDTO): CheckoutRequest {
-  return { subscriptionId: s.id, planName: s.planName, periodIndex: s.paidMonths + 1, months: s.months, kwh: s.monthlyKwh, amountCop: s.monthlyCop, priceCopPerKwh: s.priceCopPerKwh, saleCopPerKwh: s.saleCopPerKwh };
-}
-
 /** Qué le pasa al plan y qué puede hacer el usuario, en una frase. */
 function nextStep(s: SubscriptionDTO) {
   const next = s.paidMonths + 1;
@@ -27,9 +22,17 @@ function nextStep(s: SubscriptionDTO) {
 }
 
 /** Un plan del usuario: estado, meses pagados, energía generada y el pago del mes siguiente. */
-export function PlanRow({ sub, now, onPay }: { sub: SubscriptionDTO; now: number | null; onPay?(request: CheckoutRequest): void }) {
+export function PlanRow({
+  sub,
+  now,
+}: {
+  sub: SubscriptionDTO;
+  now: number | null;
+}) {
   const state = PLAN_STATE[sub.state] ?? PLAN_STATE.borrador;
-  const canPay = (sub.state === "activa" || sub.state === "en_pausa") && sub.paidMonths < sub.months;
+  const canPay =
+    (sub.state === "activa" || sub.state === "en_pausa") &&
+    sub.paidMonths < sub.months;
   return (
     <li className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-5 border-b border-line py-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] lg:items-center">
       <div>
@@ -37,18 +40,38 @@ export function PlanRow({ sub, now, onPay }: { sub: SubscriptionDTO; now: number
           <h3 className="display text-[2.5rem]">{sub.planName}</h3>
           <Status tone={state.tone}>{state.label}</Status>
         </div>
-        <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-fog">{nextStep(sub)}</p>
+        <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-fog">
+          {nextStep(sub)}
+        </p>
       </div>
 
       <div>
         {/* Un tramo por mes: lleno lo ya generado, vacío lo que falta, punteado lo que no se ha pagado. */}
-        <div className="flex gap-1.5" role="img" aria-label={`${sub.paidMonths} de ${sub.months} meses pagados`}>
+        <div
+          className="flex gap-1.5"
+          role="img"
+          aria-label={`${sub.paidMonths} de ${sub.months} meses pagados`}
+        >
           {Array.from({ length: sub.months }, (_, i) => {
             const p = sub.periods.find((x) => x.index === i + 1);
-            const done = !p || now == null ? 0 : Math.min(1, Math.max(0, (now - p.startsAt) / (p.endsAt - p.startsAt)));
+            const done =
+              !p || now == null
+                ? 0
+                : Math.min(
+                    1,
+                    Math.max(0, (now - p.startsAt) / (p.endsAt - p.startsAt)),
+                  );
             return (
-              <span key={i} className={`relative h-2 flex-1 border ${p ? "border-ink" : "border-dashed border-line-strong"}`}>
-                {p && <span className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${done * 100}%` }} />}
+              <span
+                key={i}
+                className={`relative h-2 flex-1 border ${p ? "border-ink" : "border-dashed border-line-strong"}`}
+              >
+                {p && (
+                  <span
+                    className="absolute inset-y-0 left-0 bg-ink"
+                    style={{ width: `${done * 100}%` }}
+                  />
+                )}
               </span>
             );
           })}
@@ -71,10 +94,13 @@ export function PlanRow({ sub, now, onPay }: { sub: SubscriptionDTO; now: number
         </dl>
       </div>
 
-      {canPay && onPay && (
-        <button type="button" className={`btn ${sub.state === "en_pausa" ? "btn-solid" : "btn-ghost"} lg:justify-self-end`} onClick={() => onPay(nextMonthRequest(sub))}>
+      {canPay && (
+        <Link
+          href={renewalCheckoutHref(sub.id)}
+          className={`btn ${sub.state === "en_pausa" ? "btn-solid" : "btn-ghost"} lg:justify-self-end`}
+        >
           Pagar el mes {sub.paidMonths + 1}
-        </button>
+        </Link>
       )}
     </li>
   );

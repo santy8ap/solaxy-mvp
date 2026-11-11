@@ -3,9 +3,18 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { SolarDay } from "@/config/solar";
 import { db } from "@/lib/db";
 import { ledgerTx } from "@/lib/db/schema";
-import { GRACE_MS, generatedKwh, type SubscriptionState } from "@/lib/energy/plan-math";
+import {
+  GRACE_MS,
+  generatedKwh,
+  type SubscriptionState,
+} from "@/lib/energy/plan-math";
 import { summarize } from "@/lib/energy/summary";
-import { listSubscriptions, periodsOf, stateOf, type SubscriptionWithPeriods } from "@/lib/plans/service";
+import {
+  listSubscriptions,
+  periodsOf,
+  stateOf,
+  type SubscriptionWithPeriods,
+} from "@/lib/plans/service";
 import { readConfig } from "@/lib/settings";
 
 /** Un movimiento del usuario: pago de un mes de un plan o retiro. */
@@ -89,7 +98,11 @@ export interface PortfolioDTO {
   transactions: TxDTO[];
 }
 
-export function toSubscriptionDTO(sub: SubscriptionWithPeriods, solar: SolarDay, now: number): SubscriptionDTO {
+export function toSubscriptionDTO(
+  sub: SubscriptionWithPeriods,
+  solar: SolarDay,
+  now: number,
+): SubscriptionDTO {
   const periods = periodsOf(sub);
   const state = stateOf(sub, now);
   const paidUntil = Math.max(...sub.periods.map((p) => p.endsAt));
@@ -126,27 +139,41 @@ async function withdrawalTotals(userId: string) {
     })
     .from(ledgerTx)
     .where(and(eq(ledgerTx.userId, userId), eq(ledgerTx.kind, "retiro")));
-  return { withdrawn: Number(row?.withdrawn ?? 0), reserved: Number(row?.reserved ?? 0) };
+  return {
+    withdrawn: Number(row?.withdrawn ?? 0),
+    reserved: Number(row?.reserved ?? 0),
+  };
 }
 
 /** Saldo disponible: venta de la energía generada, menos lo retirado y lo que está en revisión. Nunca se redondea hacia arriba. */
 export async function getBalance(userId: string, now = Date.now()) {
   const { solar } = await readConfig();
-  const subs = (await listSubscriptions(userId)).map((s) => toSubscriptionDTO(s, solar, now));
+  const subs = (await listSubscriptions(userId)).map((s) =>
+    toSubscriptionDTO(s, solar, now),
+  );
   const totals = summarize(subs, solar, now);
   const w = await withdrawalTotals(userId);
-  return { ...totals, ...w, balance: Math.max(0, Math.floor(totals.soldCop) - w.withdrawn - w.reserved) };
+  return {
+    ...totals,
+    ...w,
+    balance: Math.max(0, Math.floor(totals.soldCop) - w.withdrawn - w.reserved),
+  };
 }
 
-export async function getPortfolio(userId: string, now = Date.now()): Promise<PortfolioDTO> {
+export async function getPortfolio(
+  userId: string,
+  now = Date.now(),
+): Promise<PortfolioDTO> {
   const { solar } = await readConfig();
-  const subscriptions = (await listSubscriptions(userId)).map((s) => toSubscriptionDTO(s, solar, now));
+  const subscriptions = (await listSubscriptions(userId)).map((s) =>
+    toSubscriptionDTO(s, solar, now),
+  );
   const totals = summarize(subscriptions, solar, now);
   const w = await withdrawalTotals(userId);
   const txs = await db
     .select()
     .from(ledgerTx)
-    .where(and(eq(ledgerTx.userId, userId), sql`${ledgerTx.status} != 'pendiente'`))
+    .where(eq(ledgerTx.userId, userId))
     .orderBy(desc(ledgerTx.createdAt))
     .limit(60);
   return {
@@ -156,7 +183,10 @@ export async function getPortfolio(userId: string, now = Date.now()): Promise<Po
     ...totals,
     withdrawnCop: w.withdrawn,
     reservedCop: w.reserved,
-    balanceCop: Math.max(0, Math.floor(totals.soldCop) - w.withdrawn - w.reserved),
+    balanceCop: Math.max(
+      0,
+      Math.floor(totals.soldCop) - w.withdrawn - w.reserved,
+    ),
     transactions: txs.map(toTxDTO),
   };
 }
@@ -184,6 +214,8 @@ export function toTxDTO(t: typeof ledgerTx.$inferSelect): TxDTO {
     kwh: t.kwh ?? null,
     bankName: t.bankName ?? null,
     bankAccountType: t.bankAccountType ?? null,
-    bankAccountLast4: t.bankAccountNumber ? t.bankAccountNumber.slice(-4) : null,
+    bankAccountLast4: t.bankAccountNumber
+      ? t.bankAccountNumber.slice(-4)
+      : null,
   };
 }

@@ -1,7 +1,12 @@
 "use client";
 import type { SolarDay } from "@/config/solar";
 import { plantDailyKwh } from "@/lib/energy/solar-day";
-import { DEFAULT_SETTINGS, catalogFrom, solarFrom, type CatalogPlan } from "@/lib/plant-settings";
+import {
+  DEFAULT_SETTINGS,
+  catalogFrom,
+  solarFrom,
+  type CatalogPlan,
+} from "@/lib/plant-settings";
 import { useJson } from "./use-json";
 import { useNow } from "./use-now";
 
@@ -35,10 +40,19 @@ export const DEFAULT_CATALOG: CatalogDTO = {
 
 /** Catálogo vigente (precios que puede cambiar el admin y cupo de la planta). */
 export function useCatalog() {
-  const { data, receivedAt, reload } = useJson<CatalogDTO>("/api/plans", { refreshMs: 5 * 60_000 });
+  const { data, error, receivedAt, reload } = useJson<CatalogDTO>(
+    "/api/plans",
+    { refreshMs: 5 * 60_000 },
+  );
   // Diferencia entre el reloj del servidor y el de este dispositivo.
   const clockOffset = data?.asOf && receivedAt ? data.asOf - receivedAt : 0;
-  return { catalog: data ?? DEFAULT_CATALOG, loaded: !!data, reload, clockOffset };
+  return {
+    catalog: data ?? DEFAULT_CATALOG,
+    loaded: !!data,
+    error,
+    reload,
+    clockOffset,
+  };
 }
 
 /**

@@ -9,9 +9,13 @@ type Pick = "sale" | "lowestPrice" | "topKwh" | "topProfitPct";
  * administrador: así los textos nunca dicen un precio distinto al de la tabla de planes.
  */
 export function CatalogValue({ pick }: { pick: Pick }) {
-  const { catalog } = useCatalog();
+  const { catalog, loaded } = useCatalog();
+  if (!loaded) return <span aria-label="Cargando valor vigente">…</span>;
   // El plan con el kWh más barato: el más grande.
-  const top = catalog.plans.reduce((best, p) => (p.priceCopPerKwh < best.priceCopPerKwh ? p : best), catalog.plans[0]);
+  const top = catalog.plans.reduce(
+    (best, p) => (p.priceCopPerKwh < best.priceCopPerKwh ? p : best),
+    catalog.plans[0],
+  );
   const text =
     pick === "sale"
       ? formatCop(catalog.saleCopPerKwh)

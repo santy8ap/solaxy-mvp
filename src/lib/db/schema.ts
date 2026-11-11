@@ -1,7 +1,21 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
+
+/** Ajustes públicos del servicio, administrados sin editar código ni publicar otra versión. */
+export const serviceSetting = sqliteTable("service_setting", {
+  id: text("id").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
 
 /* ───────────── Tablas de Better Auth (generadas con su generador para SQLite) ───────────── */
 
@@ -9,9 +23,13 @@ export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  emailVerified: integer("email_verified", { mode: "boolean" }).default(false).notNull(),
+  emailVerified: integer("email_verified", { mode: "boolean" })
+    .default(false)
+    .notNull(),
   image: text("image"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(nowMs).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(nowMs)
+    .notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .default(nowMs)
     .$onUpdate(() => new Date())
@@ -24,7 +42,9 @@ export const session = sqliteTable(
     id: text("id").primaryKey(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     token: text("token").notNull().unique(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(nowMs).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(nowMs)
+      .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .$onUpdate(() => new Date())
       .notNull(),
@@ -49,11 +69,17 @@ export const account = sqliteTable(
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
+    accessTokenExpiresAt: integer("access_token_expires_at", {
+      mode: "timestamp_ms",
+    }),
+    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
+      mode: "timestamp_ms",
+    }),
     scope: text("scope"),
     password: text("password"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(nowMs).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(nowMs)
+      .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .$onUpdate(() => new Date())
       .notNull(),
@@ -68,7 +94,9 @@ export const verification = sqliteTable(
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(nowMs).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(nowMs)
+      .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .default(nowMs)
       .$onUpdate(() => new Date())
@@ -148,9 +176,24 @@ export const planPeriod = sqliteTable(
 /** plan_mes: pago de un mes de un plan. retiro: la empresa retira su saldo. */
 export const TX_KINDS = ["plan_mes", "retiro"] as const;
 /** por_reembolsar: el pago llegó pero no se pudo activar (sin cupo, mes ya pagado, monto distinto); reembolsada: el admin ya lo devolvió. */
-export const TX_STATUSES = ["pendiente", "verificando", "por_aprobar", "confirmada", "rechazada", "fallida", "cancelada", "por_reembolsar", "reembolsada"] as const;
+export const TX_STATUSES = [
+  "pendiente",
+  "verificando",
+  "por_aprobar",
+  "confirmada",
+  "rechazada",
+  "fallida",
+  "cancelada",
+  "por_reembolsar",
+  "reembolsada",
+] as const;
 /** Cómo se pagó: Mercado Pago, cripto directo a la billetera de la empresa, pago registrado por el admin o pago de prueba (solo en modo de pruebas). */
-export const PAYMENT_METHODS = ["demo", "mercadopago", "crypto", "manual"] as const;
+export const PAYMENT_METHODS = [
+  "demo",
+  "mercadopago",
+  "crypto",
+  "manual",
+] as const;
 export type TxKind = (typeof TX_KINDS)[number];
 export type TxStatus = (typeof TX_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -248,7 +291,17 @@ export const appMeta = sqliteTable("app_meta", {
   value: text("value").notNull(),
 });
 
-export const ADMIN_ACTIONS = ["config_planta", "pago_manual", "cerrar_plan", "aprobar_retiro", "rechazar_retiro", "reverificar_pago", "registrar_hash", "marcar_reembolso", "borrar_datos_prueba"] as const;
+export const ADMIN_ACTIONS = [
+  "config_planta",
+  "pago_manual",
+  "cerrar_plan",
+  "aprobar_retiro",
+  "rechazar_retiro",
+  "reverificar_pago",
+  "registrar_hash",
+  "marcar_reembolso",
+  "borrar_datos_prueba",
+] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
 /** Bitácora de todo lo que hace un administrador. */

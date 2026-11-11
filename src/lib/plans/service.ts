@@ -2,7 +2,14 @@ import "server-only";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { planPeriod, planSubscription } from "@/lib/db/schema";
-import { GRACE_MS, nextPeriodWindow, reservesCapacity, subscriptionState, type Period, type SubscriptionState } from "@/lib/energy/plan-math";
+import {
+  GRACE_MS,
+  nextPeriodWindow,
+  reservesCapacity,
+  subscriptionState,
+  type Period,
+  type SubscriptionState,
+} from "@/lib/energy/plan-math";
 import { MarketError } from "@/lib/errors";
 import { newId, planCode } from "@/lib/ids";
 import type { CatalogPlan } from "@/lib/plant-settings";
@@ -30,10 +37,17 @@ export function periodsOf(sub: SubscriptionWithPeriods): Period[] {
   const cut = sub.cancelledAt;
   return sub.periods
     .filter((p) => cut == null || p.startsAt < cut)
-    .map((p) => ({ index: p.idx, startsAt: p.startsAt, endsAt: cut == null ? p.endsAt : Math.min(p.endsAt, cut) }));
+    .map((p) => ({
+      index: p.idx,
+      startsAt: p.startsAt,
+      endsAt: cut == null ? p.endsAt : Math.min(p.endsAt, cut),
+    }));
 }
 
-export function stateOf(sub: SubscriptionWithPeriods, now: number): SubscriptionState {
+export function stateOf(
+  sub: SubscriptionWithPeriods,
+  now = Date.now(),
+): SubscriptionState {
   return subscriptionState(sub, periodsOf(sub), now);
 }
 
@@ -52,36 +66,67 @@ function reservedDailyKwhSql(now: number, excludeSubscriptionId: string) {
   )`;
 }
 
-export async function contractedDailyKwh(now = Date.now(), excludeSubscriptionId = "") {
-  const [row] = await db.select({ kwh: sql<number>`${reservedDailyKwhSql(now, excludeSubscriptionId)}` }).from(sql`(SELECT 1)`);
+export async function contractedDailyKwh(
+  now = Date.now(),
+  excludeSubscriptionId = "",
+) {
+  const [row] = await db
+    .select({
+      kwh: sql<number>`${reservedDailyKwhSql(now, excludeSubscriptionId)}`,
+    })
+    .from(sql`(SELECT 1)`);
   return Number(row?.kwh ?? 0);
 }
 
-async function withPeriods(subs: SubscriptionRow[]): Promise<SubscriptionWithPeriods[]> {
+async function withPeriods(
+  subs: SubscriptionRow[],
+): Promise<SubscriptionWithPeriods[]> {
   if (!subs.length) return [];
   const periods = await db
     .select()
     .from(planPeriod)
-    .where(inArray(planPeriod.subscriptionId, subs.map((s) => s.id)))
+    .where(
+      inArray(
+        planPeriod.subscriptionId,
+        subs.map((s) => s.id),
+      ),
+    )
     .orderBy(asc(planPeriod.idx));
   const bySub = new Map<string, PeriodRow[]>();
-  for (const p of periods) bySub.set(p.subscriptionId, [...(bySub.get(p.subscriptionId) ?? []), p]);
+  for (const p of periods)
+    bySub.set(p.subscriptionId, [...(bySub.get(p.subscriptionId) ?? []), p]);
   return subs.map((s) => ({ ...s, periods: bySub.get(s.id) ?? [] }));
 }
 
 /** Planes del usuario que ya empezaron (los borradores sin pagar no se muestran). */
-export async function listSubscriptions(userId: string): Promise<SubscriptionWithPeriods[]> {
-  const subs = await db.select().from(planSubscription).where(eq(planSubscription.userId, userId)).orderBy(asc(planSubscription.createdAt));
+export async function listSubscriptions(
+  userId: string,
+): Promise<SubscriptionWithPeriods[]> {
+  const subs = await db
+    .select()
+    .from(planSubscription)
+    .where(eq(planSubscription.userId, userId))
+    .orderBy(asc(planSubscription.createdAt));
   return (await withPeriods(subs)).filter((s) => s.periods.length > 0);
 }
 
-export async function listAllSubscriptions(): Promise<SubscriptionWithPeriods[]> {
-  const subs = await db.select().from(planSubscription).orderBy(asc(planSubscription.createdAt));
+export async function listAllSubscriptions(): Promise<
+  SubscriptionWithPeriods[]
+> {
+  const subs = await db
+    .select()
+    .from(planSubscription)
+    .orderBy(asc(planSubscription.createdAt));
   return (await withPeriods(subs)).filter((s) => s.periods.length > 0);
 }
 
-export async function getSubscription(id: string): Promise<SubscriptionWithPeriods | null> {
-  const [sub] = await db.select().from(planSubscription).where(eq(planSubscription.id, id));
+export async function getSubscription(
+  id: string,
+): Promise<SubscriptionWithPeriods | null> {
+  const [sub] = await db
+    .select()
+    .from(planSubscription)
+    .where(eq(planSubscription.id, id));
   return sub ? (await withPeriods([sub]))[0] : null;
 }
 
@@ -100,7 +145,10 @@ export async function getCatalog(now = Date.now()) {
     plantDailyKwh,
     contractedDailyKwh: contracted,
     availableDailyKwh: available,
-    plans: catalog.map((p) => ({ ...p, available: p.dailyKwh <= available + EPS_KWH })),
+    plans: catalog.map((p) => ({
+      ...p,
+      available: p.dailyKwh <= available + EPS_KWH,
+    })),
   };
 }
 
@@ -116,13 +164,24 @@ export interface PlanPayment {
   /** Energía del mes (kWh) */
   kwh: number;
   amountCop: number;
+  saleCopPerKwh: number;
 }
 
-const NO_CAPACITY = "La planta no tiene cupo para ese plan en este momento. Elige un plan más pequeño o escríbenos.";
+const NO_CAPACITY =
+  "La planta no tiene cupo para ese plan en este momento. Elige un plan más pequeño o escríbenos.";
 
-const monthOf = (sub: Pick<SubscriptionRow, "totalKwh" | "months" | "priceCopPerKwh">) => {
+const monthOf = (
+  sub: Pick<
+    SubscriptionRow,
+    "totalKwh" | "months" | "priceCopPerKwh" | "saleCopPerKwh"
+  >,
+) => {
   const kwh = sub.totalKwh / sub.months;
-  return { kwh, amountCop: Math.round(kwh * sub.priceCopPerKwh) };
+  return {
+    kwh,
+    amountCop: Math.round(kwh * sub.priceCopPerKwh),
+    saleCopPerKwh: sub.saleCopPerKwh,
+  };
 };
 
 /** Un borrador del mismo plan y con los mismos precios se reutiliza: abandonar un pago no deja basura. */
@@ -130,8 +189,21 @@ async function draftFor(userId: string, plan: CatalogPlan, now: number) {
   const drafts = await db
     .select()
     .from(planSubscription)
-    .where(and(eq(planSubscription.userId, userId), eq(planSubscription.planId, plan.id), sql`${planSubscription.startedAt} IS NULL`, sql`${planSubscription.cancelledAt} IS NULL`));
-  const same = drafts.find((d) => d.priceCopPerKwh === plan.priceCopPerKwh && d.saleCopPerKwh === plan.saleCopPerKwh && d.totalKwh === plan.totalKwh && d.months === plan.months);
+    .where(
+      and(
+        eq(planSubscription.userId, userId),
+        eq(planSubscription.planId, plan.id),
+        sql`${planSubscription.startedAt} IS NULL`,
+        sql`${planSubscription.cancelledAt} IS NULL`,
+      ),
+    );
+  const same = drafts.find(
+    (d) =>
+      d.priceCopPerKwh === plan.priceCopPerKwh &&
+      d.saleCopPerKwh === plan.saleCopPerKwh &&
+      d.totalKwh === plan.totalKwh &&
+      d.months === plan.months,
+  );
   if (same) return same;
   const [row] = await db
     .insert(planSubscription)
@@ -155,45 +227,93 @@ async function draftFor(userId: string, plan: CatalogPlan, now: number) {
  * Valida qué se va a pagar y calcula el monto: el primer mes de un plan nuevo (`planId`)
  * o el mes siguiente de un plan que ya tiene el usuario (`subscriptionId`).
  */
-export async function resolvePlanPayment(userId: string, input: { planId?: string; subscriptionId?: string }, now = Date.now()): Promise<PlanPayment> {
+export async function resolvePlanPayment(
+  userId: string,
+  input: { planId?: string; subscriptionId?: string },
+  now = Date.now(),
+): Promise<PlanPayment> {
   if (input.subscriptionId) {
     const sub = await getSubscription(input.subscriptionId);
-    if (!sub || sub.userId !== userId) throw new MarketError("No encontramos ese plan en tu cuenta", 404);
+    if (!sub || sub.userId !== userId)
+      throw new MarketError("No encontramos ese plan en tu cuenta", 404);
     const state = stateOf(sub, now);
-    if (state === "completada") throw new MarketError("Este plan ya tiene todos sus meses pagados.", 409);
-    if (state === "vencida" || state === "cancelada") throw new MarketError("Este plan se cerró. Compra un plan nuevo para seguir generando energía.", 409);
-    if (state === "borrador" && (await contractedDailyKwh(now)) + sub.dailyKwh > (await readConfig()).plantDailyKwh + EPS_KWH) throw new MarketError(NO_CAPACITY, 409);
-    return { subscriptionId: sub.id, planId: sub.planId, planName: sub.planName, periodIndex: sub.periods.length + 1, months: sub.months, ...monthOf(sub) };
+    if (state === "completada")
+      throw new MarketError("Este plan ya tiene todos sus meses pagados.", 409);
+    if (state === "vencida" || state === "cancelada")
+      throw new MarketError(
+        "Este plan se cerró. Compra un plan nuevo para seguir generando energía.",
+        409,
+      );
+    if (
+      state === "borrador" &&
+      (await contractedDailyKwh(now)) + sub.dailyKwh >
+        (await readConfig()).plantDailyKwh + EPS_KWH
+    )
+      throw new MarketError(NO_CAPACITY, 409);
+    return {
+      subscriptionId: sub.id,
+      planId: sub.planId,
+      planName: sub.planName,
+      periodIndex: sub.periods.length + 1,
+      months: sub.months,
+      ...monthOf(sub),
+    };
   }
 
   const { catalog, plantDailyKwh } = await readConfig();
   const plan = catalog.find((p) => p.id === input.planId);
   if (!plan) throw new MarketError("Elige uno de los planes disponibles");
-  if ((await contractedDailyKwh(now)) + plan.dailyKwh > plantDailyKwh + EPS_KWH) throw new MarketError(NO_CAPACITY, 409);
+  if ((await contractedDailyKwh(now)) + plan.dailyKwh > plantDailyKwh + EPS_KWH)
+    throw new MarketError(NO_CAPACITY, 409);
   const draft = await draftFor(userId, plan, now);
-  return { subscriptionId: draft.id, planId: draft.planId, planName: draft.planName, periodIndex: 1, months: draft.months, ...monthOf(draft) };
+  return {
+    subscriptionId: draft.id,
+    planId: draft.planId,
+    planName: draft.planName,
+    periodIndex: 1,
+    months: draft.months,
+    ...monthOf(draft),
+  };
 }
 
-export type ActivationOutcome = "activado" | "sin_cupo" | "mes_pagado" | "plan_cerrado";
+export type ActivationOutcome =
+  "activado" | "sin_cupo" | "mes_pagado" | "plan_cerrado";
 
 function isUniqueViolation(err: unknown) {
-  return /UNIQUE/i.test(String((err as { message?: string })?.message ?? err)) || /UNIQUE/i.test(String((err as { cause?: unknown })?.cause ?? ""));
+  return (
+    /UNIQUE/i.test(String((err as { message?: string })?.message ?? err)) ||
+    /UNIQUE/i.test(String((err as { cause?: unknown })?.cause ?? ""))
+  );
 }
 
 /**
  * Activa el mes que pagó una orden. El periodo se inserta con una sola sentencia que comprueba el cupo:
  * dos pagos que llegan a la vez no pueden vender la misma energía dos veces.
  */
-export async function activatePeriod(order: { id: string; subscriptionId: string | null; periodIndex: number | null; amountCop: number; kwh: number | null }, now = Date.now()): Promise<ActivationOutcome> {
-  const sub = order.subscriptionId ? await getSubscription(order.subscriptionId) : null;
+export async function activatePeriod(
+  order: {
+    id: string;
+    subscriptionId: string | null;
+    periodIndex: number | null;
+    amountCop: number;
+    kwh: number | null;
+  },
+  now = Date.now(),
+): Promise<ActivationOutcome> {
+  const sub = order.subscriptionId
+    ? await getSubscription(order.subscriptionId)
+    : null;
   if (!sub || sub.cancelledAt != null) return "plan_cerrado";
   const window = nextPeriodWindow(periodsOf(sub), now);
-  if (sub.periods.length >= sub.months || order.periodIndex !== window.index) return "mes_pagado";
+  if (sub.periods.length >= sub.months || order.periodIndex !== window.index)
+    return "mes_pagado";
 
   // Un plan activo o en pausa ya tiene su cupo apartado; uno nuevo (o vencido) lo pide ahora.
   const holdsCapacity = reservesCapacity(stateOf(sub, now));
   const { plantDailyKwh } = await readConfig();
-  const fits = holdsCapacity ? sql`1 = 1` : sql`${reservedDailyKwhSql(now, sub.id)} + ${sub.dailyKwh} <= ${plantDailyKwh + EPS_KWH}`;
+  const fits = holdsCapacity
+    ? sql`1 = 1`
+    : sql`${reservedDailyKwhSql(now, sub.id)} + ${sub.dailyKwh} <= ${plantDailyKwh + EPS_KWH}`;
   const kwh = order.kwh ?? sub.totalKwh / sub.months;
   try {
     const res = await db.run(sql`
@@ -206,6 +326,15 @@ export async function activatePeriod(order: { id: string; subscriptionId: string
     if (isUniqueViolation(err)) return "mes_pagado";
     throw err;
   }
-  if (sub.startedAt == null) await db.update(planSubscription).set({ startedAt: now }).where(and(eq(planSubscription.id, sub.id), sql`${planSubscription.startedAt} IS NULL`));
+  if (sub.startedAt == null)
+    await db
+      .update(planSubscription)
+      .set({ startedAt: now })
+      .where(
+        and(
+          eq(planSubscription.id, sub.id),
+          sql`${planSubscription.startedAt} IS NULL`,
+        ),
+      );
   return "activado";
 }

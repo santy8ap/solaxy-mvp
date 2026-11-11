@@ -1,12 +1,10 @@
 "use client";
-import { ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { formatCop, formatDateTime } from "@/lib/format";
+import { formatCop } from "@/lib/format";
 import { useProfile } from "@/components/profile/profile-form";
 import { ErrorNote } from "@/components/ui/field";
-import { Status, TX_STATUS } from "@/components/ui/status";
 import { Topbar } from "./shell";
-import { explorerTxUrl, isEvmHash, txDetail, txTitle } from "./tx-meta";
+import { TransactionHistory } from "./transaction-history";
 import { usePortfolio } from "./use-portfolio";
 import { WithdrawDialog } from "./withdraw-dialog";
 
@@ -20,23 +18,48 @@ export function WalletPage() {
     return (
       <>
         <Topbar title="Movimientos" />
-        {error ? <ErrorNote>{error}</ErrorNote> : <div className="skeleton h-[380px]" aria-busy="true" aria-label="Cargando tus movimientos" />}
+        {error ? (
+          <ErrorNote>{error}</ErrorNote>
+        ) : (
+          <div
+            className="skeleton h-[380px]"
+            aria-busy="true"
+            aria-label="Cargando tus movimientos"
+          />
+        )}
       </>
     );
   }
 
   return (
     <>
-      <Topbar title="Movimientos" subtitle="Tu saldo, tus retiros y los pagos de tus planes." />
+      <Topbar
+        title="Movimientos"
+        subtitle="Tu saldo, tus retiros y los pagos de tus planes."
+      />
 
-      <section className="grid grid-cols-[minmax(0,1fr)] gap-x-14 gap-y-8 border-t border-line-strong pt-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-end" aria-label="Saldo">
+      <section
+        className="grid grid-cols-[minmax(0,1fr)] gap-x-14 gap-y-8 border-t border-line-strong pt-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-end"
+        aria-label="Saldo"
+      >
         <div>
           <p className="cap">Saldo disponible</p>
-          <p className="figure mt-3 text-[clamp(3.2rem,9vw,6.5rem)]">{formatCop(balanceCop)}</p>
-          <button type="button" className="btn btn-solid mt-8" onClick={() => setWithdrawing(true)} disabled={balanceCop <= 0}>
+          <p className="figure mt-3 text-[clamp(3.2rem,9vw,6.5rem)]">
+            {formatCop(balanceCop)}
+          </p>
+          <button
+            type="button"
+            className="btn btn-solid mt-8"
+            onClick={() => setWithdrawing(true)}
+            disabled={balanceCop <= 0}
+          >
             Retirar
           </button>
-          {balanceCop <= 0 && <p className="mt-3 text-sm text-mute">Tu saldo crece a medida que tu energía se genera y se vende.</p>}
+          {balanceCop <= 0 && (
+            <p className="mt-3 text-sm text-mute">
+              Tu saldo crece a medida que tu energía se genera y se vende.
+            </p>
+          )}
         </div>
         <dl className="grid grid-cols-3 gap-6 border-t border-line pt-5 lg:border-t-0 lg:pt-0">
           {[
@@ -52,48 +75,14 @@ export function WalletPage() {
         </dl>
       </section>
 
-      <section className="mt-16" aria-label="Historial">
-        <h2 className="border-b border-line-strong pb-4 text-xl font-medium">Historial</h2>
-        {data.transactions.length === 0 ? (
-          <p className="py-10 text-mute">Aquí aparecerán los pagos de tus planes y tus retiros.</p>
-        ) : (
-          <ul>
-            {data.transactions.map((t) => {
-              const st = TX_STATUS[t.status] ?? TX_STATUS.pendiente;
-              const url = explorerTxUrl(t);
-              return (
-                <li key={t.id} className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[9.5rem_minmax(0,1fr)_auto] sm:items-baseline">
-                  <p className="num text-sm text-mute">{formatDateTime(t.createdAt)}</p>
-                  <div className="min-w-0">
-                    <p>{txTitle(t)}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-mute">{txDetail(t)}</p>
-                    <p className="num mt-1 text-xs text-dim">
-                      {t.id}
-                      {t.kind === "retiro" && t.status === "confirmada" && t.txHash && !isEvmHash(t.txHash) && <span> · Comprobante {t.txHash}</span>}
-                    </p>
-                    {url && (
-                      <a href={url} target="_blank" rel="noreferrer" className="link mt-1.5 inline-flex items-center gap-1.5 text-sm">
-                        Ver en BscScan <ExternalLink size={12} />
-                      </a>
-                    )}
-                  </div>
-                  <div className="flex items-baseline justify-between gap-6 sm:block sm:text-right">
-                    <p className={`num text-lg ${st.tone === "off" ? "text-dim line-through" : ""}`}>
-                      {t.kind === "retiro" ? "−" : ""}
-                      {formatCop(t.amountCop)}
-                    </p>
-                    <p className="sm:mt-2">
-                      <Status tone={st.tone}>{st.label}</Status>
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      <TransactionHistory asOf={data.asOf} />
 
-      <WithdrawDialog open={withdrawing} onClose={() => setWithdrawing(false)} balanceCop={balanceCop} profile={profile.data?.profile ?? null} />
+      <WithdrawDialog
+        open={withdrawing}
+        onClose={() => setWithdrawing(false)}
+        balanceCop={balanceCop}
+        profile={profile.data?.profile ?? null}
+      />
     </>
   );
 }
