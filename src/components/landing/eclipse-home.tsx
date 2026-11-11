@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUpRight, Menu, Pause, Play, X } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
+import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
+import { SiteHeader } from "@/components/public/site-header";
+import { SiteFooter } from "@/components/public/site-footer";
 import { SunArc } from "./sun-arc";
 import { ENERGY_PLANS, type EnergyPlan } from "@/config/energy-plans";
 import { PlanCards } from "@/components/plans/plan-cards";
@@ -35,7 +36,6 @@ const questions = [
 
 export function EclipseHome() {
   const root = useRef<HTMLDivElement>(null);
-  const [menu, setMenu] = useState(false);
   const [plan, setPlan] = useState<EnergyPlan>(plans[3]);
   const [now, setNow] = useState<number | null>(null);
   const [animationsPaused, setAnimationsPaused] = useState(false);
@@ -46,22 +46,7 @@ export function EclipseHome() {
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
   }, []);
-  useEffect(() => {
-    if (!menu) return;
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenu(false);
-    };
-    document.addEventListener("keydown", escape);
-    return () => document.removeEventListener("keydown", escape);
-  }, [menu]);
   const monthly = plan.daily * 30;
-  const links = [
-    ["#planta", "Ciclo solar"],
-    ["#planes", "Planes de energía"],
-    ["#como-funciona", "Cómo funciona"],
-    ["/planta", "La planta"],
-    ["/ayuda", "Ayuda"],
-  ];
   const time =
     now === null
       ? "— — : — — : — —"
@@ -77,68 +62,34 @@ export function EclipseHome() {
       <a className="skip-link" href="#contenido">
         Saltar al contenido
       </a>
-      <header className="eclipse-header">
-        <div className="home-scroll-progress" aria-hidden="true" />
-        <nav className="eclipse-wrap eclipse-navigation" aria-label="Principal">
-          <Link href="/" aria-label="In World Energy, inicio">
-            <Logo />
-          </Link>
-          <div className="desktop-links">
-            {links.map(([href, label]) => (
-              <a key={href} href={href}>
-                {label}
-              </a>
-            ))}
-          </div>
-          <div className="nav-actions">
-            <button
-              type="button"
-              className="motion-toggle"
-              onClick={() => setAnimationsPaused((value) => !value)}
-              aria-label={animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
-              aria-pressed={animationsPaused}
-              title={animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
-            >
-              {animationsPaused ? <Play size={14} /> : <Pause size={14} />}
-            </button>
-            <Link href="/ingresar" className="btn btn-ghost">
-              Ingresar <ArrowUpRight size={15} />
-            </Link>
-            <button
-              className="menu-toggle"
-              onClick={() => setMenu(!menu)}
-              aria-expanded={menu}
-              aria-controls="mobile-navigation"
-              aria-label={menu ? "Cerrar menú" : "Abrir menú"}
-            >
-              {menu ? <X /> : <Menu />}
-            </button>
-          </div>
-        </nav>
-        {menu && (
-          <nav
-            id="mobile-navigation"
-            className="mobile-links"
-            aria-label="Navegación móvil"
+      <SiteHeader
+        landing
+        mobileActions={
+          <button
+            type="button"
+            className="mobile-motion-toggle"
+            aria-pressed={animationsPaused}
+            onClick={() => setAnimationsPaused((value) => !value)}
           >
-            {links.map(([href, label]) => (
-              <a key={href} href={href} onClick={() => setMenu(false)}>
-                {label}
-                <ArrowUpRight size={16} />
-              </a>
-            ))}
-            <button
-              type="button"
-              className="mobile-motion-toggle"
-              aria-pressed={animationsPaused}
-              onClick={() => setAnimationsPaused((value) => !value)}
-            >
-              {animationsPaused ? <Play size={14} /> : <Pause size={14} />}
-              {animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
-            </button>
-          </nav>
-        )}
-      </header>
+            {animationsPaused ? <Play size={14} /> : <Pause size={14} />}
+            {animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
+          </button>
+        }
+      >
+        <button
+          type="button"
+          className="motion-toggle"
+          onClick={() => setAnimationsPaused((value) => !value)}
+          aria-label={animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
+          aria-pressed={animationsPaused}
+          title={animationsPaused ? "Activar animaciones" : "Pausar animaciones"}
+        >
+          {animationsPaused ? <Play size={14} /> : <Pause size={14} />}
+        </button>
+        <Link href="/panel" prefetch={false} className="btn btn-ghost">
+          Mi cuenta <ArrowUpRight size={15} />
+        </Link>
+      </SiteHeader>
       <main id="contenido">
         <section
           className="eclipse-wrap eclipse-hero"
@@ -375,23 +326,7 @@ export function EclipseHome() {
           </div>
         </section>
       </main>
-      <footer className="eclipse-footer eclipse-wrap">
-        <div>
-          <Logo />
-          <p>Energía solar. Visión empresarial.</p>
-        </div>
-        <div>
-          <Link href="/ayuda">Centro de ayuda ↗</Link>
-          <Link href="/planta">Conoce la planta ↗</Link>
-          <Link href="/terminos">Términos y condiciones ↗</Link>
-          <Link href="/privacidad">Política de privacidad ↗</Link>
-        </div>
-        <span className="eyebrow">
-          IN WORLD ENERGY
-          <br />
-          HECHO EN COLOMBIA
-        </span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

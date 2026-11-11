@@ -14,13 +14,13 @@ async function Catalog({
     <PlanCatalog
       key={typeof plan === "string" ? plan : "04"}
       initialPlanId={typeof plan === "string" ? plan : undefined}
+      headingLevel={1}
     />
   );
 }
 export default function PlansPage({ searchParams }: PageProps<"/planes">) {
   return (
     <PublicFrame active="planes">
-      <h1 className="sr-only">Planes de energía para empresas</h1>
       <Link href="/" className="back-link">
         ← Volver al inicio
       </Link>

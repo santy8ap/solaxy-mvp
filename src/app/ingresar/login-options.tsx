@@ -1,5 +1,5 @@
 "use client";
-import { KeyRound, LineChart } from "lucide-react";
+import { ChevronDown, KeyRound, LineChart } from "lucide-react";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ENERGY_PLANS, planSummary } from "@/config/energy-plans";
@@ -41,13 +41,13 @@ const ROLES: {
 }[] = [
   {
     id: "user",
-    title: "Mi cuenta",
-    note: "Tu energía y movimientos",
+    title: "Empresa",
+    note: "Planes y movimientos",
     icon: LineChart,
   },
   {
     id: "admin",
-    title: "Administrador",
+    title: "Administración",
     note: "Usuarios, planta y retiros",
     icon: KeyRound,
   },
@@ -65,7 +65,8 @@ export function LoginOptions({
   destination?: string;
 }) {
   const purchasePlan = ENERGY_PLANS.find((plan) => destination === `/comprar/${plan.id}`);
-  const [role, setRole] = useState<Role>(purchasePlan ? "user" : defaultRole);
+  const [selectedRole, setRole] = useState<Role>(defaultRole);
+  const role = purchasePlan ? "user" : selectedRole;
   const [pin, setPin] = useState("");
   const [state, formAction, pending] = useActionState(signInDemo, undefined);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -76,8 +77,8 @@ export function LoginOptions({
     if (!googleEnabled) {
       setNotice(
         demoMode
-          ? "El ingreso con Google aún no está configurado en este equipo. Agrega GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET (ver README). Mientras tanto, entra con la cuenta demo."
-          : "El ingreso con Google aún no está configurado. El administrador debe agregar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.",
+          ? "El ingreso con Google no está disponible por el momento. Puedes usar el acceso de demostración."
+          : "El ingreso con Google no está disponible por el momento. Inténtalo más tarde.",
       );
       return;
     }
@@ -116,32 +117,26 @@ export function LoginOptions({
   const error = notice ?? state?.error ?? null;
 
   return (
-    <div className="space-y-5">
+    <div className="access-options">
       {purchasePlan && (
         <section className="login-plan-context" aria-label="Plan elegido para tu compra">
-          <span className="eyebrow">TU SELECCIÓN SIGUE AQUÍ</span>
+          <span className="eyebrow">TU PLAN DE ENERGÍA</span>
           <h3>Plan {purchasePlan.name}</h3>
           <p className="mono">{formatNumber(purchasePlan.daily)} kWh / día</p>
           <p className="login-plan-price mono">{formatCop(planSummary(purchasePlan).monthlyCop)} <span>COP / mes</span></p>
-          <p>Inicia sesión y volverás directamente a este plan para continuar con tu compra.</p>
-          <Link href={`/planes?plan=${purchasePlan.id}`} className="text-link">Cambiar plan ↗</Link>
+          <p>Volverás a este plan al terminar el ingreso.</p>
+          <Link href={`/planes?plan=${purchasePlan.id}`} className="text-link">Elegir otro plan ↗</Link>
         </section>
       )}
-      {!purchasePlan && <fieldset>
-        <legend className="mb-2.5 text-sm text-silver-400">Entrar como</legend>
-        <div className="grid grid-cols-2 gap-2" role="radiogroup">
+      {!purchasePlan && <fieldset className="access-roles">
+        <legend>Tu espacio de acceso</legend>
+        <div className="access-role-grid">
           {ROLES.map(({ id, title, note, icon: Icon }) => {
             const active = role === id;
             return (
               <label
                 key={id}
-                className={`relative flex cursor-pointer flex-col gap-1.5 rounded-none border p-3.5 transition-all duration-200 ${
-                  active
-                    ? id === "admin"
-                      ? "border-dusk-400/80 bg-dusk-400/10 shadow-[0_0_0_1px_rgb(153_153_153/0.35)]"
-                      : "border-sun-400/80 bg-sun-400/10 shadow-[0_0_0_1px_rgb(188_188_188/0.35)]"
-                    : "border-silicon-600/70 hover:border-silicon-500"
-                }`}
+                className={`access-role ${active ? "is-active" : ""}`}
               >
                 <input
                   type="radio"
@@ -151,18 +146,9 @@ export function LoginOptions({
                   onChange={() => setRole(id)}
                   className="sr-only"
                 />
-                <Icon
-                  size={18}
-                  className={
-                    active
-                      ? id === "admin"
-                        ? "text-dusk-300"
-                        : "text-sun-300"
-                      : "text-silver-400"
-                  }
-                />
-                <span className="font-semibold text-silver-50">{title}</span>
-                <span className="text-xs leading-snug text-silver-400">
+                <Icon size={17} aria-hidden="true" />
+                <strong>{title}</strong>
+                <span>
                   {note}
                 </span>
               </label>
@@ -197,12 +183,12 @@ export function LoginOptions({
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="access-methods">
         <button
           type="button"
           onClick={onGoogle}
           disabled={!googleEnabled || googleLoading || pending}
-          className="btn w-full !justify-center bg-silver-50 !py-3.5 text-silicon-950 hover:bg-white"
+          className="btn btn-sun access-google"
         >
           <GoogleG />
           {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
@@ -213,7 +199,9 @@ export function LoginOptions({
           </p>
         )}
         {demoMode && (
-          <form action={formAction}>
+          <details className="access-demo-options">
+            <summary>Acceso de demostración <ChevronDown size={14} aria-hidden="true" /></summary>
+            <form action={formAction}>
             <input type="hidden" name="role" value={role} />
             <input
               type="hidden"
@@ -224,22 +212,23 @@ export function LoginOptions({
             <button
               type="submit"
               disabled={pending || googleLoading}
-              className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}
+              className="btn btn-ghost"
             >
               {pending
                 ? "Entrando…"
                 : role === "admin"
                   ? "Entrar como administrador (demo)"
-                  : "Entrar con la cuenta demo"}
+                  : "Usar cuenta de demostración"}
             </button>
-          </form>
+            </form>
+          </details>
         )}
       </div>
 
       {error && (
         <p
           role="alert"
-          className="rounded-none border border-sun-400/40 bg-sun-400/10 p-3 text-sm leading-relaxed text-sun-200"
+          className="access-message"
         >
           {error}
         </p>

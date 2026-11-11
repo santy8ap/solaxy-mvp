@@ -3,6 +3,7 @@ import { Archivo } from "next/font/google";
 import { BRAND } from "@/config/brand";
 import { LiveConfigSync } from "@/components/live/live-config-sync";
 import "./globals.css";
+import "./experience.css";
 
 const archivo = Archivo({
   variable: "--font-archivo",

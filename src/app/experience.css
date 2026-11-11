@@ -1,0 +1,186 @@
+/* Shared Eclipse language for the public site, account access and purchase. */
+:root {
+  --iwe-surface: #0e0e0e;
+  --iwe-rule: #3e3e3e;
+  --iwe-ink: #ededeb;
+  --iwe-muted: #aaa;
+  --iwe-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.site-header { background: #080808ed; backdrop-filter: blur(16px); }
+.site-brand { display: inline-flex; align-items: center; min-height: 44px; }
+.site-header .desktop-links a { position: relative; padding-block: 12px; text-decoration: none; }
+.site-header .desktop-links a::after { content: ""; position: absolute; left: 0; bottom: 3px; width: 100%; height: 1px; background: #ddd; transform: scaleX(0); transform-origin: right; transition: transform 300ms var(--iwe-ease); }
+.site-header .desktop-links a:hover::after,
+.site-header .desktop-links a:focus-visible::after,
+.site-header .desktop-links a[aria-current="page"]::after { transform: scaleX(1); transform-origin: left; }
+.site-header .desktop-links a[aria-current="page"] { color: #fff; }
+.site-mobile-links a { display: grid; grid-template-columns: 24px minmax(0, 1fr) 18px; align-items: center; gap: 14px; border-bottom: 1px solid #292929; padding-block: 18px; }
+.site-mobile-links a:last-of-type { border-bottom: 0; }
+.site-mobile-index { font-size: 9px; color: #888; }
+.site-mobile-links a[aria-current="page"] { color: #fff; }
+.site-mobile-links a[aria-current="page"] .site-mobile-index { color: #eee; }
+.site-mobile-links { display: none; }
+.site-footer { border-top: 1px solid var(--iwe-rule); }
+.site-footer-top { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 56px; padding-block: 48px; align-items: start; }
+.site-footer-brand > a { display: inline-flex; min-height: 44px; align-items: center; }
+.site-footer-brand > p { color: var(--iwe-muted); font-size: 12px; line-height: 1.8; margin-top: 18px; }
+.site-footer-top nav { display: grid; align-content: start; gap: 4px; }
+.site-footer-top nav > .eyebrow { color: #888; font-size: 8px; margin-bottom: 10px; }
+.site-footer-top nav > a { display: flex; align-items: center; justify-content: space-between; gap: 32px; color: #ccc; font-size: 12px; min-height: 36px; max-width: 210px; }
+.site-footer-top nav > a:hover { color: #fff; }
+.site-footer-top nav svg { transition: transform 200ms; }
+.site-footer-top nav > a:hover svg { transform: translate(2px, -2px); }
+.site-back-top { display: inline-flex; align-items: center; gap: 16px; min-height: 44px; font-size: 10px; color: #bbb; }
+.site-back-top svg { transition: transform 200ms; }
+.site-back-top:hover svg { transform: translateY(-3px); }
+.site-footer-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding-block: 14px; border-top: 1px solid #292929; color: #888; font-size: 9px; line-height: 1.9; }
+.site-footer-bottom > .eyebrow { font-size: 8px; color: #aaa; }
+.site-footer-bottom > span:nth-child(2) { flex: 1; }
+.site-footer-bottom > div { display: flex; gap: 24px; }
+.site-footer-bottom a { display: inline-flex; align-items: center; min-height: 44px; color: #bbb; }
+.site-footer-bottom a:hover { color: #fff; }
+.public-content > .back-link { margin-bottom: 32px; min-height: 44px; display: inline-flex; align-items: center; }
+.catalog-heading h1, .catalog-heading h2 { font-stretch: 62%; font-weight: 350; line-height: 1.02; letter-spacing: -0.035em; margin-top: 24px; }
+.catalog-heading h1 { font-size: clamp(3rem, 6.2vw, 5.7rem); }
+.catalog-heading h2 { font-size: clamp(2.3rem, 4.3vw, 3.8rem); }
+.catalog-heading > p { color: #ccc; }
+.plan-catalog .catalog-summary { margin-top: 24px; padding: 28px; border: 1px solid #444; background: linear-gradient(115deg, #151515, #0b0b0b); }
+.plan-catalog .catalog-summary .btn { min-width: 200px; justify-content: space-between; }
+.plan-catalog .catalog-facts { margin-top: 24px; border: 1px solid #3b3b3b; }
+.plan-catalog .catalog-facts > div { padding: 24px; border-right: 1px solid #3b3b3b; }
+.plan-catalog .catalog-facts > div:last-child { border-right: 0; }
+.plan-catalog .catalog-facts strong { font-size: 23px; }
+.plan-catalog .plan-card { transition: background 250ms, color 250ms, border-color 250ms; }
+.plan-catalog .plan-card:hover { background: #202020; }
+.plan-catalog .plan-card.selected:hover { background: #fff; }
+.plan-catalog .table-note { line-height: 1.9; }
+.access-content { padding-top: 28px; }
+.access-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; color: #888; font-size: 10px; }
+.access-breadcrumb > a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: #aaa; }
+.access-breadcrumb > a:hover { color: #fff; }
+.access-breadcrumb [aria-current] { color: #ddd; }
+.access-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(40px, 7vw, 100px); align-items: center; padding-block: 36px 28px; }
+.access-intro > .eyebrow { color: #999; font-size: 9px; }
+.access-intro h1 { font-stretch: 62%; font-weight: 350; font-size: clamp(3.6rem, 6.4vw, 6.2rem); line-height: 0.99; letter-spacing: -0.04em; margin-top: 30px; }
+.access-intro h1 span { color: #8f8f8f; }
+.access-intro > p { max-width: 40ch; color: #aaa; font-size: 14px; line-height: 1.9; margin-top: 28px; }
+.access-brand-art { position: relative; isolation: isolate; height: 188px; max-width: 470px; display: flex; align-items: center; padding-left: 44px; overflow: clip; margin-top: 28px; border-block: 1px solid #333; }
+.access-art-grid { position: absolute; z-index: -1; inset: 0; opacity: 0.7; background: linear-gradient(#ffffff05 1px, transparent 1px), linear-gradient(90deg, #ffffff05 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(90deg, #000, transparent); }
+.access-art-orbit { position: absolute; z-index: -1; width: 270px; height: 270px; left: -24px; top: -43px; border: 1px solid #ffffff2a; border-radius: 50%; transform: rotate(-30deg) scaleY(0.55); box-shadow: 0 0 0 32px #ffffff03, 0 0 0 64px #ffffff02; }
+.access-brand-art > svg { color: #ccc; }
+.access-brand-art > span { position: absolute; right: 14px; bottom: 18px; font-size: 7px; color: #888; letter-spacing: 0.12em; }
+.access-journey { display: grid; grid-template-columns: 1fr 1.2fr 1fr; list-style: none; gap: 14px; padding: 0; margin-top: 26px; }
+.access-journey li { display: flex; align-items: center; gap: 8px; font-size: 9px; color: #888; line-height: 1.6; }
+.access-journey li > span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid #444; flex-shrink: 0; font-family: ui-monospace, monospace; font-size: 8px; }
+.access-journey li[aria-current] { color: #eee; }
+.access-journey li[aria-current] > span { background: #eee; border-color: #eee; color: #111; }
+.access-intro-note { margin-top: 24px; }
+.access-intro-note > .eyebrow { font-size: 8px; color: #888; }
+.access-intro-note > p { font-size: 11px; color: #aaa; line-height: 1.9; margin-top: 8px; }
+.access-card { border: 1px solid #444; background: var(--iwe-surface); padding: clamp(28px, 3.2vw, 42px); position: relative; }
+.access-card::before { content: ""; position: absolute; left: -1px; top: -1px; width: 64px; height: 2px; background: #eee; }
+.access-card-header > .eyebrow { font-size: 8px; color: #999; }
+.access-card-header h2 { font-size: 34px; font-stretch: 75%; font-weight: 400; line-height: 1.15; margin-top: 18px; }
+.access-card-header > p { font-size: 12px; line-height: 1.9; color: #aaa; margin-top: 12px; }
+.access-options { display: grid; gap: 24px; margin-top: 28px; }
+.access-card .login-plan-context { background: var(--iwe-ink); color: #111; padding: 24px; border-color: var(--iwe-ink); }
+.access-card .login-plan-context > .eyebrow { color: #555; font-size: 8px; }
+.access-card .login-plan-context h3 { color: #111; font-size: 35px; font-stretch: 65%; margin-top: 16px; }
+.access-card .login-plan-context > p { color: #555; font-size: 10px; margin-top: 10px; }
+.access-card .login-plan-context > .login-plan-price { color: #111; font-size: clamp(21px, 2.3vw, 28px); border-color: #aaa; padding-top: 18px; margin-top: 18px; }
+.access-card .login-plan-price > span { color: #555; font-size: 9px; }
+.access-card .login-plan-context .text-link { font-size: 9px; border-color: #888; margin-top: 14px; }
+.access-card .login-plan-context :focus-visible { outline-color: #111; }
+.access-roles { border: 0; padding: 0; min-width: 0; }
+.access-roles legend { font-size: 10px; color: #aaa; margin-bottom: 12px; }
+.access-role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.access-role { display: grid; gap: 10px; position: relative; padding: 18px; border: 1px solid #444; cursor: pointer; color: #aaa; transition: background 160ms, border-color 160ms; }
+.access-role:hover { border-color: #888; }
+.access-role.is-active { background: #1c1c1c; border-color: #aaa; color: #eee; }
+.access-role:focus-within { outline: 2px solid #ddd; outline-offset: 3px; }
+.access-role strong { font-size: 11px; font-weight: 500; }
+.access-role > span { font-size: 9px; line-height: 1.7; color: #999; }
+.access-methods { display: grid; gap: 14px; }
+.access-google { width: 100%; justify-content: center; min-height: 52px; font-size: 10px; }
+.access-demo-options { border-top: 1px solid #333; padding-top: 4px; }
+.access-demo-options summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: #aaa; font-size: 10px; cursor: pointer; list-style: none; }
+.access-demo-options summary::-webkit-details-marker { display: none; }
+.access-demo-options summary svg { transition: transform 180ms; }
+.access-demo-options[open] summary svg { transform: rotate(180deg); }
+.access-demo-options .btn { width: 100%; font-size: 9px; margin-top: 8px; }
+.access-environment-note { display: flex; align-items: start; gap: 10px; padding-top: 18px; margin-top: 18px; border-top: 1px solid #333; color: #999; }
+.access-environment-note svg { flex-shrink: 0; margin-top: 2px; }
+.access-environment-note p { font-size: 9px; line-height: 1.9; }
+.access-legal { font-size: 9px; line-height: 1.9; color: #888; margin-top: 18px; }
+.access-legal a { color: #bbb; text-decoration: underline; text-underline-offset: 3px; }
+.access-message { border: 1px solid #777; border-left: 3px solid #ddd; padding: 16px; font-size: 11px; line-height: 1.9; color: #ddd; }
+.access-loading { min-height: 70dvh; display: flex; flex-direction: column; justify-content: center; gap: 24px; padding-block: 60px; }
+.access-loading > .eyebrow { color: #999; }
+.access-loading > p { font-size: clamp(28px, 4vw, 46px); font-stretch: 70%; }
+.access-options .field { font-size: 16px; }
+.purchase-form-panel .company-draft input { font-size: 16px; padding-block: 12px; transition: border-color 160ms; }
+.purchase-form-panel .company-draft input:focus { border-color: #eee; }
+.purchase-form-panel .company-draft label { color: #bbb; }
+.purchase-billing-notice { background: #121212; border-left-width: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .access-intro { animation: experience-enter 650ms var(--iwe-ease) both; }
+  .access-card { animation: experience-enter 650ms 90ms var(--iwe-ease) both; }
+  .site-mobile-links { animation: experience-enter 220ms var(--iwe-ease) both; }
+}
+@keyframes experience-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (max-width: 1000px) {
+  .site-header .desktop-links { gap: 18px; font-size: 11px; }
+  .site-footer-top { gap: 32px; }
+  .access-layout { gap: 36px; }
+  .access-intro h1 { font-size: clamp(3.4rem, 6.5vw, 5rem); }
+  .access-card { padding: 28px; }
+  .access-journey { grid-template-columns: 1fr; gap: 12px; }
+}
+@media (max-width: 760px) {
+  .site-header .eclipse-navigation { gap: 12px; }
+  .site-header .site-mobile-links { display: block; padding-inline: 24px; }
+  .site-footer-top { grid-template-columns: 1.2fr 1fr; gap: 28px; padding-block: 32px; }
+  .site-back-top { grid-column: 1 / -1; border-top: 1px solid #333; padding-top: 16px; }
+  .site-footer-top nav > a { min-height: 44px; }
+  .site-footer-bottom { gap: 8px 20px; padding-block: 16px; }
+  .site-footer-bottom > .eyebrow { flex-basis: 100%; }
+  .site-footer-bottom > span:nth-child(2) { flex-basis: 100%; }
+  .access-content { padding-block: 20px 48px; }
+  .access-layout { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 24px 0; }
+  .access-intro h1 { font-size: clamp(3.4rem, 10vw, 5rem); margin-top: 22px; }
+  .access-intro > p { margin-top: 20px; font-size: 12px; max-width: 42ch; }
+  .access-brand-art, .access-intro-note { display: none; }
+  .access-journey { grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; margin-top: 22px; }
+  .access-journey li { font-size: 8px; gap: 6px; }
+  .access-journey li > span { width: 21px; height: 21px; }
+  .access-card { max-width: 500px; width: 100%; }
+  .access-card-header h2 { font-size: 30px; }
+  .catalog-heading { align-items: start; }
+  .catalog-heading h1 { font-size: clamp(2.7rem, 8vw, 4rem); }
+  .plan-catalog .catalog-summary { padding: 24px; flex-direction: column; align-items: start; gap: 24px; }
+  .plan-catalog .catalog-summary .btn { width: 100%; }
+  .plan-catalog .catalog-price { font-size: clamp(23px, 6vw, 32px); }
+  .plan-catalog .catalog-facts > div { padding: 18px 12px; }
+  .plan-catalog .catalog-facts strong { font-size: 18px; }
+  .plan-catalog .catalog-facts span { font-size: 9px; line-height: 1.8; }
+}
+@media (max-width: 400px) {
+  .site-header .eclipse-navigation { gap: 8px; }
+  .site-header .nav-actions { gap: 6px; }
+  .site-header .nav-actions > .btn { font-size: 8px; padding-inline: 10px; gap: 6px; }
+  .site-header .iwe-logo { gap: 8px; font-size: 8px; }
+  .site-header .iwe-logo > svg { width: 28px; height: 28px; }
+  .site-footer-top { gap: 24px 16px; }
+  .site-footer-brand > p { font-size: 10px; }
+  .site-footer-top nav > a { font-size: 10px; gap: 12px; }
+  .access-card { padding: 22px; }
+  .access-card .login-plan-context { padding: 20px; }
+  .access-role { padding: 14px 12px; }
+  .access-role strong { font-size: 10px; }
+  .access-role > span { font-size: 8px; }
+  .access-journey li { flex-direction: column; align-items: start; }
+  .access-google { font-size: 9px; padding-inline: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header *, .site-footer *, .access-content * { animation: none !important; transition: none !important; }
+}

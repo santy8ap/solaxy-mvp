@@ -11,9 +11,12 @@ import { PlanComparator } from "./plan-comparator";
 
 export function PlanCatalog({
   initialPlanId = "04",
+  headingLevel = 2,
 }: {
   initialPlanId?: string;
+  headingLevel?: 1 | 2;
 }) {
+  const Heading = headingLevel === 1 ? "h1" : "h2";
   const [selected, setSelected] = useState<EnergyPlan>(
     () =>
       ENERGY_PLANS.find((plan) => plan.id === initialPlanId) ?? ENERGY_PLANS[3],
@@ -22,21 +25,21 @@ export function PlanCatalog({
   const summary = planSummary(selected);
   return (
     <div className="plan-catalog">
-      <div className="panel-page-heading">
+      <div className="panel-page-heading catalog-heading">
         <div>
-          <span className="eyebrow">ENERGÍA A TU ESCALA</span>
-          <h2>
-            UNA DECISIÓN
+          <span className="eyebrow">IN WORLD ENERGY / PLANES PARA EMPRESAS</span>
+          <Heading>
+            ELIGE TU
             <br />
-            CON PERSPECTIVA.
-          </h2>
+            PLAN DE ENERGÍA.
+          </Heading>
         </div>
         <p>
           Contrato de 3 meses.
           <br />
           Pago mensual en pesos colombianos.
           <br />
-          <span className="muted">Compara cantidades, precios y valores.</span>
+          <span className="muted">Pulsa un plan para continuar con tu compra.</span>
         </p>
       </div>
       <PlanCards selected={selected} onPreview={setSelected} />
@@ -46,7 +49,7 @@ export function PlanCatalog({
       >
         <div>
           <span className="eyebrow">
-            PLAN {selected.name.toUpperCase()} / CADA 30 DÍAS
+            VISTA PREVIA / PLAN {selected.name.toUpperCase()}
           </span>
           <p className="catalog-price" key={selected.id}>
             {formatCop(summary.monthlyCop)} <span>COP</span>
@@ -57,7 +60,7 @@ export function PlanCatalog({
           </p>
         </div>
         <Link href={`/comprar/${selected.id}`} prefetch={false} className="btn btn-sun">
-          Comprar plan <ArrowUpRight size={16} />
+          Comprar plan {selected.name} <ArrowUpRight size={16} />
         </Link>
       </section>
       <div className="catalog-facts">
