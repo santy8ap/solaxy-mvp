@@ -4,36 +4,28 @@ import path from "node:path";
 import { createClient } from "@libsql/client";
 import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import * as schema from "./schema";
+import { databaseTarget } from "./target";
 
 export type Db = LibSQLDatabase<typeof schema>;
 /** Operaciones compartidas por la conexión y una transacción de libSQL. */
 export type DbSession = Pick<Db, "select" | "insert" | "update" | "run">;
 
-/**
- * Dónde vive la base de datos:
- * - TURSO_DATABASE_URL / DATABASE_URL si están definidas (Turso u otro libSQL)
- * - en Vercel sin Turso: archivo temporal (los datos se pierden al reiniciar)
- * - en tu PC: ./data/iwe.db (se crea solo)
- */
+/** La URL de la base de esta ejecución (ver lib/db/target). */
 export function resolveDatabaseUrl(): string {
-  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
-  if (url) return url;
-  if (process.env.VERCEL) return "file:/tmp/iwe.db";
-  return "file:./data/iwe.db";
+  return databaseTarget().url;
 }
 
-export function createDb(
-  url = resolveDatabaseUrl(),
-  authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN,
-) {
-  if (url.startsWith("file:")) {
-    const file = url.slice("file:".length);
+/** Sin argumentos se conecta a la base de esta ejecución; con una URL, a esa (las pruebas usan archivos temporales). */
+export function createDb(url?: string, authToken?: string) {
+  const target = url ? { url, authToken } : databaseTarget();
+  if (target.url.startsWith("file:")) {
+    const file = target.url.slice("file:".length);
     mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
   }
-  const client = createClient({ url, authToken: authToken || undefined });
+  const client = createClient({ url: target.url, authToken: target.authToken || undefined });
   return {
     client,
     db: drizzle(client, { schema }) as Db,
-    isLocalFile: url.startsWith("file:"),
+    isLocalFile: target.url.startsWith("file:"),
   };
 }

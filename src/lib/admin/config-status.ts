@@ -1,5 +1,6 @@
 import "server-only";
 import { LEGAL } from "@/config/legal";
+import { databaseTarget } from "@/lib/db/target";
 import { adminEmails, baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
 import { rpcChainReader } from "@/lib/payments/chain";
 import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
@@ -71,18 +72,24 @@ export async function configStatus({
     required: true,
   });
 
-  const turso = has("TURSO_DATABASE_URL");
+  const target = databaseTarget();
+  const persistent = target.kind === "principal" || target.kind === "pruebas";
   add({
     id: "base",
     group: "Base",
     title: "Base de datos persistente",
-    state: turso ? "ok" : process.env.VERCEL ? "falta" : "info",
-    detail: turso
-      ? "Conectada a Turso."
-      : process.env.VERCEL
-        ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel › Storage."
-        : "Archivo local (data/iwe.db).",
-    vars: ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"],
+    state: persistent ? "ok" : process.env.VERCEL ? "falta" : "info",
+    detail:
+      target.kind === "pruebas"
+        ? "Esta vista previa usa su propia base de pruebas, separada de la de producción."
+        : target.kind === "principal"
+          ? "Conectada a Turso."
+          : process.env.VERCEL_ENV === "preview"
+            ? "Esta vista previa no tiene base propia: usa un archivo temporal y nunca la base de producción. Conéctale una en Vercel › Storage con el prefijo PREVIEW."
+            : process.env.VERCEL
+              ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel › Storage."
+              : "Archivo local (data/iwe.db).",
+    vars: process.env.VERCEL_ENV === "preview" ? ["PREVIEW_TURSO_DATABASE_URL", "PREVIEW_TURSO_AUTH_TOKEN"] : ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"],
     required: Boolean(process.env.VERCEL),
   });
   add({

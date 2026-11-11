@@ -136,6 +136,14 @@ describe("vistas previas de Vercel: comparten la base de datos con producción",
     expect(await hasTable(c, "plan_subscription")).toBe(true);
   });
 
+  it("con su propia base (PREVIEW_TURSO_DATABASE_URL) la vista previa migra sola", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("PREVIEW_TURSO_DATABASE_URL", "libsql://solaxy-preview.turso.io");
+    const c = fresh();
+    await migrate(c, { localFile: false });
+    expect(await hasTable(c, "plan_subscription")).toBe(true);
+  });
+
   it("si no hay nada pendiente, la vista previa funciona normal", async () => {
     const c = fresh();
     await migrate(c, { localFile: false });
