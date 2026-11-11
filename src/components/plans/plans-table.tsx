@@ -6,6 +6,8 @@ type Plan = CatalogDTO["plans"][number];
 
 const pctLabel = (fraction: number) => `${formatNumber(Math.round(fraction * 100))} %`;
 
+const priceLabel = (label: string) => label.endsWith("kWh") ? <>{label.slice(0, -3)}<span className="unit">kWh</span></> : label;
+
 /**
  * La tabla de planes: cuánta energía, a qué precio se compra, a cuánto se vende y qué utilidad deja.
  * `action` dibuja lo que va al final de cada plan (un enlace en el inicio, un botón en el panel).
@@ -21,7 +23,7 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
             <tr className="border-b border-line-strong">
               {["Plan", "Energía en 3 meses", "Cada día", "Compra / kWh", "Venta / kWh", "Utilidad bruta", "Pago mensual"].map((h, i) => (
                 <th key={h} scope="col" className={`cap pb-3 font-medium ${i === 0 ? "" : "text-right"} ${i === 6 ? "pr-6" : ""}`}>
-                  {h}
+                  {priceLabel(h)}
                 </th>
               ))}
               {action && <th scope="col" className="sr-only">Acción</th>}
@@ -73,7 +75,7 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
                   ["Venta / kWh", formatCop(p.saleCopPerKwh)],
                 ].map(([k, v]) => (
                   <div key={k}>
-                    <dt className={`cap ${selected ? "!text-void/70" : ""}`}>{k}</dt>
+                    <dt className={`cap ${selected ? "!text-void/70" : ""}`}>{priceLabel(k)}</dt>
                     <dd className="num mt-1 text-base">{v}</dd>
                   </div>
                 ))}

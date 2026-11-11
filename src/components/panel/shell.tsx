@@ -69,10 +69,10 @@ export function BottomNav() {
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(path, href);
           return (
-            <li key={href}>
+            <li key={href} className="min-w-0">
               <Link href={href} aria-current={active ? "page" : undefined} className={`flex flex-col items-center gap-1.5 border-t-2 pb-2.5 pt-2.5 text-[0.68rem] ${active ? "border-ink text-ink" : "border-transparent text-mute"}`}>
                 <Icon size={19} strokeWidth={1.5} />
-                {label}
+                <span className="max-w-full break-words px-1 text-center">{label}</span>
               </Link>
             </li>
           );

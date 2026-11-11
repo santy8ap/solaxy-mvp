@@ -24,7 +24,7 @@ export function PriceBreakdown({ monthlyKwh, months, priceCopPerKwh, saleCopPerK
               {formatCop(price)} <span className="text-xs text-mute">COP / kWh</span>
             </dd>
             <dd className="mt-5 border-t border-line pt-4">
-              <span className="cap block">{formatNumber(monthlyKwh)} kWh al mes</span>
+              <span className="cap block">{formatNumber(monthlyKwh)} <span className="unit">kWh</span> al mes</span>
               <span className="num mt-2 block text-xl">{formatCop(total)} <span className="text-xs text-mute">COP / mes</span></span>
             </dd>
           </div>
@@ -33,7 +33,7 @@ export function PriceBreakdown({ monthlyKwh, months, priceCopPerKwh, saleCopPerK
       <div className="mt-4 border border-line-strong p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h3 className="cap">Utilidad bruta por kWh</h3>
+            <h3 className="cap">Utilidad bruta por <span className="unit">kWh</span></h3>
             <p className="num mt-3 text-[1.8rem] leading-tight">{formatCop(economics.profitPerKwhCop)} <span className="text-xs text-mute">COP / kWh</span></p>
           </div>
           <p className="num text-sm text-fog">{formatNumber(economics.profitPct * 100, 2)} % sobre la compra</p>

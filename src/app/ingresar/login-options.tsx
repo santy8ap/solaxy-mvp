@@ -68,7 +68,7 @@ export function LoginOptions({ googleEnabled, demoMode, defaultRole = "user", pl
             return (
               <label key={id} className={`flex cursor-pointer flex-col gap-1 p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${id === "admin" ? "border-l border-line-strong" : ""} ${active ? "bg-ink text-void" : "hover:bg-ink/5"}`}>
                 <input type="radio" name="role-choice" value={id} checked={active} onChange={() => setRole(id)} className="sr-only" />
-                <span className="font-medium">{title}</span>
+                <span className="break-words font-medium">{title}</span>
                 <span className={`text-xs leading-snug ${active ? "text-void/70" : "text-mute"}`}>{note}</span>
               </label>
             );
