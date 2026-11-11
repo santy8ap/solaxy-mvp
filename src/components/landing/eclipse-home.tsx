@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowDown, ArrowUpRight, Check, Menu, Pause, Play, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUpRight, Menu, Pause, Play, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { SunArc } from "./sun-arc";
-import { ENERGY_PLANS } from "@/config/energy-plans";
+import { ENERGY_PLANS, type EnergyPlan } from "@/config/energy-plans";
+import { PlanCards } from "@/components/plans/plan-cards";
 import { EclipseScene, EnergyIntro } from "./eclipse-scene";
 import { useHomeMotion } from "./use-home-motion";
 import "./eclipse-motion.css";
@@ -35,7 +36,7 @@ const questions = [
 export function EclipseHome() {
   const root = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
-  const [selected, setSelected] = useState(3);
+  const [plan, setPlan] = useState<EnergyPlan>(plans[3]);
   const [now, setNow] = useState<number | null>(null);
   const [animationsPaused, setAnimationsPaused] = useState(false);
   useHomeMotion(root, animationsPaused);
@@ -53,7 +54,6 @@ export function EclipseHome() {
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, [menu]);
-  const plan = plans[selected];
   const monthly = plan.daily * 30;
   const links = [
     ["#planta", "Ciclo solar"],
@@ -218,7 +218,7 @@ export function EclipseHome() {
               </h2>
             </div>
             <p className="section-intro">
-              Cuatro formas de empezar.
+              Haz clic en un plan para empezar.
               <br />
               Un contrato de 3 meses, con pago mensual.
               <br />
@@ -227,46 +227,7 @@ export function EclipseHome() {
               </span>
             </p>
           </div>
-          <fieldset className="plan-grid" style={{
-            "--selected-plan": selected,
-            "--selected-column": selected % 2,
-            "--selected-row": Math.floor(selected / 2),
-          } as CSSProperties}>
-            <legend className="sr-only">
-              Selecciona un plan para consultar sus valores
-            </legend>
-            {plans.map((p, i) => (
-              <label
-                className={`plan-card ${i === selected ? "selected" : ""}`}
-                key={p.id}
-                data-plan-number={p.id}
-              >
-                <input
-                  type="radio"
-                  name="energy-plan"
-                  checked={i === selected}
-                  onChange={() => setSelected(i)}
-                />
-                <span className="plan-top eyebrow">
-                  {p.name}
-                  <span>{i === selected ? <Check size={16} /> : p.id}</span>
-                </span>
-                <span className="plan-volume">
-                  {number.format(p.daily)} <span>kWh</span>
-                </span>
-                <span className="plan-period">
-                  energía diaria de referencia
-                </span>
-                <span className="plan-price mono">
-                  {cop(p.price)} <span>/ kWh</span>
-                </span>
-                <span className="plan-bottom">
-                  {number.format(p.daily * 90)} kWh / 3 meses{" "}
-                  <ArrowUpRight size={16} />
-                </span>
-              </label>
-            ))}
-          </fieldset>
+          <PlanCards selected={plan} onPreview={setPlan} />
           <div className="plan-detail" aria-live="polite">
             <div>
               <span className="eyebrow">
@@ -283,7 +244,7 @@ export function EclipseHome() {
                 Consulta el resumen de tu plan y completa los datos de tu empresa
                 en la vista de compra.
               </p>
-              <Link className="btn btn-sun" href={`/comprar/${plan.id}`}>
+              <Link className="btn btn-sun" href={`/comprar/${plan.id}`} prefetch={false}>
                 Comprar plan {plan.name} <ArrowUpRight size={16} />
               </Link>
               <a className="text-link" href="#comparar">

@@ -3009,6 +3009,20 @@
 .toast-stack.in-dialog { position: sticky; inset: auto; bottom: 0; width: 100%; margin-top: 18px; z-index: 1; }
 .toast-stack.in-dialog .eclipse-toast { box-shadow: 0 -8px 32px #0008; }
 
+.plan-card-footer-copy { display: grid; gap: 9px; }
+.plan-card-action { font-size: 9px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; }
+.login-plan-context { border: 1px solid #555; padding: 22px; }
+.login-plan-context > .eyebrow { color: #aaa; font-size: 8px; }
+.login-plan-context h3 { font-stretch: 70%; font-weight: 400; font-size: 30px; margin-top: 16px; line-height: 1.2; }
+.login-plan-context > p { color: #aaa; font-size: 11px; line-height: 1.9; margin-top: 14px; }
+.login-plan-context > .login-plan-price { color: #eee; font-size: 22px; letter-spacing: -0.04em; border-top: 1px solid #444; padding-top: 16px; }
+.login-plan-price > span { display: block; color: #aaa; font-size: 10px; letter-spacing: 0; margin-top: 5px; }
+.login-plan-context .text-link { font-size: 10px; }
+.purchase-session-loading { min-height: 70dvh; display: flex; flex-direction: column; justify-content: center; gap: 24px; padding-block: 80px; }
+.purchase-session-loading > .eyebrow { color: #aaa; }
+.purchase-session-loading h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-stretch: 70%; font-weight: 400; }
+.purchase-session-loading p { font-size: 13px; line-height: 1.8; color: #aaa; }
+
 /* Dedicated energy purchase flow. */
 .purchase-breadcrumb {
   display: flex;

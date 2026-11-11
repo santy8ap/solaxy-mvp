@@ -8,10 +8,12 @@ export function PublicFrame({
   children,
   active,
   signInDestination,
+  authenticated = false,
 }: {
   children: ReactNode;
   active?: "planes" | "planta" | "ayuda";
   signInDestination?: string;
+  authenticated?: boolean;
 }) {
   return (
     <>
@@ -42,10 +44,10 @@ export function PublicFrame({
             ))}
           </div>
           <Link
-            href={signInHref(signInDestination ?? (active === "planes" ? "/panel/planes" : "/panel"))}
+            href={authenticated ? "/panel" : signInHref(signInDestination ?? (active === "planes" ? "/panel/planes" : "/panel"))}
             className="btn btn-ghost"
           >
-            Ingresar ↗
+            {authenticated ? "Mi cuenta ↗" : "Ingresar ↗"}
           </Link>
         </nav>
       </header>

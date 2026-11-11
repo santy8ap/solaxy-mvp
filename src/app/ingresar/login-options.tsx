@@ -1,6 +1,9 @@
 "use client";
 import { KeyRound, LineChart } from "lucide-react";
 import { useActionState, useState } from "react";
+import Link from "next/link";
+import { ENERGY_PLANS, planSummary } from "@/config/energy-plans";
+import { formatCop, formatNumber } from "@/lib/format";
 import { safeDestination } from "@/lib/navigation";
 import { authClient } from "@/lib/auth-client";
 import { prepareGoogleLogin, signInDemo } from "./actions";
@@ -61,7 +64,8 @@ export function LoginOptions({
   defaultRole?: Role;
   destination?: string;
 }) {
-  const [role, setRole] = useState<Role>(defaultRole);
+  const purchasePlan = ENERGY_PLANS.find((plan) => destination === `/comprar/${plan.id}`);
+  const [role, setRole] = useState<Role>(purchasePlan ? "user" : defaultRole);
   const [pin, setPin] = useState("");
   const [state, formAction, pending] = useActionState(signInDemo, undefined);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -113,7 +117,17 @@ export function LoginOptions({
 
   return (
     <div className="space-y-5">
-      <fieldset>
+      {purchasePlan && (
+        <section className="login-plan-context" aria-label="Plan elegido para tu compra">
+          <span className="eyebrow">TU SELECCIÓN SIGUE AQUÍ</span>
+          <h3>Plan {purchasePlan.name}</h3>
+          <p className="mono">{formatNumber(purchasePlan.daily)} kWh / día</p>
+          <p className="login-plan-price mono">{formatCop(planSummary(purchasePlan).monthlyCop)} <span>COP / mes</span></p>
+          <p>Inicia sesión y volverás directamente a este plan para continuar con tu compra.</p>
+          <Link href={`/planes?plan=${purchasePlan.id}`} className="text-link">Cambiar plan ↗</Link>
+        </section>
+      )}
+      {!purchasePlan && <fieldset>
         <legend className="mb-2.5 text-sm text-silver-400">Entrar como</legend>
         <div className="grid grid-cols-2 gap-2" role="radiogroup">
           {ROLES.map(({ id, title, note, icon: Icon }) => {
@@ -155,7 +169,7 @@ export function LoginOptions({
             );
           })}
         </div>
-      </fieldset>
+      </fieldset>}
 
       <div
         className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"

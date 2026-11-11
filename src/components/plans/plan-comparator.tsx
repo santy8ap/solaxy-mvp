@@ -1,18 +1,14 @@
 "use client";
 import { useId, useState } from "react";
+import Link from "next/link";
 import { ArrowLeftRight, ArrowRight } from "lucide-react";
 import {
   ENERGY_PLANS,
   planSummary,
-  type EnergyPlan,
 } from "@/config/energy-plans";
 import { formatCop, formatNumber } from "@/lib/format";
 
-export function PlanComparator({
-  onSelect,
-}: {
-  onSelect?(plan: EnergyPlan): void;
-}) {
+export function PlanComparator() {
   const id = useId();
   const [leftId, setLeftId] = useState<string>("01");
   const [rightId, setRightId] = useState<string>("04");
@@ -152,26 +148,14 @@ export function PlanComparator({
           un pago mensual mayor.
         </span>
       </div>
-      {onSelect && (
-        <div className="comparator-actions">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => onSelect(left)}
-          >
-            Elegir {left.name}
-            <ArrowRight size={14} />
-          </button>
-          <button
-            type="button"
-            className="btn btn-sun"
-            onClick={() => onSelect(right)}
-          >
-            Elegir {right.name}
-            <ArrowRight size={14} />
-          </button>
-        </div>
-      )}
+      <div className="comparator-actions">
+        <Link href={`/comprar/${left.id}`} prefetch={false} className="btn btn-ghost">
+          Comprar {left.name} <ArrowRight size={14} />
+        </Link>
+        <Link href={`/comprar/${right.id}`} prefetch={false} className="btn btn-sun">
+          Comprar {right.name} <ArrowRight size={14} />
+        </Link>
+      </div>
       <p className="table-note">
         Valores en COP. La utilidad de referencia usa una venta de $400/kWh,
         antes de costos e impuestos, y no garantiza un rendimiento.

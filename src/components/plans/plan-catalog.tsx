@@ -6,10 +6,8 @@ import { ENERGY_PLANS, planSummary, type EnergyPlan } from "@/config/energy-plan
 import { formatCop, formatNumber } from "@/lib/format";
 import { useSavedPlans } from "@/lib/client/use-saved-plans";
 import { toast } from "@/components/ui/toast";
-import { Dialog } from "@/components/ui/dialog";
 import { PlanCards } from "./plan-cards";
 import { PlanComparator } from "./plan-comparator";
-import { PlanCheckout } from "./plan-checkout";
 
 export function PlanCatalog({
   initialPlanId = "04",
@@ -20,7 +18,6 @@ export function PlanCatalog({
     () =>
       ENERGY_PLANS.find((plan) => plan.id === initialPlanId) ?? ENERGY_PLANS[3],
   );
-  const [review, setReview] = useState(false);
   const saved = useSavedPlans();
   const summary = planSummary(selected);
   return (
@@ -42,7 +39,7 @@ export function PlanCatalog({
           <span className="muted">Compara cantidades, precios y valores.</span>
         </p>
       </div>
-      <PlanCards selected={selected} onSelect={setSelected} />
+      <PlanCards selected={selected} onPreview={setSelected} />
       <section
         className="catalog-summary"
         aria-label="Resumen del plan seleccionado"
@@ -59,7 +56,7 @@ export function PlanCatalog({
             {formatNumber(summary.totalKwh)} kWh en total
           </p>
         </div>
-        <Link href={`/comprar/${selected.id}`} className="btn btn-sun">
+        <Link href={`/comprar/${selected.id}`} prefetch={false} className="btn btn-sun">
           Comprar plan <ArrowUpRight size={16} />
         </Link>
       </section>
@@ -114,16 +111,13 @@ export function PlanCatalog({
                       {formatCop(planSummary(plan).monthlyCop)} COP/mes
                     </span>
                   </div>
-                  <button
-                    type="button"
+                  <Link
+                    href={`/comprar/${plan.id}`}
+                    prefetch={false}
                     className="btn btn-ghost"
-                    onClick={() => {
-                      setSelected(plan);
-                      setReview(true);
-                    }}
                   >
-                    Reabrir <ArrowUpRight size={14} />
-                  </button>
+                    Continuar compra <ArrowUpRight size={14} />
+                  </Link>
                   <button
                     type="button"
                     className="icon-button"
@@ -141,23 +135,7 @@ export function PlanCatalog({
           </ul>
         </section>
       )}
-      <PlanComparator
-        onSelect={(plan) => {
-          setSelected(plan);
-          setReview(true);
-        }}
-      />
-      <Dialog
-        open={review}
-        onClose={() => setReview(false)}
-        title={`Revisar plan ${selected.name}`}
-      >
-        <PlanCheckout
-          key={selected.id}
-          plan={selected}
-          close={() => setReview(false)}
-        />
-      </Dialog>
+      <PlanComparator />
     </div>
   );
 }

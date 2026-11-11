@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ArrowLeft, ArrowUpRight, CalendarDays, FileText, Sun } from "lucide-react";
 import { ENERGY_PLANS, planSummary } from "@/config/energy-plans";
 import { formatCop, formatNumber } from "@/lib/format";
 import { PlanCheckout } from "@/components/plans/plan-checkout";
 import { PublicFrame } from "@/components/public/public-frame";
+import { requirePlanBuyer } from "@/lib/plan-purchase-access";
+
+// Purchase always waits for the current session; no shared or prerendered auth result.
+export const instant = false;
 
 export function generateStaticParams() {
   return ENERGY_PLANS.map((plan) => ({ planId: plan.id }));
@@ -22,16 +26,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function PurchasePage({
+async function PurchaseContent({
   params,
-}: PageProps<"/comprar/[planId]">) {
+}: Pick<PageProps<"/comprar/[planId]">, "params">) {
   const { planId } = await params;
-  const plan = ENERGY_PLANS.find((option) => option.id === planId);
-  if (!plan) notFound();
+  const { plan } = await requirePlanBuyer(planId);
   const summary = planSummary(plan);
 
   return (
-    <PublicFrame active="planes" signInDestination={`/comprar/${plan.id}`}>
+    <PublicFrame active="planes" authenticated>
       <nav className="purchase-breadcrumb" aria-label="Ruta de navegación">
         <Link href="/#planes"><ArrowLeft size={14} /> Planes de energía</Link>
         <span aria-hidden="true">/</span>
@@ -111,5 +114,19 @@ export default async function PurchasePage({
         <Link href="/terminos" className="text-link">Términos y condiciones <ArrowUpRight size={15} /></Link>
       </div>
     </PublicFrame>
+  );
+}
+
+export default function PurchasePage({ params }: PageProps<"/comprar/[planId]">) {
+  return (
+    <Suspense fallback={
+      <main className="eclipse-wrap purchase-session-loading" aria-busy="true">
+        <span className="eyebrow">IN WORLD ENERGY</span>
+        <h1>Preparando tu compra…</h1>
+        <p>Comprobamos tu sesión para continuar con el plan elegido.</p>
+      </main>
+    }>
+      <PurchaseContent params={params} />
+    </Suspense>
   );
 }

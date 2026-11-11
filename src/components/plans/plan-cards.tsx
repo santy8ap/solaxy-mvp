@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Check, ArrowUpRight } from "lucide-react";
 import {
   ENERGY_PLANS,
@@ -9,26 +11,34 @@ import { formatCop, formatNumber } from "@/lib/format";
 
 export function PlanCards({
   selected,
-  onSelect,
+  onPreview,
 }: {
   selected: EnergyPlan;
-  onSelect(plan: EnergyPlan): void;
+  onPreview?(plan: EnergyPlan): void;
 }) {
+  const index = ENERGY_PLANS.findIndex((plan) => plan.id === selected.id);
   return (
-    <fieldset className="plan-grid">
-      <legend className="sr-only">Selecciona un plan de energía</legend>
+    <div
+      className="plan-grid"
+      role="group"
+      aria-label="Elige un plan para empezar tu compra"
+      style={{
+        "--selected-plan": index,
+        "--selected-column": index % 2,
+        "--selected-row": Math.floor(index / 2),
+      } as CSSProperties}
+    >
       {ENERGY_PLANS.map((plan) => (
-        <label
+        <Link
+          href={`/comprar/${plan.id}`}
+          prefetch={false}
           className={`plan-card ${selected.id === plan.id ? "selected" : ""}`}
           key={plan.id}
+          data-plan-number={plan.id}
+          onMouseEnter={() => onPreview?.(plan)}
+          onFocus={() => onPreview?.(plan)}
+          aria-label={`Comprar plan ${plan.name}: ${formatNumber(plan.daily)} kWh diarios, ${formatCop(planSummary(plan).monthlyCop)} COP al mes`}
         >
-          <input
-            type="radio"
-            name="energy-plan"
-            value={plan.id}
-            checked={selected.id === plan.id}
-            onChange={() => onSelect(plan)}
-          />
           <span className="plan-top eyebrow">
             {plan.name}
             <span>
@@ -43,11 +53,14 @@ export function PlanCards({
             {formatCop(plan.price)} <span>/ kWh</span>
           </span>
           <span className="plan-bottom">
-            {formatNumber(planSummary(plan).totalKwh)} kWh / 3 meses
-            <ArrowUpRight size={16} />
+            <span className="plan-card-footer-copy">
+              <span>{formatNumber(planSummary(plan).totalKwh)} kWh / 3 meses</span>
+              <span className="plan-card-action">Empezar compra</span>
+            </span>
+            <ArrowUpRight size={16} aria-hidden="true" />
           </span>
-        </label>
+        </Link>
       ))}
-    </fieldset>
+    </div>
   );
 }
