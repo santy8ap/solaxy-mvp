@@ -1,6 +1,5 @@
 import "server-only";
 import { headers } from "next/headers";
-import { connection } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -25,8 +24,6 @@ export async function knownUser(id: string) {
 
 /** Usuario de la sesión actual o null. Prepara la base de datos si hace falta. */
 export async function getSessionUser(): Promise<CurrentUser | null> {
-  // connection(): esto ocurre solo al momento de la visita (usa la hora actual y la BD).
-  await connection();
   const h = await headers();
   await ensureReady();
   const s = await auth.api.getSession({ headers: h });

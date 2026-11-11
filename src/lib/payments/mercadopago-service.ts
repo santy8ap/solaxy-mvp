@@ -214,6 +214,12 @@ export async function handleMercadoPagoNotification(
   if (!type && (req.query.get("topic") ?? body.topic)) return { status: 200, message: "Aviso IPN ignorado: se usan los webhooks firmados" };
   const dataId = req.query.get("data.id") ?? (body.data?.id != null ? String(body.data.id) : null);
   if (type !== "payment" || !dataId) return { status: 200, message: "Evento ignorado" };
+  // En modo producción (no sandbox) la firma del webhook es obligatoria. Sin MERCADOPAGO_WEBHOOK_SECRET
+  // se rechazan todas las notificaciones para evitar que un atacante acredite pagos inexistentes.
+  if (!cfg.webhookSecret && !cfg.sandbox) {
+    payLog("webhook_rechazado", { proveedor: "mercadopago", motivo: "webhook_no_configurado", dataId });
+    return { status: 401, message: "Webhook de Mercado Pago no configurado." };
+  }
   if (
     cfg.webhookSecret &&
     !verifyWebhookSignature({ xSignature: req.headers.get("x-signature"), xRequestId: req.headers.get("x-request-id"), dataId, secret: cfg.webhookSecret })

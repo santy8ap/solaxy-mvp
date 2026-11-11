@@ -44,7 +44,14 @@ function loadPresentation(): Presentation {
 let liveSpec: PlantSpec = PLANT;
 let liveEcon: Economics = ECONOMICS;
 
-let state: LiveState = { payload: null, status: "connecting", presentation: loadPresentation() };
+// Nota: la presentación guardada en sessionStorage no se lee aquí (module level)
+// para evitar un hydration mismatch entre servidor y cliente. Se carga en
+// subscribe() cuando el primer componente se monta en el navegador.
+let state: LiveState = {
+  payload: null,
+  status: "connecting",
+  presentation: { active: false, anchorReal: 0, anchorSim: 0, speed: 1 },
+};
 const listeners = new Set<() => void>();
 let source: EventSource | null = null;
 let simTimer: ReturnType<typeof setInterval> | null = null;
@@ -103,7 +110,15 @@ function restart() {
 
 export function subscribe(listener: () => void) {
   listeners.add(listener);
-  if (listeners.size === 1) restart();
+  if (listeners.size === 1) {
+    // Restaura la presentación guardada en sessionStorage (solo en cliente).
+    const saved = loadPresentation();
+    if (saved.active) {
+      state = { ...state, presentation: saved };
+      emit({ payload: livePayload(liveSpec, currentTime(saved), liveEcon) });
+    }
+    restart();
+  }
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0) stopAll();
@@ -112,12 +127,12 @@ export function subscribe(listener: () => void) {
 
 export const getSnapshot = () => state;
 
-const serverState: LiveState = {
+/** Snapshot para SSR: sin presentación activa, sin payload. */
+export const getServerSnapshot = (): LiveState => ({
   payload: null,
   status: "connecting",
   presentation: { active: false, anchorReal: 0, anchorSim: 0, speed: 1 },
-};
-export const getServerSnapshot = () => serverState;
+});
 
 export function setPresentation(next: { active: boolean; at?: number; speed?: number }) {
   const p: Presentation = next.active

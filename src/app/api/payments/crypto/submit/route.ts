@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const user = await getSessionUser();
     if (!user) return unauthorized();
     const b = Body.parse(await readJson(req));
-    if (!syncLimiter.hit(user.id)) return jsonError("Demasiadas consultas seguidas. Espera un momento.", 429);
+    if (!(await syncLimiter.hit(user.id))) return jsonError("Demasiadas consultas seguidas. Espera un momento.", 429);
     const s = await submitCryptoPayment({ userId: user.id, orderId: b.orderId, txHash: b.txHash });
     return Response.json({ order: toTxDTO(s.order), state: s.state, confirmations: s.confirmations, needed: s.needed });
   } catch (e) {

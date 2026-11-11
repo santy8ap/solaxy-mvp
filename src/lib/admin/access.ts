@@ -1,9 +1,8 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
-import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { ensureReady } from "@/lib/db/init";
-import { adminEmailAllowed, adminPin, authSecret } from "@/lib/env";
+import { adminEmailAllowed, adminPin, authSecret, baseUrl } from "@/lib/env";
 import { jsonError, knownUser, unauthorized, type CurrentUser } from "@/lib/session";
 import { createPinLimiter, pinMatches, sessionBinding, signAdminToken, verifyAdminToken } from "./token";
 
@@ -18,7 +17,7 @@ const limiter = (g.__solaxyPinLimiter ??= createPinLimiter({ max: 5, windowMs: 1
 const cookieOptions = (maxAgeMs: number) => ({
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  secure: process.env.NODE_ENV === "production" || baseUrl().startsWith("https://"),
   path: "/",
   maxAge: Math.floor(maxAgeMs / 1000),
 });
@@ -77,7 +76,6 @@ export interface AuthContext {
 
 /** Sesión actual y si está en modo administrador. */
 export async function getAuthContext(): Promise<AuthContext | null> {
-  await connection();
   const h = await headers();
   await ensureReady();
   const s = await auth.api.getSession({ headers: h });

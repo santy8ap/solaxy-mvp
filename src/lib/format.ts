@@ -26,7 +26,7 @@ export function formatCop(n: number, decimals = 0) {
 /** $ 1,2 M · $ 350 mil — para ejes y tarjetas compactas */
 export function formatCopCompact(n: number) {
   const a = Math.abs(n);
-  if (a >= 1e9) return `$ ${fmt(0, 1).format(n / 1e9)} mil M`;
+  if (a >= 1e9) return `$ ${fmt(0, 1).format(n / 1e9)} mil millones`;
   if (a >= 1e6) return `$ ${fmt(0, 1).format(n / 1e6)} M`;
   if (a >= 1e3) return `$ ${fmt(0, 0).format(n / 1e3)} mil`;
   return `$ ${fmt(0, 0).format(n)}`;

@@ -1,6 +1,6 @@
 import { isAddress } from "viem";
 import { z } from "zod";
-import { handleError, readJson } from "@/lib/api";
+import { handleError, validateBody } from "@/lib/api";
 import { createBuyOrder } from "@/lib/market";
 import { ASSETS } from "@/lib/rates";
 import { TOO_MANY_ORDERS, orderLimiter } from "@/lib/security/limits";
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
-    const b = Body.parse(await readJson(req));
-    if (!orderLimiter.hit(user.id)) return jsonError(TOO_MANY_ORDERS, 429);
+    const b = await validateBody(req, Body);
+    if (!(await orderLimiter.hit(user.id))) return jsonError(TOO_MANY_ORDERS, 429);
     const order = await createBuyOrder({
       userId: user.id,
       kw: b.kw,

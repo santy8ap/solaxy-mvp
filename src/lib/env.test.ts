@@ -51,11 +51,11 @@ describe("clave secreta", () => {
 });
 
 describe("PIN de administrador", () => {
-  it("en local usa el PIN de demostración si falta", async () => {
+  it("en local sin ADMIN_PIN no hay acceso de administrador (no hay valor por defecto)", async () => {
     vi.stubEnv("VERCEL", "");
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_PIN", "");
-    expect((await import("@/lib/env")).adminPin()).toBe("2026");
+    expect((await import("@/lib/env")).adminPin()).toBeNull();
   });
 
   it("en Vercel o fuera del modo demo, sin ADMIN_PIN no hay acceso de administrador", async () => {
@@ -81,9 +81,11 @@ describe("PIN de administrador", () => {
     expect(adminEmailAllowed("socio@solaxy.co")).toBe(false);
   });
 
-  it("en modo demo, sin ADMIN_EMAILS, cualquiera con el PIN puede entrar", async () => {
+  it("en modo demo, sin ADMIN_EMAILS, solo la cuenta de demostración puede ser administradora", async () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "");
-    expect((await import("@/lib/env")).adminEmailAllowed("demo@solaxy.local")).toBe(true);
+    const { adminEmailAllowed } = await import("@/lib/env");
+    expect(adminEmailAllowed("demo@solaxy.local")).toBe(true);
+    expect(adminEmailAllowed("otro@correo.com")).toBe(false);
   });
 });

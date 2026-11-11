@@ -34,7 +34,9 @@ export function refetch(url: string): Promise<void> {
     .then(async (res) => {
       const json = await res.json().catch(() => ({}));
       if (res.status === 401) {
-        window.location.replace(`${window.location.origin}/ingresar`);
+        // Deja que el componente decida qué mostrar (p. ej. un botón "Iniciar sesión"
+        // o un redireccionamiento controlado) en lugar de forzar un replace brusco.
+        e.error = "Sesión expirada. Inicia sesión de nuevo.";
         return;
       }
       if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status}`);

@@ -10,6 +10,7 @@ import { chainName } from "@/lib/wallet/types";
 import { Odometer } from "@/components/ui/odometer";
 import { toast } from "@/components/ui/toast";
 import { Modal } from "@/components/wallet/connect-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Topbar } from "./shell";
 import { STATUS_LABEL, explorerTxUrl, txAmount, txDetail, txTitle } from "./tx-meta";
 import { useLiveEarnings } from "./use-live-earnings";
@@ -188,6 +189,9 @@ export function WalletPage() {
   const wallet = useWallet();
   const earn = useLiveEarnings(p);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
+  const [withdrawConfirmAmount, setWithdrawConfirmAmount] = useState(0);
+  const [withdrawConfirmTxHash, setWithdrawConfirmTxHash] = useState<string | null>(null);
   const liveBalance = p ? p.balanceCop + ((earn?.earned ?? p.earnedCop) - p.earnedCop) : 0;
 
   return (

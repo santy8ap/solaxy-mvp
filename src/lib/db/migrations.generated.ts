@@ -50,5 +50,12 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "CREATE INDEX IF NOT EXISTS `tx_method_status_idx` ON `ledger_tx` (`method`,`status`);",
       "CREATE UNIQUE INDEX IF NOT EXISTS `tx_provider_uq` ON `ledger_tx` (`method`,`provider_id`);"
     ]
+  },
+  {
+    "id": "0003_rate_limit",
+    "statements": [
+      "-- Contadores de rate limiting persistentes en BD (funcionan entre instancias de Vercel).\nCREATE TABLE IF NOT EXISTS `rate_limit` (\n\t`rl_key` text NOT NULL,\n\t`window_start` integer NOT NULL,\n\t`count` integer NOT NULL DEFAULT 1,\n\tPRIMARY KEY(`rl_key`, `window_start`)\n);",
+      "CREATE INDEX IF NOT EXISTS `rate_limit_key_idx` ON `rate_limit` (`rl_key`);"
+    ]
   }
 ];

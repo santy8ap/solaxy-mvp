@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_rethrow } from "next/navigation";
-import { ZodError } from "zod";
+import { ZodError, type ZodSchema } from "zod";
 import { MarketError } from "@/lib/errors";
 
 /** Convierte errores conocidos en respuestas JSON claras para la interfaz. */
@@ -21,4 +21,10 @@ export async function readJson(req: Request): Promise<unknown> {
   } catch {
     return {};
   }
+}
+
+/** Valida el cuerpo JSON contra un esquema Zod. Lanza ZodError si falla. */
+export async function validateBody<T>(req: Request, schema: ZodSchema<T>): Promise<T> {
+  const body = await readJson(req);
+  return schema.parse(body);
 }
