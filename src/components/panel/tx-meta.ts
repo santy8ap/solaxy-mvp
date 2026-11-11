@@ -15,6 +15,7 @@ export function explorerTxUrl(t: Pick<TxDTO, "txHash" | "chainId">) {
 const METHOD: Record<string, string> = {
   mercadopago: "Mercado Pago",
   crypto: "Cripto",
+  transferencia: "Transferencia bancaria",
   manual: "Transferencia bancaria",
   demo: "Pago de prueba",
 };

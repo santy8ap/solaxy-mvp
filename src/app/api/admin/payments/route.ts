@@ -4,7 +4,7 @@ import { listPayments, paymentSummary, type PaymentFilter } from "@/lib/admin/pa
 import { handleError } from "@/lib/api";
 
 const FILTERS: PaymentFilter[] = ["todos", "en_proceso", "confirmadas", "fallidas", "por_reembolsar"];
-const METHODS = ["todos", "mercadopago", "crypto", "manual", "demo"] as const;
+const METHODS = ["todos", "mercadopago", "crypto", "transferencia", "manual", "demo"] as const;
 
 /** Órdenes de pago para la sección Pagos del admin. */
 export async function GET(req: Request) {

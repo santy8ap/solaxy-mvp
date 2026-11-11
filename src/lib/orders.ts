@@ -24,6 +24,7 @@ export const REAL_PAYMENT_METHODS: readonly PaymentMethod[] = [
   "mercadopago",
   "crypto",
   "manual",
+  "transferencia",
 ];
 
 /** Cuánto vive una orden de Mercado Pago sin pagar antes de considerarse abandonada. */

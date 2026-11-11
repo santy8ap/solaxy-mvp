@@ -18,6 +18,15 @@ function Stat({ label, value, note, href, alert = false }: { label: string; valu
   return <div className="border-b border-line py-5 pr-6">{href ? <Link href={href} className="block hover:opacity-80">{body}</Link> : body}</div>;
 }
 
+/** Lo que espera en Pagos: transferencias por confirmar en el banco y pagos que llegaron sin activar un mes. */
+function paymentsNote(d: Pick<OverviewDTO, "transfersToConfirm" | "paymentsToRefund">) {
+  const parts = [
+    d.transfersToConfirm ? `${d.transfersToConfirm} ${d.transfersToConfirm === 1 ? "transferencia" : "transferencias"} por confirmar` : null,
+    d.paymentsToRefund ? `${d.paymentsToRefund} por reembolsar` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "Ninguno";
+}
+
 export function AdminOverview() {
   const { data, error } = useJson<OverviewDTO>("/api/admin/overview", { refreshMs: 15_000 });
   if (!data) {
@@ -56,7 +65,7 @@ export function AdminOverview() {
         <Stat label="Se les debe a los clientes" value={formatCop(data.owedCop)} note="Venta de su energía menos lo ya pagado" />
         <Stat label="Pagado en retiros" value={formatCop(data.paidOutCop)} href="/admin/retiros" />
         <Stat label="Retiros por revisar" value={String(data.pendingWithdrawals)} note={data.pendingWithdrawals ? formatCop(data.pendingWithdrawalsCop) : "Ninguno pendiente"} href="/admin/retiros" alert={data.pendingWithdrawals > 0} />
-        <Stat label="Pagos por reembolsar" value={String(data.paymentsToRefund)} note={data.paymentsToRefund ? "Llegaron pero no activaron un mes" : "Ninguno"} href="/admin/pagos" alert={data.paymentsToRefund > 0} />
+        <Stat label="Pagos por revisar" value={String(data.transfersToConfirm + data.paymentsToRefund)} note={paymentsNote(data)} href="/admin/pagos" alert={data.transfersToConfirm + data.paymentsToRefund > 0} />
         <Stat label="Energía generada" value={`${formatNumber(data.generatedKwh)} kWh`} note="Por todos los planes" />
         <Stat label="Precio de venta" value={`${formatCop(data.settings.saleCopPerKwh)} / kWh`} href="/admin/planta" />
       </dl>

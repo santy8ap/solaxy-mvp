@@ -71,13 +71,15 @@ export function accountNotices(
       });
     } else if (
       tx.kind === "plan_mes" &&
-      [
+      ([
         "confirmada",
         "pendiente",
         "verificando",
         "por_reembolsar",
         "reembolsada",
-      ].includes(tx.status)
+      ].includes(tx.status) ||
+        // Una transferencia que el admin no encontró en el banco: la empresa debe saberlo para volver a pagar.
+        (tx.status === "fallida" && tx.method === "transferencia"))
     ) {
       const titles: Record<string, string> = {
         confirmada: "Pago del paquete confirmado",
@@ -85,6 +87,7 @@ export function accountNotices(
         verificando: "Estamos verificando tu pago",
         por_reembolsar: "Tu pago necesita revisión",
         reembolsada: "Reembolso registrado",
+        fallida: "No pudimos confirmar tu transferencia",
       };
       notices.push({
         id: `mov:${tx.id}:${tx.status}`,
@@ -97,7 +100,7 @@ export function accountNotices(
             ? `/pagos/resultado?ref=${encodeURIComponent(tx.id)}`
             : "/panel/billetera",
         action: "Ver movimiento",
-        priority: tx.status === "por_reembolsar",
+        priority: tx.status === "por_reembolsar" || tx.status === "fallida",
       });
     }
   }

@@ -12,14 +12,15 @@ import { formatCop, shortAddress } from "@/lib/format";
 import type { TxDTO } from "@/lib/portfolio";
 import { buildPayerProofMessage } from "@/lib/signing";
 import { useWallet } from "@/lib/wallet/context";
+import { accountTypeLabel } from "@/lib/withdrawal-schema";
 import { useUser } from "@/components/panel/user-context";
-import { ErrorNote } from "@/components/ui/field";
+import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 
 import type { CheckoutRequest } from "@/lib/checkout";
 export type { CheckoutRequest } from "@/lib/checkout";
 
-type MethodId = "mercadopago" | "USDT" | "BNB" | "test";
+type MethodId = "mercadopago" | "transfer" | "USDT" | "BNB" | "test";
 interface Method {
   id: MethodId;
   label: string;
@@ -52,6 +53,12 @@ function methodsFrom(
         : "Con Mercado Pago",
     });
   }
+  if (config.transfer.enabled)
+    list.push({
+      id: "transfer",
+      label: "Transferencia bancaria",
+      note: "Desde tu banco, sin tope por pago. El mes se activa cuando confirmamos el dinero",
+    });
   if (config.crypto.enabled) {
     const net =
       config.crypto.network === "bsc-testnet"
@@ -69,6 +76,17 @@ function methodsFrom(
       note: "Activa el mes al instante, sin mover dinero",
     });
   return list;
+}
+
+/** Qué queda cuando Mercado Pago no recibe el monto del mes. */
+function otherWays(config: AppConfigDTO) {
+  const ways = [
+    config.transfer.enabled && "por transferencia bancaria",
+    config.crypto.enabled && "con cripto",
+  ].filter(Boolean);
+  return ways.length
+    ? `este mes págalo ${ways.join(" o ")}.`
+    : "escríbenos para acordar cómo pagar este mes.";
 }
 
 class ApiError extends Error {
@@ -194,8 +212,7 @@ export function CheckoutPayment({
       {overMercadoPago && (
         <p className="mt-4 text-sm leading-relaxed text-mute">
           Mercado Pago recibe hasta {formatCop(config.mercadopago.pseMaxCop)}{" "}
-          por pago: este mes págalo con cripto, o escríbenos para pagarlo por
-          transferencia bancaria.
+          por pago: {otherWays(config)}
         </p>
       )}
       {method.id === "mercadopago" && (
@@ -205,6 +222,7 @@ export function CheckoutPayment({
           cardMaxCop={config.mercadopago.cardMaxCop}
         />
       )}
+      {method.id === "transfer" && <TransferPay {...props} />}
       {method.id === "test" && <TestPay {...props} />}
       {(method.id === "USDT" || method.id === "BNB") && (
         <CryptoPay
@@ -305,6 +323,229 @@ function MercadoPagoPay({
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+
+/* ───────────── Transferencia bancaria ───────────── */
+
+interface TransferInfo {
+  account: {
+    bank: string;
+    accountType: string;
+    accountNumber: string;
+    holder: string;
+    holderId: string;
+  };
+  reference: string;
+  amountCop: number;
+  planName: string;
+  periodIndex: number;
+  /** La transferencia de este mes que ya se reportó, si la hay */
+  order: TxDTO | null;
+}
+
+/** Un dato de la cuenta. Los que se pegan en el banco se copian con un toque. */
+function AccountDatum({
+  label,
+  value,
+  copy,
+}: {
+  label: string;
+  value: string;
+  copy?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-6 border-b border-line py-3">
+      <dt className="shrink-0 text-sm text-mute">{label}</dt>
+      <dd className="min-w-0 text-right">
+        {copy === undefined ? (
+          <span className="break-words">{value}</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              void navigator.clipboard?.writeText(copy).then(
+                () => toast(`${label}: copiado`),
+                () => toast("No se pudo copiar.", "error"),
+              )
+            }
+            className="num inline-flex max-w-full items-center gap-2 break-all text-left hover:text-ink"
+            aria-label={`Copiar ${label.toLowerCase()}: ${value}`}
+          >
+            {value}
+            <Copy size={12} className="shrink-0 text-mute" aria-hidden="true" />
+          </button>
+        )}
+      </dd>
+    </div>
+  );
+}
+
+function TransferPay({ request, onClose, onBusy }: PayProps) {
+  const [info, setInfo] = useState<TransferInfo | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reported, setReported] = useState<TxDTO | null>(null);
+  const [receipt, setReceipt] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // El resumen se vuelve a crear en cada render: los datos se piden de nuevo solo si cambia lo que se paga.
+  const body = JSON.stringify(target(request));
+
+  useEffect(() => {
+    let alive = true;
+    api<TransferInfo>("/api/payments/transfer", JSON.parse(body)).then(
+      (r) => {
+        if (!alive) return;
+        setInfo(r);
+        setReported(r.order);
+      },
+      (e) => {
+        if (!alive) return;
+        if (e instanceof ApiError && e.code === "perfil_incompleto")
+          void refetch("/api/profile");
+        setLoadError((e as Error).message);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [body]);
+
+  const report = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    onBusy(true);
+    setError(null);
+    try {
+      const r = await api<{ order: TxDTO }>("/api/payments/transfer/report", {
+        ...JSON.parse(body),
+        receipt: receipt.trim(),
+      });
+      setReported(r.order);
+      invalidateJson("/api/transactions");
+      void refetch("/api/portfolio");
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "perfil_incompleto")
+        void refetch("/api/profile");
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+      onBusy(false);
+    }
+  };
+
+  if (loadError)
+    return (
+      <div className="mt-6">
+        <ErrorNote>{loadError}</ErrorNote>
+        <div className="mt-7 flex justify-end">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  if (!info)
+    return (
+      <div
+        className="skeleton mt-6 h-64"
+        aria-busy="true"
+        aria-label="Cargando los datos para transferir"
+      />
+    );
+  if (reported)
+    return (
+      <div className="mt-8 border-t border-line-strong pt-6">
+        <p className="flex items-start gap-3 text-lg">
+          <Check size={22} strokeWidth={1.8} className="mt-0.5 shrink-0" />
+          <span>Recibimos el aviso de tu transferencia.</span>
+        </p>
+        <p className="mt-4 text-sm leading-relaxed text-fog">
+          Buscamos en el banco la transferencia de{" "}
+          <span className="num">{formatCop(reported.amountCop)}</span> con la
+          referencia <span className="num">{info.reference}</span>
+          {reported.txHash ? (
+            <>
+              {" "}
+              y el comprobante <span className="num">{reported.txHash}</span>
+            </>
+          ) : null}
+          . Cuando la confirmemos, el mes se activa y tu energía empieza a
+          contar. Mientras tanto la ves en tus movimientos como «En
+          verificación».
+        </p>
+        <div className="mt-7 flex flex-wrap justify-end gap-3">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
+            Cerrar
+          </button>
+          <Link href="/panel/billetera" className="btn btn-solid" onClick={onClose}>
+            Ver mis movimientos
+          </Link>
+        </div>
+      </div>
+    );
+
+  const a = info.account;
+  return (
+    <div className="mt-6">
+      <p className="text-sm leading-relaxed text-fog">
+        Transfiere el valor exacto desde una cuenta bancaria a tu nombre y
+        escribe la referencia en la descripción de la transferencia: con ella
+        encontramos tu pago en el banco.
+      </p>
+      <dl className="mt-5 border-t border-line-strong">
+        <AccountDatum label="Banco" value={a.bank} />
+        <AccountDatum label="Tipo de cuenta" value={accountTypeLabel(a.accountType)} />
+        <AccountDatum label="Número de cuenta" value={a.accountNumber} copy={a.accountNumber} />
+        <AccountDatum label="Titular" value={a.holder} />
+        <AccountDatum label="NIT o documento" value={a.holderId} copy={a.holderId} />
+        <AccountDatum label="Valor exacto" value={formatCop(info.amountCop)} copy={String(info.amountCop)} />
+        <AccountDatum label="Referencia" value={info.reference} copy={info.reference} />
+      </dl>
+      <form className="mt-7" onSubmit={(e) => void report(e)} noValidate>
+        <Field
+          label="Número del comprobante"
+          hint="Cuando el banco apruebe la transferencia, escribe aquí el número del comprobante y avísanos."
+        >
+          {(id, aria) => (
+            <input
+              id={id}
+              {...aria}
+              value={receipt}
+              onChange={(e) => setReceipt(e.target.value)}
+              maxLength={60}
+              autoComplete="off"
+              className="field num"
+            />
+          )}
+        </Field>
+        {error && <ErrorNote className="mt-5">{error}</ErrorNote>}
+        <div className="mt-7 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="btn btn-solid"
+            disabled={busy || receipt.trim().length < 4}
+          >
+            {busy ? (
+              <>
+                <Loader2 size={15} className="animate-spin" /> Enviando…
+              </>
+            ) : (
+              "Ya transferí"
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

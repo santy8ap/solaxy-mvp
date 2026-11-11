@@ -61,6 +61,7 @@ export async function receiptData(
   const methods: Record<string, string> = {
     mercadopago: "Mercado Pago",
     crypto: "Cripto",
+    transferencia: "Transferencia bancaria",
     manual: "Transferencia bancaria",
     demo: "Pago de prueba",
   };

@@ -21,6 +21,7 @@ import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { AdminTopbar } from "./shell";
 import { SupportSettingsForm } from "./support-settings";
+import { TransferSettingsForm } from "./transfer-settings";
 import type { OverviewDTO } from "./types";
 
 /** "8.000" o "8000" → 8000. Vacío o con letras → NaN, y la validación lo explica. */
@@ -338,6 +339,7 @@ export function AdminPlant() {
           contractedDailyKwh={data.contractedDailyKwh}
         />
       )}
+      <TransferSettingsForm />
       <SupportSettingsForm />
     </>
   );

@@ -3,6 +3,7 @@ import { googleEnabled, isDemoMode } from "@/lib/env";
 import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
 import { isMercadoPagoTest } from "@/lib/payments/mercadopago-account";
 import { DEFAULT_MP_LIMITS, mercadoPagoLimits } from "@/lib/payments/mercadopago-limits";
+import { getTransferAccount } from "@/lib/payments/transfer";
 
 /** Lo que el navegador necesita saber de la configuración del servidor (sin secretos). */
 export interface AppConfigDTO {
@@ -14,6 +15,8 @@ export interface AppConfigDTO {
    */
   mercadopago: { enabled: boolean; sandbox: boolean; cardMaxCop: number; pseMaxCop: number };
   crypto: { enabled: boolean; network: "bsc" | "bsc-testnet"; chainId: number; networkName: string; confirmations: number; explorer: string };
+  /** Transferencia bancaria a la cuenta que configuró el admin (sin tope por pago). Los datos se piden al pagar. */
+  transfer: { enabled: boolean };
 }
 
 export async function appConfig(): Promise<AppConfigDTO> {
@@ -24,5 +27,6 @@ export async function appConfig(): Promise<AppConfigDTO> {
     googleEnabled,
     mercadopago: { enabled: mp.enabled, sandbox: await isMercadoPagoTest(), ...(mp.enabled ? await mercadoPagoLimits() : DEFAULT_MP_LIMITS) },
     crypto: { enabled: c.enabled, network: c.network, chainId: c.chainId, networkName: c.networkName, confirmations: c.confirmations, explorer: c.explorer },
+    transfer: { enabled: (await getTransferAccount()) !== null },
   };
 }

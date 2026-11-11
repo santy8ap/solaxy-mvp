@@ -4,11 +4,12 @@ import { ledgerTx } from "@/lib/db/schema";
 import { isDemoMode } from "@/lib/env";
 import { MP_SANDBOX_NETWORK } from "./mercadopago-service";
 
-/** Pagos con dinero real: Mercado Pago (no de pruebas), cripto en la red principal y pagos registrados por el admin. */
+/** Pagos con dinero real: Mercado Pago (no de pruebas), cripto en la red principal, transferencias y pagos registrados por el admin. */
 export const realPaymentWhere = or(
   and(eq(ledgerTx.method, "mercadopago"), or(isNull(ledgerTx.network), ne(ledgerTx.network, MP_SANDBOX_NETWORK))),
   and(eq(ledgerTx.method, "crypto"), or(isNull(ledgerTx.chainId), ne(ledgerTx.chainId, 97))),
   eq(ledgerTx.method, "manual"),
+  eq(ledgerTx.method, "transferencia"),
 );
 
 /**

@@ -193,6 +193,8 @@ export const PAYMENT_METHODS = [
   "mercadopago",
   "crypto",
   "manual",
+  // La empresa transfiere a la cuenta de la empresa y el admin confirma con la referencia del banco.
+  "transferencia",
 ] as const;
 export type TxKind = (typeof TX_KINDS)[number];
 export type TxStatus = (typeof TX_STATUSES)[number];
@@ -333,6 +335,9 @@ export const ADMIN_ACTIONS = [
   "borrar_datos_prueba",
   "conciliar_devolucion",
   "devolucion_proveedor",
+  "config_transferencia",
+  "confirmar_transferencia",
+  "rechazar_transferencia",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

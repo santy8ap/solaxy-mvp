@@ -504,6 +504,17 @@ export async function adminOverview() {
     })
     .from(ledgerTx)
     .where(and(eq(ledgerTx.kind, "plan_mes"), collectedWhere()));
+  // Transferencias que reportaron las empresas y esperan que el admin las busque en el banco.
+  const [t] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(ledgerTx)
+    .where(
+      and(
+        eq(ledgerTx.kind, "plan_mes"),
+        eq(ledgerTx.method, "transferencia"),
+        inArray(ledgerTx.status, ["pendiente", "verificando"]),
+      ),
+    );
   const paidOut = Number(w?.paidCop ?? 0);
   return {
     settings,
@@ -524,6 +535,7 @@ export async function adminOverview() {
     pendingWithdrawals: Number(w?.pending ?? 0),
     pendingWithdrawalsCop: Number(w?.pendingCop ?? 0),
     paymentsToRefund: Number(p?.toRefund ?? 0),
+    transfersToConfirm: Number(t?.n ?? 0),
     recent: await listAudit(8),
   };
 }

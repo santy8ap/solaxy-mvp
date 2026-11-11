@@ -24,10 +24,10 @@ function isActive(path: string, href: string) {
   return href === "/admin" ? path === "/admin" : path.startsWith(href);
 }
 
-/** Cuántas cosas esperan al administrador: retiros por revisar y pagos por reembolsar. */
+/** Cuántas cosas esperan al administrador: retiros por revisar, transferencias por confirmar y pagos por reembolsar. */
 function usePending() {
-  const { data } = useJson<{ pendingWithdrawals: number; paymentsToRefund: number }>("/api/admin/overview", { refreshMs: 15_000 });
-  return { retiros: data?.pendingWithdrawals ?? 0, pagos: data?.paymentsToRefund ?? 0 };
+  const { data } = useJson<{ pendingWithdrawals: number; paymentsToRefund: number; transfersToConfirm?: number }>("/api/admin/overview", { refreshMs: 15_000 });
+  return { retiros: data?.pendingWithdrawals ?? 0, pagos: (data?.paymentsToRefund ?? 0) + (data?.transfersToConfirm ?? 0) };
 }
 
 const itemClass = (active: boolean) =>

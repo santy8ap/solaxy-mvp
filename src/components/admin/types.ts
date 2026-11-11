@@ -29,6 +29,8 @@ export interface OverviewDTO {
   pendingWithdrawals: number;
   pendingWithdrawalsCop: number;
   paymentsToRefund: number;
+  /** Transferencias reportadas por las empresas que esperan confirmación */
+  transfersToConfirm: number;
   recent: AuditEntry[];
 }
 
@@ -72,6 +74,9 @@ export interface AdminWithdrawal extends TxDTO {
 const ACTION_LABEL: Record<string, string> = {
   config_planta: "Configuración",
   pago_manual: "Pago manual",
+  config_transferencia: "Cuenta para transferencias",
+  confirmar_transferencia: "Transferencia confirmada",
+  rechazar_transferencia: "Transferencia rechazada",
   cerrar_plan: "Plan cerrado",
   aprobar_retiro: "Retiro aprobado",
   rechazar_retiro: "Retiro rechazado",

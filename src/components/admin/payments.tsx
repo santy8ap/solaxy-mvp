@@ -12,6 +12,7 @@ import type { ConfigCheck, ConfigStatus } from "@/lib/admin/config-status";
 import type { AdminPaymentRow, PaymentFilter } from "@/lib/admin/payments";
 import { useAppConfig } from "@/lib/client/use-app-config";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
+import { transferReference } from "@/lib/transfer-reference";
 import {
   formatAsset,
   formatCop,
@@ -36,7 +37,13 @@ const FILTERS: { id: PaymentFilter; label: string }[] = [
   { id: "por_reembolsar", label: "Reembolsos" },
 ];
 
-type MethodFilter = "todos" | "mercadopago" | "crypto" | "manual" | "demo";
+type MethodFilter =
+  | "todos"
+  | "mercadopago"
+  | "crypto"
+  | "transferencia"
+  | "manual"
+  | "demo";
 
 interface PaymentsResponse {
   payments: AdminPaymentRow[];
@@ -294,9 +301,14 @@ function PaymentActions({
   p: AdminPaymentRow;
   listUrl: string;
 }) {
-  const [mode, setMode] = useState<null | "hash" | "reembolso" | "conciliar">(
-    null,
-  );
+  const [mode, setMode] = useState<
+    | null
+    | "hash"
+    | "reembolso"
+    | "conciliar"
+    | "confirmar_transferencia"
+    | "rechazar_transferencia"
+  >(null);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const run = async (body: Record<string, unknown>, done: string) => {
@@ -333,11 +345,16 @@ function PaymentActions({
   const canAttach =
     p.method === "crypto" && p.status === "pendiente" && !p.providerId;
   const canRefund = p.status === "por_reembolsar";
+  // Transferencia que reportó la empresa: el admin la busca en el banco y la confirma o la rechaza.
+  const canReviewTransfer =
+    p.method === "transferencia" &&
+    (p.status === "pendiente" || p.status === "verificando");
   const explorer = p.method === "crypto" ? explorerTxUrl(p) : null;
   if (
     !canReverify &&
     !canAttach &&
     !canRefund &&
+    !canReviewTransfer &&
     !p.reviewRequired &&
     !explorer
   )
@@ -362,6 +379,38 @@ function PaymentActions({
             />{" "}
             Volver a verificar
           </button>
+        )}
+        {canReviewTransfer && (
+          <>
+            <button
+              type="button"
+              className="link"
+              aria-expanded={mode === "confirmar_transferencia"}
+              onClick={() =>
+                setMode(
+                  mode === "confirmar_transferencia"
+                    ? null
+                    : "confirmar_transferencia",
+                )
+              }
+            >
+              Confirmar la transferencia
+            </button>
+            <button
+              type="button"
+              className="link"
+              aria-expanded={mode === "rechazar_transferencia"}
+              onClick={() =>
+                setMode(
+                  mode === "rechazar_transferencia"
+                    ? null
+                    : "rechazar_transferencia",
+                )
+              }
+            >
+              No llegó
+            </button>
+          </>
         )}
         {canAttach && (
           <button
@@ -404,6 +453,22 @@ function PaymentActions({
           </a>
         )}
       </div>
+      {mode === "confirmar_transferencia" && (
+        <p className="mt-3 max-w-[68ch] text-sm text-fog">
+          Confírmala solo cuando veas en el banco {formatCop(p.amountCop)} con
+          la referencia{" "}
+          {p.subscriptionId && p.periodIndex
+            ? transferReference(p.subscriptionId, p.periodIndex)
+            : "del plan"}
+          . Al guardar se activa el mes y la energía empieza a contar.
+        </p>
+      )}
+      {mode === "rechazar_transferencia" && (
+        <p className="mt-3 max-w-[68ch] text-sm text-fog">
+          El comercializador verá el motivo en sus movimientos y podrá pagar el
+          mes otra vez.
+        </p>
+      )}
       {mode === "conciliar" && (
         <p className="mt-3 max-w-[68ch] text-sm text-fog">
           Registra el acuerdo solo después de revisar el saldo, los retiros y
@@ -416,20 +481,28 @@ function PaymentActions({
           className="mt-3 flex max-w-[560px] flex-wrap items-end gap-3"
           onSubmit={(e) => {
             e.preventDefault();
+            const v = value.trim();
             void (mode === "hash"
-              ? run(
-                  { action: "registrar_hash", txHash: value.trim() },
-                  "Hash registrado",
-                )
+              ? run({ action: "registrar_hash", txHash: v }, "Hash registrado")
               : mode === "conciliar"
                 ? run(
-                    { action: "conciliar", reference: value.trim() },
+                    { action: "conciliar", reference: v },
                     "Conciliación registrada",
                   )
-                : run(
-                    { action: "reembolsado", reference: value.trim() },
-                    "Reembolso registrado",
-                  ));
+                : mode === "confirmar_transferencia"
+                  ? run(
+                      { action: "confirmar_transferencia", reference: v },
+                      "Transferencia revisada",
+                    )
+                  : mode === "rechazar_transferencia"
+                    ? run(
+                        { action: "rechazar_transferencia", reason: v },
+                        "Transferencia revisada",
+                      )
+                    : run(
+                        { action: "reembolsado", reference: v },
+                        "Reembolso registrado",
+                      ));
           }}
         >
           <Field
@@ -438,7 +511,11 @@ function PaymentActions({
                 ? "Hash de la transacción (0x…)"
                 : mode === "conciliar"
                   ? "Conciliación y referencia del acuerdo"
-                  : "Referencia del reembolso"
+                  : mode === "confirmar_transferencia"
+                    ? "Referencia del movimiento en el banco"
+                    : mode === "rechazar_transferencia"
+                      ? "Motivo (lo ve el comercializador)"
+                      : "Referencia del reembolso"
             }
             className="min-w-[220px] flex-1"
           >
@@ -481,13 +558,23 @@ function PaymentRow({ p, listUrl }: { p: AdminPaymentRow; listUrl: string }) {
     .filter(Boolean)
     .join(", ");
   // Lo que respondió la pasarela o la red. En un pago de prueba o registrado a mano no agrega nada.
-  const provider = !p.providerStatus
-    ? null
-    : p.method === "mercadopago"
-      ? `Estado en Mercado Pago: ${p.providerStatus}`
-      : p.method === "crypto"
-        ? `En la red: ${p.providerStatus}`
-        : null;
+  const provider =
+    p.method === "transferencia"
+      ? [
+          p.subscriptionId && p.periodIndex
+            ? `Referencia en el banco: ${transferReference(p.subscriptionId, p.periodIndex)}`
+            : null,
+          p.txHash ? `comprobante de la empresa: ${p.txHash}` : null,
+        ]
+          .filter(Boolean)
+          .join(", ") || null
+      : !p.providerStatus
+        ? null
+        : p.method === "mercadopago"
+          ? `Estado en Mercado Pago: ${p.providerStatus}`
+          : p.method === "crypto"
+            ? `En la red: ${p.providerStatus}`
+            : null;
   return (
     <li className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 lg:grid-cols-[9.5rem_minmax(0,1fr)_auto] lg:items-baseline">
       <p className="num text-sm text-mute">{formatDateTime(p.createdAt)}</p>
@@ -615,7 +702,8 @@ export function AdminPayments() {
                 <option value="todos">Todos los medios</option>
                 <option value="mercadopago">Mercado Pago</option>
                 <option value="crypto">Cripto</option>
-                <option value="manual">Transferencia registrada</option>
+                <option value="transferencia">Transferencia bancaria</option>
+                <option value="manual">Registrado a mano</option>
                 <option value="demo">Pago de prueba</option>
               </select>
             </div>
