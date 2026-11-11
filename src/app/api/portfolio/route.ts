@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { handleError } from "@/lib/api";
+import { maybeReconcile } from "@/lib/jobs/tick";
 import { retryUserCryptoOrders } from "@/lib/payments/crypto-service";
 import { getPortfolio } from "@/lib/portfolio";
 import { getSessionUser, unauthorized } from "@/lib/session";
@@ -10,6 +11,7 @@ export async function GET() {
     if (!user) return unauthorized();
     // Si quedó un pago cripto verificando (por ejemplo, se cerró la pestaña), se reintenta sin demorar la respuesta.
     after(() => retryUserCryptoOrders(user.id).catch(() => undefined));
+    after(() => maybeReconcile());
     return Response.json(await getPortfolio(user.id));
   } catch (e) {
     return handleError(e);
