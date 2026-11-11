@@ -1,10 +1,10 @@
 /** Identidad de marca. Cambia aquí el nombre y los textos principales. */
 export const BRAND = {
-  name: "In World Energy",
+  name: "X green Energy",
   /** Sigla, para espacios pequeños y para las referencias de pago */
   shortName: "IWE",
-  legalName: "In World Energy S.A.S.",
-  tagline: "Energía solar por planes",
-  description: "Tu empresa compra energía solar por planes de 3 meses, la paga mes a mes y ve cómo rinde cada día.",
+  legalName: "X green Energy",
+  tagline: "Bienvenido al mundo de la energía",
+  description: "Bienvenido al mundo de la energía. Compra paquetes de energía solar, paga mes a mes y consulta su generación y utilidad como comercializador.",
   country: "Colombia",
 } as const;

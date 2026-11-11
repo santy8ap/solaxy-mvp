@@ -43,7 +43,7 @@ export function Hero() {
     <section className="mx-auto max-w-[1240px] px-5 pb-12 pt-14 sm:px-8 sm:pb-16 sm:pt-20">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[1fr_minmax(0,40ch)] lg:items-end lg:gap-16">
         <h1 className="display text-[clamp(3.6rem,11.5vw,9.5rem)]">
-          Compra energía solar por planes.
+          Bienvenido al mundo de la energía
         </h1>
         <div className="lg:pb-3">
           <p className="text-lg leading-relaxed text-fog">

@@ -117,7 +117,7 @@ describe("orden de un mes con Mercado Pago", () => {
     expect(row.subscriptionId).toMatch(/^PLN-[0-9A-F]{8}$/);
     const pref = mp.preferences.at(-1)!.body as { external_reference: string; items: { title: string; unit_price: number; currency_id: string }[]; back_urls: { success: string } };
     expect(pref.external_reference).toBe(o.orderId);
-    expect(pref.items[0]).toMatchObject({ title: "Plan 180 · mes 1 de 3 · In World Energy", unit_price: MONTH_180, currency_id: "COP" });
+    expect(pref.items[0]).toMatchObject({ title: "Plan 180 · mes 1 de 3 · X green Energy", unit_price: MONTH_180, currency_id: "COP" });
     expect(pref.back_urls.success).toMatch(new RegExp(`/pagos/resultado\\?ref=${o.orderId}$`));
     expect(o.checkoutUrl).toMatch(/^https:\/\/mp\.falso\/checkout\?pref=/);
     // Todavía no se paga: el plan es un borrador que no ocupa cupo ni se muestra.
