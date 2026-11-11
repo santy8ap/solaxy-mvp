@@ -46,6 +46,28 @@ describe("límite de intentos guardado en la base (compartido entre instancias d
     expect(await orders.hit("u", t + 1)).toBe(false);
   });
 
+  it("limpiar las ventanas viejas de un límite no reinicia la cuenta de otro con ventana más larga", async () => {
+    const client = await testClient();
+    const orders = createDbRateLimiter({ name: "ordenes", max: 2, windowMs: 600_000 }, client);
+    const sync = createDbRateLimiter({ name: "consultas", max: 40, windowMs: 60_000 }, client);
+    const t = 6_000_000;
+    expect(await orders.hit("u", t)).toBe(true);
+    expect(await orders.hit("u", t + 1)).toBe(true);
+    // Cinco minutos después, una consulta limpia sus ventanas de más de dos minutos…
+    expect(await sync.hit("u", t + 300_000)).toBe(true);
+    // …y el límite de órdenes sigue contando en su ventana de diez minutos.
+    expect(await orders.hit("u", t + 300_001)).toBe(false);
+  });
+
+  it("las filas de más de un día se borran, sea cual sea el límite", async () => {
+    const client = await testClient();
+    await client.execute({ sql: "INSERT INTO rate_limit (rl_key, window_start, count) VALUES (?, ?, 1)", args: ["auth:vieja", 1_000] });
+    const rl = createDbRateLimiter({ name: "ordenes", max: 3, windowMs: 60_000 }, client);
+    expect(await rl.hit("u", 1_000 + 86_400_000 + 1)).toBe(true);
+    const { rows } = await client.execute({ sql: "SELECT count(*) AS n FROM rate_limit WHERE rl_key = 'auth:vieja'" });
+    expect(Number(rows[0].n)).toBe(0);
+  });
+
   it("si la base falla, cuenta en memoria en lugar de bloquear los pagos", async () => {
     const broken = { execute: async () => Promise.reject(new Error("sin base")) } as unknown as Client;
     const rl = createDbRateLimiter({ name: "ordenes", max: 2, windowMs: 60_000 }, broken);

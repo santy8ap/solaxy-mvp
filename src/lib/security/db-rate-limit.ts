@@ -8,6 +8,9 @@ import { createRateLimiter } from "./rate-limit";
  * sola sentencia, así que dos solicitudes simultáneas no se saltan el límite.
  * Si la base falla, cuenta en memoria: un problema de la base no debe impedir pagar.
  */
+/** Ningún límite usa ventanas de más de una hora: lo de más de un día ya no cuenta para nada. */
+const DAY_MS = 86_400_000;
+
 export function createDbRateLimiter({ name, max, windowMs }: { name: string; max: number; windowMs: number }, dbClient?: Client) {
   const memory = createRateLimiter({ max, windowMs });
   const clientOf = async () => dbClient ?? (await import("@/lib/db")).client;
@@ -26,8 +29,15 @@ export function createDbRateLimiter({ name, max, windowMs }: { name: string; max
           args: [rlKey, windowStart],
         });
         const count = Number(res.rows[0]?.count ?? 1);
-        // Limpieza de ventanas viejas; si falla, no importa.
-        await c.execute({ sql: "DELETE FROM rate_limit WHERE window_start < ?", args: [now - 2 * windowMs] }).catch(() => {});
+        // Limpieza: las ventanas viejas de este límite y cualquier fila de más de un día. Solo las suyas:
+        // un límite de un minuto no puede borrar la cuenta de uno de diez. Si falla, no importa.
+        const prefix = `${name}:`;
+        await c
+          .execute({
+            sql: "DELETE FROM rate_limit WHERE (substr(rl_key, 1, ?) = ? AND window_start < ?) OR window_start < ?",
+            args: [prefix.length, prefix, now - 2 * windowMs, now - DAY_MS],
+          })
+          .catch(() => {});
         return count <= max;
       } catch {
         return memory.hit(rlKey, now);
