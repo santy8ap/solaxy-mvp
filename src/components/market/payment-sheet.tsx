@@ -78,7 +78,7 @@ export function Burst() {
             className="absolute left-1/2 top-1/2 h-2 w-2 rounded-full"
             style={
               {
-                background: i % 3 === 0 ? "#57d69b" : i % 3 === 1 ? "#f6b73c" : "#ffe3a3",
+                background: i % 3 === 0 ? "#b7b7b7" : i % 3 === 1 ? "#bcbcbc" : "#e4e4e4",
                 "--bx": `${Math.cos(angle) * dist}px`,
                 "--by": `${Math.sin(angle) * dist}px`,
                 animation: `burst 900ms cubic-bezier(0.22,1,0.36,1) ${i * 12}ms both`,
@@ -171,7 +171,7 @@ export function PaymentSheet({ request, onClose }: { request: PurchaseRequest | 
     <Modal open={!!request} onClose={busy ? () => {} : onClose} title={phase === "done" ? "¡Listo! Ya es tuya" : request?.title ?? "Compra"} wide>
       {request && (
         <div>
-          <div className="rounded-2xl border border-silicon-600/60 bg-silicon-950/40 p-4">
+          <div className="rounded-none border border-silicon-600/60 bg-silicon-950/40 p-4">
             <div className="flex items-baseline justify-between gap-4">
               <span className="text-silver-400">Energía</span>
               <span className="num font-semibold text-silver-50">{order ? formatKw(order.kw) : request.kw ? formatKw(request.kw) : "—"}</span>
@@ -196,8 +196,8 @@ export function PaymentSheet({ request, onClose }: { request: PurchaseRequest | 
 
           {phase === "qr" && order && (
             <div className="mt-5 grid items-center gap-5 sm:grid-cols-[auto_1fr]">
-              <div className="mx-auto rounded-2xl bg-white p-3">
-                <QRCodeSVG value={`SOLAXY-DEMO ${order.orderId} ${order.assetAmount.toFixed(6)} BTC (no enviar fondos)`} size={168} fgColor="#0a1430" />
+              <div className="mx-auto rounded-none bg-white p-3">
+                <QRCodeSVG value={`SOLAXY-DEMO ${order.orderId} ${order.assetAmount.toFixed(6)} BTC (no enviar fondos)`} size={168} fgColor="#141414" />
               </div>
               <div>
                 <p className="text-sm text-silver-300">
@@ -253,7 +253,7 @@ export function PaymentSheet({ request, onClose }: { request: PurchaseRequest | 
           </ol>
 
           {phase === "error" && (
-            <div className="mt-5 rounded-xl border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400" role="alert">
+            <div className="mt-5 rounded-none border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400" role="alert">
               {error}
             </div>
           )}

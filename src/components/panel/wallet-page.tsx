@@ -107,7 +107,7 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
     >
       {phase === "waiting" ? (
         <div>
-          <div className="flex items-center gap-3 rounded-2xl border border-dusk-400/40 bg-dusk-400/10 p-4">
+          <div className="flex items-center gap-3 rounded-none border border-dusk-400/40 bg-dusk-400/10 p-4">
             <Loader2 size={20} className="shrink-0 animate-spin text-dusk-300" />
             <p className="text-sm text-silver-200">
               Tu firma quedó verificada. El administrador está revisando el retiro de <span className="num font-semibold">{formatCop(amount)}</span>. Esta ventana se actualiza sola.
@@ -121,7 +121,7 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
       ) : phase === "rejected" ? (
         <div>
           <p className="text-silver-300">El administrador rechazó el retiro. El saldo volvió a estar disponible.</p>
-          <p className="mt-3 rounded-xl border border-silicon-600/60 bg-silicon-950/40 p-3 text-sm text-silver-200">Motivo: {rejection ?? "sin motivo"}</p>
+          <p className="mt-3 rounded-none border border-silicon-600/60 bg-silicon-950/40 p-3 text-sm text-silver-200">Motivo: {rejection ?? "sin motivo"}</p>
           <button type="button" className="btn btn-sun mt-6 w-full" onClick={close}>
             Entendido
           </button>
@@ -173,7 +173,7 @@ function WithdrawDialog({ open, onClose, max }: { open: boolean; onClose(): void
           <p className="mt-3 text-center text-xs text-silver-500">
             {demo
               ? "La firma autoriza el retiro. En modo demo no se mueve dinero."
-              : "La firma prueba que la wallet es tuya. El equipo de Solaxy revisa la solicitud y te envía el dinero."}
+              : "La firma prueba que la wallet es tuya. El equipo de In World Energy revisa la solicitud y te envía el dinero."}
           </p>
         </div>
       )}
@@ -192,11 +192,11 @@ export function WalletPage() {
 
   return (
     <>
-      <Topbar title="Billetera" subtitle="Tu wallet conectada, tu saldo en Solaxy y todos tus movimientos." />
+      <Topbar title="Billetera" subtitle="Tu wallet conectada, tu saldo en In World Energy y todos tus movimientos." />
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="panel cells p-6 sm:p-8" aria-labelledby="balance-title">
           <h2 id="balance-title" className="text-sm text-silver-400">
-            Saldo disponible en Solaxy
+            Saldo disponible en In World Energy
           </h2>
           <div className="mt-3 text-[clamp(1.6rem,6.4vw,3.2rem)]">
             <Odometer value={liveBalance} decimals={2} prefix={"$ "} className="display text-silver-50" />

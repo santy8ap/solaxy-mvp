@@ -36,14 +36,14 @@ export function availableMethods(config: AppConfigDTO | null): PayMethod[] {
 export function MethodSelect({ methods, value, onChange }: { methods: PayMethod[]; value: string; onChange(id: string): void }) {
   const groups: { title: string; items: PayMethod[] }[] = [
     { title: "Pesos colombianos", items: methods.filter((m) => m.kind === "mercadopago") },
-    { title: "Cripto directo a Solaxy", items: methods.filter((m) => m.kind === "crypto") },
+    { title: "Cripto directo a In World Energy", items: methods.filter((m) => m.kind === "crypto") },
     { title: "Modo demo", items: methods.filter((m) => m.kind === "demo") },
   ].filter((g) => g.items.length > 0);
 
   if (methods.length === 0) {
     return (
-      <p className="rounded-xl border border-sun-400/40 bg-sun-400/10 p-3 text-sm text-sun-200">
-        Los pagos todavía no están habilitados. El equipo de Solaxy está terminando de configurarlos.
+      <p className="rounded-none border border-sun-400/40 bg-sun-400/10 p-3 text-sm text-sun-200">
+        Los pagos todavía no están habilitados. El equipo de In World Energy está terminando de configurarlos.
       </p>
     );
   }
@@ -57,11 +57,11 @@ export function MethodSelect({ methods, value, onChange }: { methods: PayMethod[
             {g.items.map((m) => (
               <label
                 key={m.id}
-                className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-sm transition-colors ${
+                className={`flex cursor-pointer items-center gap-3 rounded-none border px-3.5 py-3 text-sm transition-colors ${
                   value === m.id ? "border-sun-400/70 bg-sun-400/10 text-silver-50" : "border-silicon-600/70 text-silver-300 hover:border-silicon-500"
                 }`}
               >
-                <input type="radio" name="pay" value={m.id} checked={value === m.id} onChange={() => onChange(m.id)} className="accent-[#f6b73c]" />
+                <input type="radio" name="pay" value={m.id} checked={value === m.id} onChange={() => onChange(m.id)} className="accent-[#bcbcbc]" />
                 <span>
                   <span className="block font-medium">{m.label}</span>
                   <span className="block text-xs text-silver-400">{m.note}</span>

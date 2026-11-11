@@ -40,7 +40,7 @@ export function Toaster() {
         <div
           key={t.id}
           role={t.tone === "error" ? "alert" : "status"}
-          className={`pointer-events-auto max-w-[480px] rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur ${
+          className={`pointer-events-auto max-w-[480px] rounded-none border px-4 py-3 text-sm shadow-2xl backdrop-blur ${
             t.tone === "error"
               ? "border-alert-400/50 bg-silicon-950/95 text-alert-400"
               : t.tone === "info"

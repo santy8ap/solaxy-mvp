@@ -12,13 +12,13 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: { default: `${BRAND.name} · Invierte en energía solar`, template: `%s · ${BRAND.name}` },
+  title: { default: `${BRAND.name} · Energía para empresas`, template: `%s · ${BRAND.name}` },
   description: BRAND.description,
   applicationName: BRAND.name,
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a1430",
+  themeColor: "#080808",
   colorScheme: "dark",
 };
 

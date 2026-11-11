@@ -42,7 +42,7 @@ async function api<T>(url: string, body?: unknown): Promise<T> {
 
 function Summary({ request, children }: { request: CheckoutRequest; children?: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-silicon-600/60 bg-silicon-950/40 p-4">
+    <div className="rounded-none border border-silicon-600/60 bg-silicon-950/40 p-4">
       <div className="flex items-baseline justify-between gap-4">
         <span className="text-silver-400">Energía</span>
         <span className="num font-semibold text-silver-50">{request.kw ? formatKw(request.kw, 1) : "—"}</span>
@@ -60,7 +60,7 @@ function Summary({ request, children }: { request: CheckoutRequest; children?: R
 function ProfileGate({ children }: { children: React.ReactNode }) {
   const { data, error } = useProfile();
   if (!data) {
-    return error ? <p className="mt-5 text-sm text-alert-400">{error}</p> : <div className="mt-5 h-24 animate-pulse rounded-2xl bg-silicon-800/60" aria-busy="true" />;
+    return error ? <p className="mt-5 text-sm text-alert-400">{error}</p> : <div className="mt-5 h-24 animate-pulse rounded-none bg-silicon-800/60" aria-busy="true" />;
   }
   if (!data.profile?.complete) {
     return (
@@ -78,7 +78,7 @@ function ProfileGate({ children }: { children: React.ReactNode }) {
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <p role="alert" className="mt-5 rounded-xl border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
+    <p role="alert" className="mt-5 rounded-none border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
       {message}
     </p>
   );
@@ -118,7 +118,7 @@ export function MercadoPagoSheet({ request, onClose }: { request: CheckoutReques
           <ProfileGate>
             <p className="mt-5 text-sm leading-relaxed text-silver-300">
               Te llevamos al checkout seguro de Mercado Pago. Allí eliges tarjeta o PSE (para pagar con Nequi o Daviplata, elige PSE y luego tu
-              billetera) y, al terminar, vuelves a Solaxy. Tus kW se asignan apenas el pago quede aprobado.
+              billetera) y, al terminar, vuelves a In World Energy. Tus kW se asignan apenas el pago quede aprobado.
             </p>
             {config?.mercadopago.sandbox && <p className="mt-2 text-xs text-sun-300">Modo de pruebas de Mercado Pago: no se cobra dinero real.</p>}
             {error && <ErrorBox message={error} />}
@@ -358,9 +358,9 @@ export function CryptoSheet({ request, asset, onClose }: { request: CheckoutRequ
 
           <ProfileGate>
             {quote && (phase === "listo" || phase === "enviando") && (
-              <div className="mt-5 rounded-2xl border border-sun-400/30 bg-sun-400/5 p-4 text-sm">
+              <div className="mt-5 rounded-none border border-sun-400/30 bg-sun-400/5 p-4 text-sm">
                 <p className="text-silver-200">
-                  Envía <span className="num font-semibold text-silver-50">{quote.amount} {quote.asset}</span> a la billetera de Solaxy en {quote.networkName}:
+                  Envía <span className="num font-semibold text-silver-50">{quote.amount} {quote.asset}</span> a la billetera de In World Energy en {quote.networkName}:
                 </p>
                 <div className="mt-2">
                   <CopyLine value={quote.to} />

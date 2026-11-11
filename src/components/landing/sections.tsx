@@ -68,27 +68,27 @@ function Glyph({ children, tone }: { children: React.ReactNode; tone: string }) 
 }
 
 const WALLETS = [
-  { name: "Trust Wallet", note: "Extensión o celular con QR", glyph: "TW", tone: "#7fb2ff" },
-  { name: "MetaMask", note: "Extensión del navegador", glyph: "MM", tone: "#f6b73c" },
+  { name: "Trust Wallet", note: "Extensión o celular con QR", glyph: "TW", tone: "#adadad" },
+  { name: "MetaMask", note: "Extensión del navegador", glyph: "MM", tone: "#bcbcbc" },
 ];
 
 function paymentMethods() {
   const methods: { name: string; note: string; glyph: string; tone: string }[] = [];
   if (mercadoPagoConfig().enabled) {
     methods.push(
-      { name: "Tarjeta", note: "Crédito o débito, con Mercado Pago", glyph: "$", tone: "#57d69b" },
-      { name: "PSE y Nequi", note: "Desde tu banco o tu billetera (por PSE)", glyph: "⇄", tone: "#7fb2ff" },
+      { name: "Tarjeta", note: "Crédito o débito, con Mercado Pago", glyph: "$", tone: "#b7b7b7" },
+      { name: "PSE y Nequi", note: "Desde tu banco o tu billetera (por PSE)", glyph: "⇄", tone: "#adadad" },
     );
   }
   if (cryptoConfig().enabled) {
     methods.push(
-      { name: "USDT", note: "BNB Smart Chain, directo a Solaxy", glyph: "₮", tone: "#57d69b" },
-      { name: "BNB", note: "BNB Smart Chain, directo a Solaxy", glyph: "◆", tone: "#f6b73c" },
+      { name: "USDT", note: "BNB Smart Chain, directo a In World Energy", glyph: "₮", tone: "#b7b7b7" },
+      { name: "BNB", note: "BNB Smart Chain, directo a In World Energy", glyph: "◆", tone: "#bcbcbc" },
       ...WALLETS,
     );
   }
   if (isDemoMode()) {
-    methods.push(...(cryptoConfig().enabled ? [] : WALLETS), { name: "Pago simulado", note: "Firma con tu wallet, sin mover fondos", glyph: "D", tone: "#a68bff" });
+    methods.push(...(cryptoConfig().enabled ? [] : WALLETS), { name: "Pago simulado", note: "Firma con tu wallet, sin mover fondos", glyph: "D", tone: "#999999" });
   }
   return methods;
 }
@@ -104,7 +104,7 @@ export function Payments() {
             Paga como prefieras
           </h2>
           <p className="mt-4 max-w-[42ch] text-silver-300">
-            Con tarjeta, PSE o Nequi a través de Mercado Pago, o con USDT y BNB desde tu wallet directo a la billetera de Solaxy. Tus kW se asignan apenas
+            Con tarjeta, PSE o Nequi a través de Mercado Pago, o con USDT y BNB desde tu wallet directo a la billetera de In World Energy. Tus kW se asignan apenas
             se confirma el pago.
           </p>
           {demo && <p className="mt-3 max-w-[42ch] text-sm text-silver-500">En modo demo también puedes simular un pago firmando con tu wallet, sin mover fondos.</p>}
@@ -132,7 +132,7 @@ const FAQ = [
   },
   {
     q: "¿De dónde salen las ganancias?",
-    a: "De vender la energía. Cada kWh entregado se cobra a la tarifa del momento, más alta en la hora pico de la noche. Solaxy descuenta el 18 % para operación, mantenimiento y la plataforma, y el resto se reparte según los kW de cada persona.",
+    a: "De vender la energía. Cada kWh entregado se cobra a la tarifa del momento, más alta en la hora pico de la noche. In World Energy descuenta el 18 % para operación, mantenimiento y la plataforma, y el resto se reparte según los kW de cada persona.",
   },
   {
     q: "¿Qué pasa de noche o cuando está nublado?",
@@ -144,7 +144,7 @@ const FAQ = [
   },
   {
     q: "¿Cómo retiro mis ganancias?",
-    a: "Tus ganancias se acumulan en tu saldo. Cuando quieras, pides el retiro a tu wallet en USDT y lo firmas; el equipo de Solaxy revisa la solicitud y te envía el dinero.",
+    a: "Tus ganancias se acumulan en tu saldo. Cuando quieras, pides el retiro a tu wallet en USDT y lo firmas; el equipo de In World Energy revisa la solicitud y te envía el dinero.",
   },
 ];
 
@@ -155,7 +155,7 @@ const FAQ_DEMO = {
 
 const FAQ_LIVE = {
   q: "¿Esto ya funciona con dinero real?",
-  a: "Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Mercado Pago, y los pagos en USDT o BNB llegan directo a la billetera de Solaxy en BNB Chain. La planta todavía no tiene sus medidores conectados a la plataforma: la telemetría es una simulación y las ganancias que ves son estimadas.",
+  a: "Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Mercado Pago, y los pagos en USDT o BNB llegan directo a la billetera de In World Energy en BNB Chain. La planta todavía no tiene sus medidores conectados a la plataforma: la telemetría es una simulación y las ganancias que ves son estimadas.",
 };
 
 export function Faq() {

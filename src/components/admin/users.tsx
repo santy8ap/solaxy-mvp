@@ -100,7 +100,7 @@ function AdjustForm({ user, onClose, onDone }: { user: AdminUserRow; onClose(): 
                 type="button"
                 aria-pressed={since === s.days}
                 onClick={() => setSince(s.days)}
-                className={`rounded-xl border px-2 py-2 text-sm ${since === s.days ? "border-dusk-400/70 bg-dusk-400/10 text-silver-50" : "border-silicon-600/70 text-silver-300"}`}
+                className={`rounded-none border px-2 py-2 text-sm ${since === s.days ? "border-dusk-400/70 bg-dusk-400/10 text-silver-50" : "border-silicon-600/70 text-silver-300"}`}
               >
                 {s.label}
               </button>
@@ -115,7 +115,7 @@ function AdjustForm({ user, onClose, onDone }: { user: AdminUserRow; onClose(): 
       </label>
       <input id="adj-reason" type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej.: compra por transferencia, bono de bienvenida" className="field mt-2" />
 
-      <div className="mt-6 rounded-2xl border border-silicon-600/60 bg-silicon-950/40 p-4 text-sm">
+      <div className="mt-6 rounded-none border border-silicon-600/60 bg-silicon-950/40 p-4 text-sm">
         <div className="flex justify-between">
           <span className="text-silver-400">Resultado</span>
           <span className="num font-semibold text-silver-50">

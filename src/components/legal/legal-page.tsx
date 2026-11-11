@@ -41,7 +41,7 @@ export function LegalPage({ title, intro, sections }: { title: string; intro: Re
         </nav>
         <article className="max-w-[72ch]">
           {!LEGAL.reviewed && (
-            <div role="note" className="mb-8 flex gap-3 rounded-2xl border border-sun-400/40 bg-sun-400/10 p-4 text-sm leading-relaxed text-sun-200">
+            <div role="note" className="mb-8 flex gap-3 rounded-none border border-sun-400/40 bg-sun-400/10 p-4 text-sm leading-relaxed text-sun-200">
               <FileWarning size={20} className="mt-0.5 shrink-0" />
               <p>
                 <strong>Borrador para revisión legal.</strong> Este texto es una plantilla: un abogado debe revisarlo y completar los datos

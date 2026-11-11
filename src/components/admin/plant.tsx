@@ -124,7 +124,7 @@ function PlantForm({ settings, reload }: { settings: PlantSettings; reload(): Pr
             </Field>
           </div>
           {problem && (
-            <p role="alert" className="mt-5 rounded-xl border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
+            <p role="alert" className="mt-5 rounded-none border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
               {problem}
             </p>
           )}

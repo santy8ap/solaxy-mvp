@@ -1,10 +1,10 @@
 /** Identidad de marca. Cambia aquí el nombre y los textos principales. */
 export const BRAND = {
-  name: "Solaxy",
-  legalName: "Solaxy S.A.S.",
+  name: "In World Energy",
+  legalName: "In World Energy",
   tagline: "Energía solar que rinde cada segundo",
   description:
-    "Compra kW de una planta solar, paga con Trust Wallet o cripto y mira crecer tus ganancias en tiempo real.",
+    "Energía solar para empresas. Consulta planes de energía, precios en pesos colombianos y el ciclo solar de In World Energy.",
   country: "Colombia",
   demoBadge: "Modo demo: la telemetría es simulada",
 } as const;

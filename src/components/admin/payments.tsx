@@ -138,7 +138,7 @@ function ConfigChecklist() {
                 {data.checks
                   .filter((c) => c.group === g)
                   .map((c) => (
-                    <li key={c.id} className="flex gap-3 rounded-xl border border-silicon-600/50 bg-silicon-950/30 p-3">
+                    <li key={c.id} className="flex gap-3 rounded-none border border-silicon-600/50 bg-silicon-950/30 p-3">
                       <span className="mt-0.5 shrink-0">{STATE_ICON[c.state]}</span>
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-silver-50">{c.title}</div>

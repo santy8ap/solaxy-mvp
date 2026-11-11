@@ -50,9 +50,9 @@ function Option({ title, note, icon, onClick, disabled = false }: { title: strin
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex w-full items-center gap-4 rounded-2xl border border-silicon-600/70 bg-silicon-950/40 p-4 text-left transition-colors hover:border-sun-400/60 hover:bg-silicon-800 disabled:opacity-50"
+      className="flex w-full items-center gap-4 rounded-none border border-silicon-600/70 bg-silicon-950/40 p-4 text-left transition-colors hover:border-sun-400/60 hover:bg-silicon-800 disabled:opacity-50"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-silicon-700">{icon}</span>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-none bg-silicon-700">{icon}</span>
       <span>
         <span className="block font-semibold text-silver-50">{title}</span>
         <span className="block text-sm text-silver-400">{note}</span>
@@ -77,8 +77,8 @@ export function ConnectWalletDialog() {
     <Modal open={wallet.connectOpen} onClose={close} title={uri ? "Escanea con Trust Wallet" : "Conecta tu wallet"}>
       {uri ? (
         <div className="text-center">
-          <div className="mx-auto w-fit rounded-2xl bg-white p-4">
-            <QRCodeSVG value={uri} size={232} level="M" bgColor="#ffffff" fgColor="#0a1430" />
+          <div className="mx-auto w-fit rounded-none bg-white p-4">
+            <QRCodeSVG value={uri} size={232} level="M" bgColor="#ffffff" fgColor="#141414" />
           </div>
           <p className="mx-auto mt-4 max-w-[34ch] text-sm text-silver-300">
             Abre Trust Wallet en tu celular, toca el ícono de escanear y apunta a este código.
@@ -117,7 +117,7 @@ export function ConnectWalletDialog() {
           <Option
             title="Trust Wallet en tu celular"
             note={WC_PROJECT_ID ? "Conexión con código QR (WalletConnect)" : "Requiere configurar el Project ID de Reown"}
-            icon={<span className="text-lg font-bold text-[#7fb2ff]">QR</span>}
+            icon={<span className="text-lg font-bold text-[#adadad]">QR</span>}
             onClick={() => void wallet.connectWalletConnect(setUri)}
             disabled={!WC_PROJECT_ID || wallet.status === "connecting"}
           />
@@ -135,7 +135,7 @@ export function ConnectWalletDialog() {
             </p>
           )}
           {wallet.error && (
-            <p role="alert" className="rounded-xl border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
+            <p role="alert" className="rounded-none border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
               {wallet.error}
             </p>
           )}
