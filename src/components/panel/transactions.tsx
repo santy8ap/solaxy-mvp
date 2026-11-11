@@ -69,7 +69,8 @@ export function Transactions({
     to: "",
   });
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<TxDTO | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = transactions.find((tx) => tx.id === selectedId) ?? null;
   const rows = filterTransactions(transactions, filter);
   const pageSize = compact ? 5 : 10;
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -189,7 +190,7 @@ export function Transactions({
                   <button
                     className="icon-button"
                     type="button"
-                    onClick={() => setSelected(tx)}
+                    onClick={() => setSelectedId(tx.id)}
                     aria-label={`Ver detalle de ${txTitle(tx)}, referencia ${tx.id}`}
                   >
                     <ArrowUpRight size={18} />
@@ -242,7 +243,7 @@ export function Transactions({
       )}
       <Dialog
         open={selected !== null}
-        onClose={() => setSelected(null)}
+        onClose={() => setSelectedId(null)}
         title="Detalle del movimiento"
       >
         {selected && (

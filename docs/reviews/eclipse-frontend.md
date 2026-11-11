@@ -52,4 +52,4 @@ Recorrido visual pendiente en un navegador compatible: inicio a 360, 390, 768 y 
 - Exploración del reloj solar por cursor, toque o control de rango con teclado. La hora del nuevo panel usa el reloj real, independiente del modo de presentación.
 - El saldo para solicitar retiros procede de la respuesta del servidor; no se incrementa mediante extrapolación del navegador. Se bloquea la acción si la carga falló o el saldo no cumple el mínimo.
 
-Validación local: ESLint sin advertencias, compilación de producción (51 rutas) y 180 pruebas aprobadas. Las pruebas nuevas cubren límites de fecha en Colombia, combinación de filtros y neutralización de fórmulas en CSV. Recorrido HTTP de inicio, catálogo, selección por URL e ingreso aprobado; el portafolio sin sesión devuelve 401.
+Validación local tras incorporar los cambios de seguridad de `main`: ESLint sin advertencias, compilación de producción (52 rutas) y 182 pruebas aprobadas. Las pruebas nuevas cubren límites de fecha en Colombia, combinación de filtros y neutralización de fórmulas en CSV. Recorrido HTTP de inicio, catálogo, selección por URL e ingreso aprobado; el portafolio sin sesión devuelve 401.

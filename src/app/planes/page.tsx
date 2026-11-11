@@ -11,7 +11,10 @@ async function Catalog({
 }: Pick<PageProps<"/planes">, "searchParams">) {
   const { plan } = await searchParams;
   return (
-    <PlanCatalog initialPlanId={typeof plan === "string" ? plan : undefined} />
+    <PlanCatalog
+      key={typeof plan === "string" ? plan : "04"}
+      initialPlanId={typeof plan === "string" ? plan : undefined}
+    />
   );
 }
 export default function PlansPage({ searchParams }: PageProps<"/planes">) {
