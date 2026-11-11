@@ -105,7 +105,7 @@ export function toSubscriptionDTO(
 ): SubscriptionDTO {
   const periods = periodsOf(sub);
   const state = stateOf(sub, now);
-  const paidUntil = Math.max(...sub.periods.map((p) => p.endsAt));
+  const paidUntil = Math.max(...periods.map((p) => p.endsAt));
   const monthlyKwh = sub.totalKwh / sub.months;
   return {
     id: sub.id,

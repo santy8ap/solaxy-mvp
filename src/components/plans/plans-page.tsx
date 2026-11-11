@@ -16,7 +16,7 @@ export function PlansPage() {
   const { data, now } = usePortfolio();
   const subs = data?.subscriptions ?? [];
   const payable = subs.filter(
-    (s) => s.state === "activa" || s.state === "en_pausa",
+    (s) => ["activa", "en_pausa", "en_revision"].includes(s.state),
   );
 
   const used =

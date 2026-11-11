@@ -6,6 +6,8 @@ import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
 export type Db = LibSQLDatabase<typeof schema>;
+/** Operaciones compartidas por la conexión y una transacción de libSQL. */
+export type DbSession = Pick<Db, "select" | "insert" | "update" | "run">;
 
 /**
  * Dónde vive la base de datos:
@@ -20,11 +22,18 @@ export function resolveDatabaseUrl(): string {
   return "file:./data/iwe.db";
 }
 
-export function createDb(url = resolveDatabaseUrl(), authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN) {
+export function createDb(
+  url = resolveDatabaseUrl(),
+  authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN,
+) {
   if (url.startsWith("file:")) {
     const file = url.slice("file:".length);
     mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
   }
   const client = createClient({ url, authToken: authToken || undefined });
-  return { client, db: drizzle(client, { schema }) as Db, isLocalFile: url.startsWith("file:") };
+  return {
+    client,
+    db: drizzle(client, { schema }) as Db,
+    isLocalFile: url.startsWith("file:"),
+  };
 }

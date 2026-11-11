@@ -1,7 +1,7 @@
 import { createDb, type Db } from "./client";
 import type { Client } from "@libsql/client";
 
-export type { Db } from "./client";
+export type { Db, DbSession } from "./client";
 
 type Holder = { client: Client; db: Db; isLocalFile: boolean };
 const g = globalThis as unknown as { __iweDb?: Holder };

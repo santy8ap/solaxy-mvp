@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { planPeriod, planSubscription } from "@/lib/db/schema";
+import { db, type DbSession } from "@/lib/db";
+import { paymentReview, planPeriod, planSubscription } from "@/lib/db/schema";
 import {
   GRACE_MS,
   nextPeriodWindow,
@@ -21,9 +21,12 @@ import { readConfig } from "@/lib/settings";
  */
 
 export type SubscriptionRow = typeof planSubscription.$inferSelect;
-export type PeriodRow = typeof planPeriod.$inferSelect;
+export type PeriodRow = typeof planPeriod.$inferSelect & {
+  stoppedAt?: number | null;
+};
 export interface SubscriptionWithPeriods extends SubscriptionRow {
   periods: PeriodRow[];
+  reviewRequired?: boolean;
 }
 
 /** Tolerancia al comparar kWh (los kWh diarios son números enteros; esto solo cubre el redondeo). */
@@ -40,7 +43,10 @@ export function periodsOf(sub: SubscriptionWithPeriods): Period[] {
     .map((p) => ({
       index: p.idx,
       startsAt: p.startsAt,
-      endsAt: cut == null ? p.endsAt : Math.min(p.endsAt, cut),
+      endsAt: Math.max(
+        p.startsAt,
+        Math.min(p.endsAt, cut ?? Infinity, p.stoppedAt ?? Infinity),
+      ),
     }));
 }
 
@@ -48,6 +54,7 @@ export function stateOf(
   sub: SubscriptionWithPeriods,
   now = Date.now(),
 ): SubscriptionState {
+  if (sub.reviewRequired) return "en_revision";
   return subscriptionState(sub, periodsOf(sub), now);
 }
 
@@ -59,7 +66,12 @@ function reservedDailyKwhSql(now: number, excludeSubscriptionId: string) {
   return sql`(
     SELECT coalesce(sum(s.daily_kwh), 0)
     FROM plan_subscription s
-    JOIN (SELECT subscription_id, count(*) AS n, max(ends_at) AS last_end FROM plan_period GROUP BY subscription_id) p ON p.subscription_id = s.id
+    JOIN (
+      SELECT per.subscription_id, count(*) AS n,
+        max(max(per.starts_at, min(per.ends_at, coalesce(r.occurred_at, per.ends_at)))) AS last_end
+      FROM plan_period per LEFT JOIN payment_review r ON r.payment_id = per.tx_id
+      GROUP BY per.subscription_id
+    ) p ON p.subscription_id = s.id
     WHERE s.cancelled_at IS NULL
       AND s.id != ${excludeSubscriptionId}
       AND ((p.n >= s.months AND p.last_end > ${now}) OR (p.n < s.months AND p.last_end + ${GRACE_MS} >= ${now}))
@@ -80,9 +92,10 @@ export async function contractedDailyKwh(
 
 async function withPeriods(
   subs: SubscriptionRow[],
+  session: DbSession = db,
 ): Promise<SubscriptionWithPeriods[]> {
   if (!subs.length) return [];
-  const periods = await db
+  const periods = await session
     .select()
     .from(planPeriod)
     .where(
@@ -92,10 +105,29 @@ async function withPeriods(
       ),
     )
     .orderBy(asc(planPeriod.idx));
+  const reviews = await session
+    .select()
+    .from(paymentReview)
+    .where(
+      inArray(
+        paymentReview.subscriptionId,
+        subs.map((s) => s.id),
+      ),
+    );
+  const cutByPayment = new Map(reviews.map((r) => [r.paymentId, r.occurredAt]));
   const bySub = new Map<string, PeriodRow[]>();
   for (const p of periods)
-    bySub.set(p.subscriptionId, [...(bySub.get(p.subscriptionId) ?? []), p]);
-  return subs.map((s) => ({ ...s, periods: bySub.get(s.id) ?? [] }));
+    bySub.set(p.subscriptionId, [
+      ...(bySub.get(p.subscriptionId) ?? []),
+      { ...p, stoppedAt: cutByPayment.get(p.txId) ?? null },
+    ]);
+  return subs.map((s) => ({
+    ...s,
+    periods: bySub.get(s.id) ?? [],
+    reviewRequired: reviews.some(
+      (r) => r.subscriptionId === s.id && r.resolvedAt == null,
+    ),
+  }));
 }
 
 /** Planes del usuario que ya empezaron (los borradores sin pagar no se muestran). */
@@ -122,12 +154,13 @@ export async function listAllSubscriptions(): Promise<
 
 export async function getSubscription(
   id: string,
+  session: DbSession = db,
 ): Promise<SubscriptionWithPeriods | null> {
-  const [sub] = await db
+  const [sub] = await session
     .select()
     .from(planSubscription)
     .where(eq(planSubscription.id, id));
-  return sub ? (await withPeriods([sub]))[0] : null;
+  return sub ? (await withPeriods([sub], session))[0] : null;
 }
 
 /** El catálogo vigente con el cupo de la planta. */
@@ -237,6 +270,11 @@ export async function resolvePlanPayment(
     if (!sub || sub.userId !== userId)
       throw new MarketError("No encontramos ese plan en tu cuenta", 404);
     const state = stateOf(sub, now);
+    if (state === "en_revision")
+      throw new MarketError(
+        "Este paquete tiene una devolución en revisión. Contacta a soporte antes de pagar otro mes.",
+        409,
+      );
     if (state === "completada")
       throw new MarketError("Este plan ya tiene todos sus meses pagados.", 409);
     if (state === "vencida" || state === "cancelada")
@@ -277,7 +315,11 @@ export async function resolvePlanPayment(
 }
 
 export type ActivationOutcome =
-  "activado" | "sin_cupo" | "mes_pagado" | "plan_cerrado";
+  | "activado"
+  | "sin_cupo"
+  | "mes_pagado"
+  | "plan_cerrado"
+  | "plan_en_revision";
 
 function isUniqueViolation(err: unknown) {
   return (
@@ -299,24 +341,29 @@ export async function activatePeriod(
     kwh: number | null;
   },
   now = Date.now(),
+  context?: { session: DbSession; plantDailyKwh: number },
 ): Promise<ActivationOutcome> {
+  const session = context?.session ?? db;
   const sub = order.subscriptionId
-    ? await getSubscription(order.subscriptionId)
+    ? await getSubscription(order.subscriptionId, session)
     : null;
   if (!sub || sub.cancelledAt != null) return "plan_cerrado";
+  if (sub.reviewRequired) return "plan_en_revision";
+  // Conserva las fechas de otros períodos pagados y usa el corte efectivo del período devuelto.
   const window = nextPeriodWindow(periodsOf(sub), now);
   if (sub.periods.length >= sub.months || order.periodIndex !== window.index)
     return "mes_pagado";
 
   // Un plan activo o en pausa ya tiene su cupo apartado; uno nuevo (o vencido) lo pide ahora.
   const holdsCapacity = reservesCapacity(stateOf(sub, now));
-  const { plantDailyKwh } = await readConfig();
+  const plantDailyKwh =
+    context?.plantDailyKwh ?? (await readConfig()).plantDailyKwh;
   const fits = holdsCapacity
     ? sql`1 = 1`
     : sql`${reservedDailyKwhSql(now, sub.id)} + ${sub.dailyKwh} <= ${plantDailyKwh + EPS_KWH}`;
   const kwh = order.kwh ?? sub.totalKwh / sub.months;
   try {
-    const res = await db.run(sql`
+    const res = await session.run(sql`
       INSERT INTO plan_period (id, subscription_id, idx, starts_at, ends_at, kwh, amount_cop, tx_id, created_at)
       SELECT ${newId("per-")}, ${sub.id}, ${window.index}, ${window.startsAt}, ${window.endsAt}, ${kwh}, ${order.amountCop}, ${order.id}, ${now}
       WHERE ${fits}
@@ -327,7 +374,7 @@ export async function activatePeriod(
     throw err;
   }
   if (sub.startedAt == null)
-    await db
+    await session
       .update(planSubscription)
       .set({ startedAt: now })
       .where(

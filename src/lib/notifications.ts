@@ -20,6 +20,17 @@ export function accountNotices(
 ): AccountNotice[] {
   const notices: AccountNotice[] = [];
   for (const sub of data.subscriptions) {
+    if (sub.state === "en_revision") {
+      notices.push({
+        id: `revision:${sub.id}`,
+        title: "Tu cuenta necesita conciliación",
+        detail: `${sub.planName}: el proveedor reportó una devolución. Revisa el movimiento con soporte; los retiros quedan en revisión.`,
+        at: data.asOf,
+        href: "/ayuda",
+        action: "Consultar ayuda",
+        priority: true,
+      });
+    }
     if (
       !["activa", "en_pausa"].includes(sub.state) ||
       sub.paidMonths >= sub.months ||

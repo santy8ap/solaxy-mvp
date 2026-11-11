@@ -5,14 +5,23 @@ import { formatCop, formatDate, formatNumber } from "@/lib/format";
 import type { SubscriptionDTO } from "@/lib/portfolio";
 import { PLAN_STATE, Status } from "@/components/ui/status";
 /** Qué le pasa al plan y qué puede hacer el usuario, en una frase. */
-function nextStep(s: SubscriptionDTO) {
+function nextStep(s: SubscriptionDTO, now: number | null) {
   const next = s.paidMonths + 1;
   switch (s.state) {
+    case "en_revision":
+      return "El proveedor reportó una devolución. El período afectado dejó de generar; contacta a soporte para revisar tu cuenta antes de retirar o pagar otra mensualidad.";
     case "activa":
       return s.paidMonths < s.months
         ? `Paga el mes ${next} antes del ${formatDate(s.paidUntil)} para que tu energía no se pause.`
         : `Todos los meses están pagados. El plan termina el ${formatDate(s.paidUntil)}.`;
     case "en_pausa":
+      if (now != null) {
+        const scheduled = s.periods.find(
+          (p) => p.startsAt > now && p.endsAt > p.startsAt,
+        );
+        if (scheduled)
+          return `Tu próximo período ya está pagado y comienza el ${formatDate(scheduled.startsAt)}. La energía se retomará en esa fecha.`;
+      }
       return `En pausa desde el ${formatDate(s.paidUntil)}. Paga el mes ${next} antes del ${formatDate(s.graceEndsAt ?? s.paidUntil)} o el plan se cierra.`;
     case "completada":
       return `Terminó el ${formatDate(s.paidUntil)}.`;
@@ -41,7 +50,7 @@ export function PlanRow({
           <Status tone={state.tone}>{state.label}</Status>
         </div>
         <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-fog">
-          {nextStep(sub)}
+          {nextStep(sub, now)}
         </p>
       </div>
 
@@ -57,10 +66,12 @@ export function PlanRow({
             const done =
               !p || now == null
                 ? 0
-                : Math.min(
-                    1,
-                    Math.max(0, (now - p.startsAt) / (p.endsAt - p.startsAt)),
-                  );
+                : p.endsAt <= p.startsAt
+                  ? 1
+                  : Math.min(
+                      1,
+                      Math.max(0, (now - p.startsAt) / (p.endsAt - p.startsAt)),
+                    );
             return (
               <span
                 key={i}
@@ -100,6 +111,11 @@ export function PlanRow({
           className={`btn ${sub.state === "en_pausa" ? "btn-solid" : "btn-ghost"} lg:justify-self-end`}
         >
           Pagar el mes {sub.paidMonths + 1}
+        </Link>
+      )}
+      {sub.state === "en_revision" && (
+        <Link href="/ayuda" className="btn btn-ghost lg:justify-self-end">
+          Revisar con soporte
         </Link>
       )}
     </li>

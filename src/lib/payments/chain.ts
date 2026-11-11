@@ -1,4 +1,9 @@
-import { TransactionNotFoundError, TransactionReceiptNotFoundError, createPublicClient, http } from "viem";
+import {
+  TransactionNotFoundError,
+  TransactionReceiptNotFoundError,
+  createPublicClient,
+  http,
+} from "viem";
 import type { ChainReceipt, ChainTx } from "./crypto";
 
 /** Lo único que la verificación necesita de la blockchain. Inyectable para probar sin red. */
@@ -14,10 +19,16 @@ export interface ChainReader {
 const readers = new Map<string, ChainReader>();
 
 /** Lector por JSON-RPC (nodo público de BNB Chain o BSC_RPC_URL). */
-export function rpcChainReader(rpcUrl: string): ChainReader {
-  const cached = readers.get(rpcUrl);
+export function rpcChainReader(
+  rpcUrl: string,
+  { timeout = 10_000, retryCount = 1 } = {},
+): ChainReader {
+  const key = `${rpcUrl}:${timeout}:${retryCount}`;
+  const cached = readers.get(key);
   if (cached) return cached;
-  const client = createPublicClient({ transport: http(rpcUrl, { timeout: 10_000, retryCount: 1 }) });
+  const client = createPublicClient({
+    transport: http(rpcUrl, { timeout, retryCount }),
+  });
   const reader: ChainReader = {
     getChainId: () => client.getChainId(),
     async getTransaction(hash) {
@@ -32,7 +43,15 @@ export function rpcChainReader(rpcUrl: string): ChainReader {
     async getReceipt(hash) {
       try {
         const r = await client.getTransactionReceipt({ hash });
-        return { status: r.status, blockNumber: r.blockNumber, logs: r.logs.map((l) => ({ address: l.address, topics: [...l.topics], data: l.data })) };
+        return {
+          status: r.status,
+          blockNumber: r.blockNumber,
+          logs: r.logs.map((l) => ({
+            address: l.address,
+            topics: [...l.topics],
+            data: l.data,
+          })),
+        };
       } catch (err) {
         if (err instanceof TransactionReceiptNotFoundError) return null;
         throw err;
@@ -44,6 +63,6 @@ export function rpcChainReader(rpcUrl: string): ChainReader {
       return Number(b.timestamp);
     },
   };
-  readers.set(rpcUrl, reader);
+  readers.set(key, reader);
   return reader;
 }
