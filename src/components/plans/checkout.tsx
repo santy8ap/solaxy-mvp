@@ -17,6 +17,7 @@ import { ProfileForm, useProfile } from "@/components/profile/profile-form";
 import { ErrorNote } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "@/components/ui/toast";
+import { PriceBreakdown } from "./price-breakdown";
 
 /** Lo que se va a pagar: el primer mes de un plan nuevo o el mes siguiente de un plan del usuario. */
 export interface CheckoutRequest {
@@ -28,6 +29,9 @@ export interface CheckoutRequest {
   /** Energía del mes (kWh) y monto estimado: el servidor calcula el definitivo. */
   kwh: number;
   amountCop: number;
+  /** Precios del paquete que se paga: los contratados en renovaciones. */
+  priceCopPerKwh: number;
+  saleCopPerKwh: number;
 }
 
 type MethodId = "mercadopago" | "USDT" | "BNB" | "test";
@@ -85,14 +89,14 @@ function Row({ label, children, strong = false }: { label: string; children: Rea
   );
 }
 
-/** Antes del primer pago: datos de la empresa y términos aceptados. */
+/** Antes del primer pago: datos personales del comercializador y términos aceptados. */
 function ProfileGate({ children }: { children: React.ReactNode }) {
   const { data, error } = useProfile();
   if (!data) return error ? <ErrorNote className="mt-6">{error}</ErrorNote> : <div className="skeleton mt-6 h-24" aria-busy="true" />;
   if (!data.profile?.complete) {
     return (
       <div className="mt-8">
-        <p className="mb-8 leading-relaxed text-fog">Antes de pagar, registra tu empresa. Solo te lo pedimos una vez.</p>
+        <p className="mb-8 leading-relaxed text-fog">Antes de pagar, completa tus datos personales como comercializador. Solo te lo pedimos una vez.</p>
         <ProfileForm submitLabel="Guardar y continuar" onSaved={() => toast("Datos guardados. Ya puedes pagar.")} />
       </div>
     );
@@ -100,7 +104,7 @@ function ProfileGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Diálogo de pago de un mes: resumen, datos de la empresa (si faltan), medio de pago y el pago. */
+/** Diálogo de pago: resumen, identidad del comercializador, medio de pago y confirmación. */
 export function CheckoutDialog({ request, onClose }: { request: CheckoutRequest | null; onClose(): void }) {
   const { config } = useAppConfig();
   const methods = methodsFrom(config);
@@ -128,6 +132,7 @@ export function CheckoutDialog({ request, onClose }: { request: CheckoutRequest 
               {formatCop(request.amountCop)}
             </Row>
           </dl>
+          <PriceBreakdown monthlyKwh={request.kwh} months={request.months} priceCopPerKwh={request.priceCopPerKwh} saleCopPerKwh={request.saleCopPerKwh} />
           <ProfileGate>
             {!config ? (
               <div className="skeleton mt-6 h-32" aria-busy="true" />

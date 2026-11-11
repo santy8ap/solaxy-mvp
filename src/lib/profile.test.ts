@@ -16,12 +16,31 @@ beforeAll(async () => {
   dbMod = await import("@/lib/db");
   schema = await import("@/lib/db/schema");
   drizzle = await import("drizzle-orm");
-  for (const id of ["inv-010", "inv-011", "inv-012", "inv-013", "inv-014", "inv-015"]) await createUser(id, { profile: false });
+  for (const id of ["inv-010", "inv-011", "inv-012", "inv-013", "inv-014", "inv-015", "inv-016", "inv-017", "inv-018"]) await createUser(id, { profile: false });
 }, 120_000);
 
 const input = { companyName: "Energía Andina S.A.S.", nit: "900.123.456-8", fullName: "Laura Gómez", docType: "CC", docNumber: "1.036.123.456", phone: "300 123 4567", city: "Medellín", acceptTerms: true };
 
-describe("datos de la empresa", () => {
+const personal = { fullName: "Laura Gómez", docType: "CC", docNumber: "1.036.123.456", phone: "300 123 4567", city: "Medellín", acceptTerms: true };
+
+describe("datos del comercializador", () => {
+  it("guarda un perfil personal y permite continuar al pago sin razón social ni NIT", async () => {
+    const saved = await profile.saveProfile("inv-016", personal);
+    expect(saved).toMatchObject({ companyName: "", nit: "", fullName: "Laura Gómez", docNumber: "1036123456", complete: true });
+    await expect(profile.requireCompleteProfile("inv-016")).resolves.toEqual(saved);
+  });
+
+  it("conserva los datos históricos al actualizar únicamente la identidad personal", async () => {
+    await profile.saveProfile("inv-017", input);
+    const saved = await profile.saveProfile("inv-017", { ...personal, city: "Envigado" });
+    expect(saved).toMatchObject({ companyName: input.companyName, nit: "900123456-8", city: "Envigado", complete: true });
+  });
+
+  it("no deja comprar con datos personales incompletos aunque los términos estén vigentes", async () => {
+    await profile.saveProfile("inv-018", personal);
+    await dbMod.db.update(schema.companyProfile).set({ phone: "" }).where(drizzle.eq(schema.companyProfile.userId, "inv-018"));
+    await expect(profile.requireCompleteProfile("inv-018")).rejects.toMatchObject({ status: 412, extra: { code: "perfil_incompleto" } });
+  });
   it("guarda los datos normalizados con la versión de los términos y la fecha", async () => {
     const before = Date.now();
     const p = await profile.saveProfile("inv-010", input);
@@ -55,10 +74,10 @@ describe("datos de la empresa", () => {
     await expect(profile.requireCompleteProfile("inv-014")).rejects.toMatchObject({ status: 412 });
   });
 
-  it("un perfil que viene del modelo anterior (sin razón social ni NIT) debe completarse", async () => {
+  it("reconoce perfiles personales anteriores sin exigirles datos de empresa", async () => {
     const now = Date.now();
     await dbMod.db.insert(schema.companyProfile).values({ userId: "inv-015", companyName: "", nit: "", fullName: "Laura Gómez", docType: "CC", docNumber: "1036123456", phone: "3001234567", city: "Medellín", termsVersion: profile.TERMS_VERSION, termsAcceptedAt: now, createdAt: now, updatedAt: now });
-    expect((await profile.getProfile("inv-015"))?.complete).toBe(false);
-    await expect(profile.requireCompleteProfile("inv-015")).rejects.toMatchObject({ status: 412, message: expect.stringMatching(/datos de tu empresa/) });
+    expect((await profile.getProfile("inv-015"))?.complete).toBe(true);
+    await expect(profile.requireCompleteProfile("inv-015")).resolves.toMatchObject({ fullName: "Laura Gómez", complete: true });
   });
 });

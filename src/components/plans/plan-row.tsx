@@ -6,7 +6,7 @@ import type { CheckoutRequest } from "./checkout";
 
 /** La orden para pagar el mes siguiente de un plan del usuario. */
 export function nextMonthRequest(s: SubscriptionDTO): CheckoutRequest {
-  return { subscriptionId: s.id, planName: s.planName, periodIndex: s.paidMonths + 1, months: s.months, kwh: s.monthlyKwh, amountCop: s.monthlyCop };
+  return { subscriptionId: s.id, planName: s.planName, periodIndex: s.paidMonths + 1, months: s.months, kwh: s.monthlyKwh, amountCop: s.monthlyCop, priceCopPerKwh: s.priceCopPerKwh, saleCopPerKwh: s.saleCopPerKwh };
 }
 
 /** Qué le pasa al plan y qué puede hacer el usuario, en una frase. */

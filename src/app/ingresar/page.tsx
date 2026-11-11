@@ -22,7 +22,7 @@ async function Options({ searchParams }: { searchParams: Promise<Params> }) {
     <>
       {chosen && (
         <p className="mb-7 border-l-2 border-ink pl-4 text-sm leading-relaxed text-fog">
-          Elegiste el <strong className="font-medium text-ink">{chosen.name}</strong>. Entra para registrar tu empresa y pagar el primer mes.
+          Elegiste el <strong className="font-medium text-ink">{chosen.name}</strong>. Entra como comercializador, completa tus datos personales y paga el primer mes.
         </p>
       )}
       <LoginOptions googleEnabled={googleEnabled} demoMode={isDemoMode()} defaultRole={rol === "admin" ? "admin" : "user"} planId={chosen?.id} />

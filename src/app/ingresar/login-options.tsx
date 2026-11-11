@@ -14,7 +14,7 @@ function GoogleG() {
 type Role = "user" | "admin";
 
 const ROLES: { id: Role; title: string; note: string }[] = [
-  { id: "user", title: "Empresa", note: "Tus planes, tu energía y tus retiros" },
+  { id: "user", title: "Comercializador", note: "Tus planes, tu energía y tus retiros" },
   { id: "admin", title: "Administrador", note: "Clientes, pagos y retiros" },
 ];
 

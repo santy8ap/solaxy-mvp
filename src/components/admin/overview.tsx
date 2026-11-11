@@ -51,7 +51,7 @@ export function AdminOverview() {
       </section>
 
       <dl className="mt-10 grid border-t border-line-strong sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Planes generando" value={String(data.activePlans)} note={data.pausedPlans ? `${data.pausedPlans} en pausa por falta de pago` : `${data.clients} ${data.clients === 1 ? "empresa" : "empresas"}`} href="/admin/clientes" />
+        <Stat label="Planes generando" value={String(data.activePlans)} note={data.pausedPlans ? `${data.pausedPlans} en pausa por falta de pago` : `${data.clients} ${data.clients === 1 ? "comercializador" : "comercializadores"}`} href="/admin/clientes" />
         <Stat label="Mensualidades cobradas" value={formatCop(data.collectedCop)} href="/admin/pagos" />
         <Stat label="Se les debe a los clientes" value={formatCop(data.owedCop)} note="Venta de su energía menos lo ya pagado" />
         <Stat label="Pagado en retiros" value={formatCop(data.paidOutCop)} href="/admin/retiros" />

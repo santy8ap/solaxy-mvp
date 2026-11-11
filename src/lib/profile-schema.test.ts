@@ -17,7 +17,7 @@ function errors(input: Record<string, unknown>) {
   return r.ok ? {} : r.errors;
 }
 
-describe("datos de la empresa", () => {
+describe("datos personales del comercializador", () => {
   it("normaliza lo que la gente escribe", () => {
     const r = parseProfile({ ...base, companyName: "  Energía   Andina S.A.S. ", nit: "900.123.456-8", fullName: "  Laura   Gómez  ", docNumber: "1.036.123.456", phone: "+57 300-123-4567", city: " Medellín " });
     expect(r).toEqual({
@@ -26,8 +26,15 @@ describe("datos de la empresa", () => {
     });
   });
 
-  it("exige la razón social", () => {
-    expect(errors({ ...base, companyName: "" }).companyName).toMatch(/razón social/i);
+  it("no exige razón social ni NIT para un comercializador", () => {
+    const { fullName, docType, docNumber, phone, city, acceptTerms } = base;
+    expect(parseProfile({ fullName, docType, docNumber, phone, city, acceptTerms })).toEqual({
+      ok: true, value: { fullName, docType, docNumber, phone, city },
+    });
+    expect(parseProfile({ ...base, companyName: "", nit: "" }).ok).toBe(true);
+  });
+
+  it("mantiene la validación de datos empresariales opcionales de clientes anteriores", () => {
     expect(errors({ ...base, companyName: "A" }).companyName).toBeDefined();
   });
 
@@ -37,7 +44,7 @@ describe("datos de la empresa", () => {
     expect(nitCheckDigit("900123456")).toBe(8);
     expect(errors({ ...base, nit: "900123456-7" }).nit).toMatch(/verificación/i);
     expect(errors({ ...base, nit: "12345" }).nit).toBeDefined();
-    expect(errors({ ...base, nit: "" }).nit).toBeDefined();
+    expect(errors({ ...base, nit: "" }).nit).toBeUndefined();
   });
 
   it("si el NIT llega sin dígito de verificación, lo completa", () => {
@@ -45,11 +52,11 @@ describe("datos de la empresa", () => {
     expect(r.ok && r.value.nit).toBe("890903938-8");
   });
 
-  it("pide nombre y apellido del representante legal", () => {
+  it("pide nombre y apellido del titular", () => {
     expect(errors({ ...base, fullName: "Laura" }).fullName).toMatch(/apellido/i);
   });
 
-  it("valida el documento del representante: cédula, cédula de extranjería o pasaporte", () => {
+  it("valida el documento personal: cédula, cédula de extranjería o pasaporte", () => {
     expect(errors({ ...base, docNumber: "12" }).docNumber).toBeDefined();
     expect(errors({ ...base, docNumber: "12a45678" }).docNumber).toBeDefined();
     const pp = parseProfile({ ...base, docType: "PP", docNumber: "ab123456" });

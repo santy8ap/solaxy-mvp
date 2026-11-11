@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCatalog } from "@/lib/client/use-catalog";
 import { formatCop } from "@/lib/format";
 import { PlansTable } from "@/components/plans/plans-table";
+import { ProfitPreview } from "@/components/plans/profit-preview";
 
 /** Los planes, con sus precios vigentes. Para comprar hay que ingresar. */
 export function PlansSection() {
@@ -28,6 +29,7 @@ export function PlansSection() {
           }
         />
       </div>
+      <ProfitPreview plans={catalog.plans} />
       <p className="mt-6 max-w-[72ch] text-sm leading-relaxed text-mute">
         La utilidad es la diferencia entre el precio de venta y el precio del plan, sobre el precio del plan. Cada pago mensual activa 30 días de energía; si un mes no se paga, la energía se pausa
         hasta el siguiente pago.

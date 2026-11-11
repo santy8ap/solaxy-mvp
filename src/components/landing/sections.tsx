@@ -47,7 +47,7 @@ export function Hero() {
         </h1>
         <div className="lg:pb-3">
           <p className="text-lg leading-relaxed text-fog">
-            Tu empresa compra energía a precio de plan, desde <CatalogValue pick="lowestPrice" /> el kWh. La planta la genera cada día y se vende a <CatalogValue pick="sale" />. La diferencia
+            Como comercializador compras energía a precio de plan, desde <CatalogValue pick="lowestPrice" /> el kWh. La planta la genera cada día y se vende a <CatalogValue pick="sale" />. La diferencia
             es tu utilidad, y la ves crecer mientras sale el sol.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -66,8 +66,8 @@ export function Hero() {
 
 const STEPS: { title: string; text: React.ReactNode }[] = [
   {
-    title: "Registra tu empresa",
-    text: "Entra con tu cuenta de Google y completa la razón social, el NIT y los datos del representante legal.",
+    title: "Regístrate como comercializador",
+    text: "Entra con tu cuenta de Google y completa tus datos personales: nombre, documento, celular y ciudad de residencia.",
   },
   {
     title: "Elige un plan y paga el primer mes",
@@ -77,7 +77,7 @@ const STEPS: { title: string; text: React.ReactNode }[] = [
     title: "Mira tu energía y retira",
     text: (
       <>
-        Tu energía se genera cada día con el sol y se vende a <CatalogValue pick="sale" /> el kWh. El saldo lo retiras a la cuenta bancaria de tu empresa.
+        Tu energía se genera cada día con el sol y se vende a <CatalogValue pick="sale" /> el kWh. El saldo lo retiras a una cuenta bancaria a tu nombre.
       </>
     ),
   },
@@ -108,14 +108,14 @@ const SUNSET = formatHourLabel(SOLAR.endHour);
 
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
-    q: "¿Qué compra mi empresa exactamente?",
+    q: "¿Qué compro como comercializador?",
     a: `Una cantidad de energía solar para ${PLAN_MONTHS} meses: ${SIZES.slice(0, -1).join(", ")} o ${SIZES.at(-1)} kWh, según el plan. La planta la genera día a día, siguiendo la curva del reloj solar.`,
   },
   {
     q: "¿De dónde sale la utilidad?",
     a: (
       <>
-        Tu empresa paga cada kWh al precio de su plan y esa energía se vende a <CatalogValue pick="sale" /> el kWh. La diferencia es la utilidad. En el plan de <CatalogValue pick="topKwh" /> kWh,
+        Pagas cada kWh al precio de tu plan y esa energía se vende a <CatalogValue pick="sale" /> el kWh. La diferencia es la utilidad bruta. En el plan de <CatalogValue pick="topKwh" /> kWh,
         por ejemplo, pagas <CatalogValue pick="lowestPrice" /> y se vende a <CatalogValue pick="sale" />: <CatalogValue pick="topProfitPct" /> sobre lo que pagaste.
       </>
     ),
@@ -126,7 +126,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "¿Cuándo puedo retirar?",
-    a: `Cuando quieras, desde ${formatCop(MIN_WITHDRAWAL_COP)}. Cada kWh generado se abona a tu saldo al precio de venta. Nuestro equipo revisa cada retiro y lo paga a la cuenta bancaria a nombre de tu empresa, o en USDT a tu wallet.`,
+    a: `Cuando quieras, desde ${formatCop(MIN_WITHDRAWAL_COP)}. Cada kWh generado se abona a tu saldo al precio de venta. Nuestro equipo revisa cada retiro y lo paga a una cuenta bancaria a tu nombre, o en USDT a tu wallet.`,
   },
   {
     q: "¿Qué pasa de noche o con mal tiempo?",

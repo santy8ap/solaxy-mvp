@@ -8,6 +8,21 @@ const at = (d: number, h = 0, m = 0) => bogotaMs(2026, 11, d, h, m);
 const period = (index: number, startsAt: number): Period => ({ index, startsAt, endsAt: startsAt + PERIOD_MS });
 
 describe("planes de energía (notas del cliente)", () => {
+  it("desglosa la compra, la venta y la utilidad mensual de los cuatro paquetes", () => {
+    const rows = PLANS.map((plan) => planEconomics(plan, SALE_COP_PER_KWH));
+    expect(rows.map((row) => row.monthlyCop)).toEqual([76_800_000, 59_400_000, 40_800_000, 20_880_000]);
+    expect(rows.map((row) => row.monthlySaleCop)).toEqual([96_000_000, 72_000_000, 48_000_000, 24_000_000]);
+    expect(rows.map((row) => row.monthlyProfitCop)).toEqual([19_200_000, 12_600_000, 7_200_000, 3_120_000]);
+    expect(rows.map((row) => row.profitPerKwhCop)).toEqual([80, 70, 60, 52]);
+    for (const row of rows) expect(row.monthlySaleCop - row.monthlyCop).toBe(row.monthlyProfitCop);
+  });
+
+  it("usa los precios recibidos y conserva diferencias negativas sin inventar ganancias", () => {
+    const changed = planEconomics({ totalKwh: 180_000, priceCopPerKwh: 310 }, 450);
+    expect(changed).toMatchObject({ monthlyCop: 18_600_000, monthlySaleCop: 27_000_000, monthlyProfitCop: 8_400_000 });
+    const loss = planEconomics({ totalKwh: 180_000, priceCopPerKwh: 410 }, 400);
+    expect(loss.monthlyProfitCop).toBe(-600_000);
+  });
   it("son cuatro planes de 3 meses y toda la energía se vende a $ 400", () => {
     expect(SALE_COP_PER_KWH).toBe(400);
     expect(PLAN_MONTHS).toBe(3);

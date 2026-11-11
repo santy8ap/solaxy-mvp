@@ -19,11 +19,11 @@ export function useProfile() {
 
 const DOC_PLACEHOLDER: Record<DocTypeId, string> = { CC: "1036123456", CE: "E123456", PP: "AB123456" };
 
-/** Formulario de los datos de la empresa y aceptación de términos. */
+/** Datos personales del comercializador y aceptación de términos. */
 export function ProfileForm({ onSaved, submitLabel = "Guardar los datos" }: { onSaved?(p: ProfileDTO): void; submitLabel?: string }) {
   const { data, error } = useProfile();
   if (!data) {
-    return error ? <ErrorNote>{error}</ErrorNote> : <div className="skeleton h-[460px]" aria-busy="true" aria-label="Cargando los datos de la empresa" />;
+    return error ? <ErrorNote>{error}</ErrorNote> : <div className="skeleton h-[460px]" aria-busy="true" aria-label="Cargando tus datos personales" />;
   }
   // Al guardar cambia la fecha de aceptación y el formulario arranca con lo guardado.
   return <ProfileFields key={data.profile?.termsAcceptedAt ?? "nuevo"} initial={data} onSaved={onSaved} submitLabel={submitLabel} />;
@@ -32,8 +32,6 @@ export function ProfileForm({ onSaved, submitLabel = "Guardar los datos" }: { on
 function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResponse; onSaved?(p: ProfileDTO): void; submitLabel: string }) {
   const p = initial.profile;
   const [form, setForm] = useState({
-    companyName: p?.companyName ?? "",
-    nit: p?.nit ?? "",
     fullName: p?.fullName ?? "",
     docType: (p?.docType ?? "CC") as DocTypeId,
     docNumber: p?.docNumber ?? "",
@@ -45,7 +43,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
   const [serverError, setServerError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
-  // Ya tenía datos, pero falta aceptar los términos vigentes (o completar la razón social y el NIT).
+  // Puede faltar algún dato personal o la aceptación de los términos vigentes.
   const mustReview = Boolean(p && !p.complete);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -82,25 +80,12 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
 
   return (
     <form onSubmit={submit} noValidate className="space-y-8">
-      {mustReview && <p className="border-l-2 border-ink pl-4 text-sm leading-relaxed text-fog">Completa los datos de la empresa y acepta los Términos y la Política de Datos vigentes para continuar.</p>}
+      {mustReview && <p className="border-l-2 border-ink pl-4 text-sm leading-relaxed text-fog">Revisa tus datos personales y acepta los Términos y la Política de Datos vigentes para continuar.</p>}
 
       <fieldset className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
-        <legend className="sr-only">Empresa</legend>
-        <Field label="Razón social" error={errors.companyName} className="sm:col-span-2">
-          {(id, aria) => <input id={id} {...aria} value={form.companyName} onChange={(e) => set("companyName", e.target.value)} autoComplete="organization" placeholder="Como aparece en el RUT" className="field" />}
-        </Field>
-        <Field label="NIT" error={errors.nit} hint="Con o sin dígito de verificación.">
-          {(id, aria) => <input id={id} {...aria} value={form.nit} onChange={(e) => set("nit", e.target.value)} inputMode="numeric" placeholder="900123456-8" className="field num" />}
-        </Field>
-        <Field label="Ciudad" error={errors.city}>
-          {(id, aria) => <input id={id} {...aria} value={form.city} onChange={(e) => set("city", e.target.value)} autoComplete="address-level2" placeholder="Medellín" className="field" />}
-        </Field>
-      </fieldset>
-
-      <fieldset className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
-        <legend className="mb-6 text-lg font-medium sm:col-span-2">Representante legal</legend>
+        <legend className="mb-6 text-lg font-medium sm:col-span-2">Datos personales del comercializador</legend>
         <Field label="Nombre completo" error={errors.fullName} className="sm:col-span-2">
-          {(id, aria) => <input id={id} {...aria} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} autoComplete="name" placeholder="Como aparece en su documento" className="field" />}
+          {(id, aria) => <input id={id} {...aria} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} autoComplete="name" placeholder="Como aparece en tu documento" className="field" />}
         </Field>
         <Field label="Tipo de documento" error={errors.docType}>
           {(id, aria) => (
@@ -118,6 +103,12 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
         </Field>
         <Field label="Celular" error={errors.phone}>
           {(id, aria) => <input id={id} {...aria} type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel-national" inputMode="tel" placeholder="300 123 4567" className="field num" />}
+        </Field>
+        <Field label="Ciudad de residencia" error={errors.city}>
+          {(id, aria) => <input id={id} {...aria} value={form.city} onChange={(e) => set("city", e.target.value)} autoComplete="address-level2" placeholder="Medellín" className="field" />}
+        </Field>
+        <Field label="Correo electrónico" hint="El correo asociado a tu cuenta." className="sm:col-span-2">
+          {(id, aria) => <input id={id} {...aria} type="email" value={initial.email} readOnly autoComplete="email" className="field text-mute" />}
         </Field>
       </fieldset>
 

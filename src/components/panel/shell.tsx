@@ -15,7 +15,7 @@ export const NAV = [
   { href: "/panel", label: "Resumen", icon: LayoutDashboard },
   { href: "/panel/planes", label: "Planes", icon: SunMedium },
   { href: "/panel/billetera", label: "Movimientos", icon: ArrowLeftRight },
-  { href: "/panel/perfil", label: "Empresa", icon: Building2 },
+  { href: "/panel/perfil", label: "Comercializador", icon: Building2 },
 ] as const;
 
 function isActive(path: string, href: string) {

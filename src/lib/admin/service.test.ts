@@ -60,7 +60,7 @@ describe("pago manual (transferencia bancaria)", () => {
     expect(tx).toMatchObject({ periodIndex: 2, subscriptionId: sub.id });
   });
 
-  it("no se registra para un cliente que no ha completado los datos de su empresa", async () => {
+  it("no se registra para un comercializador que no ha completado sus datos personales", async () => {
     await expect(admin.registerManualPayment(actor, { userId: "nuevo", planId: "p180", reference: "TRANSF-0003" })).rejects.toMatchObject({ status: 412 });
   });
 });
@@ -151,5 +151,25 @@ describe("configuración de la planta y de los planes", () => {
     expect((await plans.listSubscriptions("a1"))[0]).toMatchObject({ priceCopPerKwh: 340, saleCopPerKwh: 400 });
     const entry = (await admin.listAudit(20)).find((e) => e.action === "config_planta");
     expect(entry?.summary).toMatch(/precio de venta.*precios de los planes/);
+  });
+});
+
+describe("comercializador con datos personales", () => {
+  it("puede comprar, buscarse por identidad y solicitar un retiro con su nombre registrado", async () => {
+    const { saveProfile } = await import("@/lib/profile");
+    const { createBankWithdrawal } = await import("@/lib/withdrawals");
+    await createUser("personal", { profile: false, name: "Alias de Google" });
+    await saveProfile("personal", { fullName: "Mariana Restrepo", docType: "CC", docNumber: "1023456789", phone: "3001234567", city: "Medellín", acceptTerms: true });
+    const tx = await admin.registerManualPayment(actor, { userId: "personal", planId: "p180", reference: "TRANSF-PERSONAL-1" });
+    expect(tx).toMatchObject({ kind: "plan_mes", status: "confirmada", periodIndex: 1 });
+    expect((await admin.listClients({ query: "Mariana Restrepo" })).map((c) => c.id)).toEqual(["personal"]);
+    expect((await admin.listClients({ query: "1023456789" })).map((c) => c.id)).toEqual(["personal"]);
+    try {
+      vi.setSystemTime(T0 + 10 * DAY_MS);
+      const w = await createBankWithdrawal({ userId: "personal", amountCop: 100_000, destination: { bank: "Bancolombia", accountType: "ahorros", accountNumber: "12345678901" } });
+      expect((await admin.listWithdrawals()).find((item) => item.id === w.id)).toMatchObject({ fullName: "Mariana Restrepo", userName: "Alias de Google", companyName: "", nit: "", status: "por_aprobar" });
+    } finally {
+      vi.setSystemTime(T0);
+    }
   });
 });

@@ -22,18 +22,17 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          {BRAND.name} les vende a empresas. Los datos de una empresa (razón social y NIT) no son datos personales, pero los de las personas que la representan sí, y a ellos se refiere esta
-          política.
+          Esta política describe el tratamiento de los datos personales que proporcionas al registrarte como comercializador y comprar paquetes de energía en {BRAND.name}.
         </p>
         <ul>
           <li>
-            <strong>Representante legal o persona autorizada:</strong> nombre completo, tipo y número de documento, celular y ciudad.
+            <strong>Comercializador:</strong> nombre completo, tipo y número de documento, celular y ciudad de residencia.
           </li>
           <li>
             <strong>Cuenta de Google:</strong> nombre, correo y foto de perfil, que Google nos comparte cuando ingresas.
           </li>
           <li>
-            <strong>Operaciones de la empresa:</strong> planes comprados, pagos y retiros; referencias de pago de Mercado Pago; direcciones públicas de wallet y hashes de transacciones; banco, tipo
+            <strong>Operaciones del comercializador:</strong> planes comprados, pagos y retiros; referencias de pago de Mercado Pago; direcciones públicas de wallet y hashes de transacciones; banco, tipo
             y número de la cuenta a la que se pagan los retiros. No recibimos ni guardamos los datos de tu tarjeta.
           </li>
           <li>
@@ -48,11 +47,11 @@ const SECTIONS: LegalSection[] = [
     title: "Para qué los usamos",
     body: (
       <ul>
-        <li>Crear y administrar la cuenta de la empresa y registrar sus planes de energía.</li>
+        <li>Crear y administrar la cuenta del comercializador y registrar sus planes de energía.</li>
         <li>Procesar los pagos, calcular la energía y el saldo de cada plan y pagar los retiros.</li>
         <li>Cumplir obligaciones legales, contables y tributarias, y las de prevención de lavado de activos y financiación del terrorismo.</li>
         <li>Prevenir fraudes y proteger la seguridad de la plataforma.</li>
-        <li>Atender peticiones, quejas y reclamos, y enviar información sobre los planes de la empresa.</li>
+        <li>Atender peticiones, quejas y reclamos, y enviar información sobre los planes del comercializador.</li>
         <li>Elaborar estadísticas agregadas que no identifican a nadie.</li>
       </ul>
     ),
@@ -110,7 +109,7 @@ const SECTIONS: LegalSection[] = [
     title: "Seguridad y conservación",
     body: (
       <p>
-        Protegemos los datos con conexiones cifradas, accesos restringidos y un registro de lo que hace cada administrador. Los conservamos mientras la empresa tenga una cuenta y luego por el
+        Protegemos los datos con conexiones cifradas, accesos restringidos y un registro de lo que hace cada administrador. Los conservamos mientras el comercializador tenga una cuenta y luego por el
         tiempo que exijan las normas contables, tributarias y de prevención de lavado de activos.
       </p>
     ),

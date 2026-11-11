@@ -1,4 +1,5 @@
 import "server-only";
+import { hasPersonalDetails } from "@/lib/profile-schema";
 import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
@@ -52,7 +53,7 @@ function profileOf(p: typeof companyProfile.$inferSelect | undefined) {
     phone: p.phone,
     city: p.city,
     termsAcceptedAt: p.termsAcceptedAt,
-    termsCurrent: p.termsVersion === TERMS_VERSION && Boolean(p.companyName && p.nit),
+    termsCurrent: p.termsVersion === TERMS_VERSION && p.termsAcceptedAt != null && hasPersonalDetails(p),
   };
 }
 
@@ -70,7 +71,7 @@ async function withdrawalsByUser() {
   return new Map(rows.map((r) => [r.userId, { withdrawn: Number(r.withdrawn), reserved: Number(r.reserved) }]));
 }
 
-/** Las empresas registradas, con sus planes, su energía y su saldo. */
+/** Los comercializadores registrados, con sus planes, su energía y su saldo. */
 export async function listClients({ query = "" }: { query?: string } = {}) {
   const { solar } = await readConfig();
   const now = Date.now();
@@ -80,7 +81,7 @@ export async function listClients({ query = "" }: { query?: string } = {}) {
         .select({ id: user.id })
         .from(user)
         .leftJoin(companyProfile, eq(companyProfile.userId, user.id))
-        .where(or(like(user.name, `%${q}%`), like(user.email, `%${q}%`), like(companyProfile.companyName, `%${q}%`), like(companyProfile.nit, `%${q}%`)))
+        .where(or(like(user.name, `%${q}%`), like(user.email, `%${q}%`), like(companyProfile.fullName, `%${q}%`), like(companyProfile.docNumber, `%${q}%`), like(companyProfile.companyName, `%${q}%`), like(companyProfile.nit, `%${q}%`)))
     : null;
   const rows = await db
     .select({ id: user.id, name: user.name, email: user.email, createdAt: user.createdAt })
@@ -127,7 +128,7 @@ export async function registerManualPayment(actor: Actor, input: { userId: strin
   const [target] = await db.select({ id: user.id, name: user.name }).from(user).where(eq(user.id, input.userId));
   if (!target) throw new MarketError("Cliente no encontrado", 404);
   const profile = await requireCompleteProfile(input.userId).catch(() => {
-    throw new MarketError("Este cliente todavía no completa los datos de su empresa ni acepta los términos. Pídele que lo haga antes de registrar el pago.", 412);
+    throw new MarketError("Este comercializador todavía no completa sus datos personales ni acepta los términos. Pídele que lo haga antes de registrar el pago.", 412);
   });
   const now = Date.now();
   const p = await resolvePlanPayment(input.userId, { planId: input.planId, subscriptionId: input.subscriptionId }, now);
@@ -159,7 +160,7 @@ export async function registerManualPayment(actor: Actor, input: { userId: strin
   await audit(
     actor,
     "pago_manual",
-    `Registró el pago de ${formatCop(p.amountCop)} de ${profile.companyName}: ${p.planName}, mes ${p.periodIndex} de ${p.months} (ref. ${reference})`,
+    `Registró el pago de ${formatCop(p.amountCop)} de ${profile.companyName || profile.fullName}: ${p.planName}, mes ${p.periodIndex} de ${p.months} (ref. ${reference})`,
     { orderId, subscriptionId: p.subscriptionId, periodIndex: p.periodIndex, amountCop: p.amountCop, reference },
     input.userId,
   );
@@ -191,7 +192,7 @@ export async function closeSubscription(actor: Actor, subscriptionId: string, re
 export async function listWithdrawals() {
   await readSettings();
   const rows = await db
-    .select({ tx: ledgerTx, userName: user.name, userEmail: user.email, companyName: companyProfile.companyName, nit: companyProfile.nit })
+    .select({ tx: ledgerTx, userName: user.name, userEmail: user.email, fullName: companyProfile.fullName, companyName: companyProfile.companyName, nit: companyProfile.nit })
     .from(ledgerTx)
     .innerJoin(user, eq(user.id, ledgerTx.userId))
     .leftJoin(companyProfile, eq(companyProfile.userId, ledgerTx.userId))
@@ -203,6 +204,7 @@ export async function listWithdrawals() {
     userId: r.tx.userId,
     userName: r.userName,
     userEmail: r.userEmail,
+    fullName: r.fullName ?? null,
     companyName: r.companyName ?? null,
     nit: r.nit ?? null,
     // Quien paga necesita la cuenta completa (el usuario solo ve los últimos 4 dígitos).

@@ -2,7 +2,7 @@ import { handleError, readJson } from "@/lib/api";
 import { TERMS_VERSION, getProfile, saveProfile } from "@/lib/profile";
 import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 
-/** Datos de la empresa de la sesión actual. */
+/** Datos personales del comercializador de la sesión actual. */
 export async function GET() {
   try {
     const user = await getSessionUser();

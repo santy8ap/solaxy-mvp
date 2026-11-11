@@ -19,7 +19,7 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
           <caption className="sr-only">Planes de energía de 3 meses, con pago mensual</caption>
           <thead>
             <tr className="border-b border-line-strong">
-              {["Plan", "Energía en 3 meses", "Cada día", "Precio por kWh", "Se vende a", "Utilidad", "Pago mensual"].map((h, i) => (
+              {["Plan", "Energía en 3 meses", "Cada día", "Compra / kWh", "Venta / kWh", "Utilidad bruta", "Pago mensual"].map((h, i) => (
                 <th key={h} scope="col" className={`cap pb-3 font-medium ${i === 0 ? "" : "text-right"} ${i === 6 ? "pr-6" : ""}`}>
                   {h}
                 </th>
@@ -61,7 +61,7 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
               <div className="flex items-end justify-between gap-4">
                 <h3 className="display text-[2.75rem]">{p.name}</h3>
                 <p className="text-right">
-                  <span className={`cap block ${selected ? "!text-void/70" : ""}`}>Utilidad</span>
+                  <span className={`cap block ${selected ? "!text-void/70" : ""}`}>Utilidad bruta</span>
                   <span className="figure text-[2.75rem]">{pctLabel(p.profitPct)}</span>
                 </p>
               </div>
@@ -69,8 +69,8 @@ export function PlansTable({ catalog, action, selectedId }: { catalog: CatalogDT
                 {[
                   ["Energía en 3 meses", `${formatNumber(p.totalKwh)} kWh`],
                   ["Cada día", `${formatNumber(p.dailyKwh)} kWh`],
-                  ["Precio por kWh", formatCop(p.priceCopPerKwh)],
-                  ["Se vende a", formatCop(p.saleCopPerKwh)],
+                  ["Compra / kWh", formatCop(p.priceCopPerKwh)],
+                  ["Venta / kWh", formatCop(p.saleCopPerKwh)],
                 ].map(([k, v]) => (
                   <div key={k}>
                     <dt className={`cap ${selected ? "!text-void/70" : ""}`}>{k}</dt>

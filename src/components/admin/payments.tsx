@@ -95,7 +95,7 @@ function ResetDialog({ open, onClose }: { open: boolean; onClose(): void }) {
   return (
     <Modal open={open} onClose={busy ? () => {} : onClose} title="Borrar los datos de prueba">
       <p className="leading-relaxed text-fog">
-        Se borran la cuenta de pruebas y todos los planes y movimientos de la etapa de pruebas. Las cuentas reales y los datos de sus empresas se conservan, pero quedan sin planes. No se puede deshacer.
+        Se borran la cuenta de pruebas y todos los planes y movimientos de la etapa de pruebas. Las cuentas reales y los datos de los comercializadores se conservan, pero quedan sin planes. No se puede deshacer.
       </p>
       <form onSubmit={submit} className="mt-7 space-y-6">
         <Field label={`Escribe ${RESET_PHRASE} para confirmar`}>
@@ -308,7 +308,7 @@ export function AdminPayments() {
 
   return (
     <>
-      <AdminTopbar title="Pagos" subtitle="Las mensualidades que pagan las empresas: su estado, su verificación y los reembolsos." />
+      <AdminTopbar title="Pagos" subtitle="Las mensualidades que pagan los comercializadores: su estado, su verificación y los reembolsos." />
 
       <dl className="grid border-t border-line-strong sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -370,7 +370,7 @@ export function AdminPayments() {
             <PaymentRow key={p.id} p={p} listUrl={url} />
           ))}
         </ul>
-        {!loading && !error && payments.length === 0 && <p className="py-10 text-mute">No hay pagos en esta lista. Aparecen aquí apenas una empresa empieza a pagar.</p>}
+        {!loading && !error && payments.length === 0 && <p className="py-10 text-mute">No hay pagos en esta lista. Aparecen aquí apenas un comercializador empieza a pagar.</p>}
         {loading && !data && <div className="skeleton mt-6 h-40" aria-busy="true" aria-label="Cargando los pagos" />}
       </section>
     </>

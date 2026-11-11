@@ -67,7 +67,7 @@ export function AdminSidebar() {
       <div className="mt-auto flex flex-col border-t border-line pt-4">
         <Link href="/panel" className={itemClass(false)}>
           <ArrowLeftCircle size={17} strokeWidth={1.5} />
-          Ver como empresa
+          Ver como comercializador
         </Link>
         <button type="button" disabled={leaving} onClick={() => startLeave(() => leaveAdmin())} className={`${itemClass(false)} text-left`}>
           <ShieldCheck size={17} strokeWidth={1.5} />
@@ -116,7 +116,7 @@ export function AdminMobileBar() {
       </Link>
       <div className="flex items-center gap-5 text-sm text-mute">
         <Link href="/panel" className="hover:text-ink">
-          Empresa
+          Comercializador
         </Link>
         <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className="hover:text-ink">
           {out ? "Saliendo…" : "Salir"}
@@ -171,7 +171,7 @@ export function AdminPinWall({ name, email, allowed }: { name: string; email: st
         <p className="mt-5 leading-relaxed text-fog">{email} no está en la lista de administradores. Si debes tener acceso, pide que agreguen tu correo a la variable ADMIN_EMAILS.</p>
       )}
       <Link href="/panel" className="link mt-8 inline-block text-sm text-fog">
-        Volver al panel de mi empresa
+        Volver a mi panel de comercializador
       </Link>
     </div>
   );

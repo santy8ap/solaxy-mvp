@@ -43,7 +43,7 @@ function Datum({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const ownerOf = (w: AdminWithdrawal) => w.companyName || w.userName;
+const ownerOf = (w: AdminWithdrawal) => w.companyName || w.fullName || w.userName;
 
 function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: boolean }) {
   const [mode, setMode] = useState<null | "aprobar" | "rechazar">(null);
@@ -89,7 +89,7 @@ function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: bo
               </dl>
               <p className="mt-5 max-w-[62ch] text-sm leading-relaxed text-fog">
                 Antes de transferir, verifica en el banco que la cuenta esté a nombre de {ownerOf(w)}
-                {w.nit ? ` (NIT ${w.nit})` : ""}. Solo se paga a cuentas de la misma empresa.
+                {w.nit ? ` (NIT ${w.nit})` : ""}. Solo se paga a cuentas del titular registrado.
               </p>
             </>
           ) : (
@@ -100,7 +100,7 @@ function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: bo
               </dl>
               <p className="mt-5 flex max-w-[62ch] items-start gap-2 text-sm leading-relaxed text-fog">
                 <ShieldCheck size={15} strokeWidth={1.5} className="mt-0.5 shrink-0" aria-hidden="true" />
-                {w.signed ? `${ownerOf(w)} firmó la solicitud con esa wallet (${w.walletName ?? "wallet"}): es suya.` : "La solicitud no trae la firma de la wallet: no la apruebes sin confirmar la dirección con la empresa."}
+                {w.signed ? `${ownerOf(w)} firmó la solicitud con esa wallet (${w.walletName ?? "wallet"}): es suya.` : "La solicitud no trae la firma de la wallet: no la apruebes sin confirmar la dirección con el comercializador."}
               </p>
             </>
           )}
@@ -124,7 +124,7 @@ function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: bo
             >
               <Field
                 label="Referencia del envío"
-                hint={`${toBank ? "El número del comprobante de la transferencia." : "El hash de la transacción (0x…)."} La empresa lo verá en sus movimientos.${realMoney ? "" : " En modo de pruebas puedes dejarla vacía."}`}
+                hint={`${toBank ? "El número del comprobante de la transferencia." : "El hash de la transacción (0x…)."} El comercializador lo verá en sus movimientos.${realMoney ? "" : " En modo de pruebas puedes dejarla vacía."}`}
               >
                 {(id, aria) => <input id={id} {...aria} value={reference} onChange={(e) => setReference(e.target.value)} maxLength={120} autoComplete="off" className="field num" />}
               </Field>
@@ -141,7 +141,7 @@ function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: bo
                 void decide("rechazar");
               }}
             >
-              <Field label="Motivo del rechazo" hint="La empresa lo verá en sus movimientos y el saldo vuelve a quedar disponible.">
+              <Field label="Motivo del rechazo" hint="El comercializador lo verá en sus movimientos y el saldo vuelve a quedar disponible.">
                 {(id, aria) => <input id={id} {...aria} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} autoComplete="off" className="field" />}
               </Field>
               <button type="submit" className="btn btn-solid" disabled={busy || reason.trim().length < 4}>
@@ -209,7 +209,7 @@ export function AdminWithdrawals() {
             ))}
           </ul>
         ) : (
-          <p className="py-10 text-mute">No hay retiros esperando. Cuando una empresa pida uno, aparece aquí.</p>
+          <p className="py-10 text-mute">No hay retiros esperando. Cuando un comercializador pida uno, aparece aquí.</p>
         )}
       </section>
 

@@ -21,11 +21,13 @@ export interface PlanEconomics {
   totalCop: number;
   /** Lo que se recibe por la venta de la energía (COP) */
   dailySaleCop: number;
+  monthlySaleCop: number;
   totalSaleCop: number;
   profitPerKwhCop: number;
   /** Utilidad sobre el precio del plan (fracción): (venta − precio) ÷ precio */
   profitPct: number;
   dailyProfitCop: number;
+  monthlyProfitCop: number;
   totalProfitCop: number;
 }
 
@@ -33,17 +35,21 @@ export function planEconomics(plan: { totalKwh: number; priceCopPerKwh: number }
   const monthlyKwh = plan.totalKwh / months;
   const dailyKwh = monthlyKwh / DAYS_PER_MONTH;
   const profitPerKwhCop = saleCopPerKwh - plan.priceCopPerKwh;
+  const monthlyCop = Math.round(monthlyKwh * plan.priceCopPerKwh);
+  const monthlySaleCop = Math.round(monthlyKwh * saleCopPerKwh);
   return {
     months,
     dailyKwh,
     monthlyKwh,
-    monthlyCop: Math.round(monthlyKwh * plan.priceCopPerKwh),
+    monthlyCop,
     totalCop: Math.round(plan.totalKwh * plan.priceCopPerKwh),
     dailySaleCop: Math.round(dailyKwh * saleCopPerKwh),
+    monthlySaleCop,
     totalSaleCop: Math.round(plan.totalKwh * saleCopPerKwh),
     profitPerKwhCop,
     profitPct: profitPerKwhCop / plan.priceCopPerKwh,
     dailyProfitCop: Math.round(dailyKwh * profitPerKwhCop),
+    monthlyProfitCop: monthlySaleCop - monthlyCop,
     totalProfitCop: Math.round(plan.totalKwh * profitPerKwhCop),
   };
 }

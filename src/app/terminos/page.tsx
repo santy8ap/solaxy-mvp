@@ -28,16 +28,14 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <strong>Solo empresas.</strong> Los planes se venden a personas jurídicas constituidas en Colombia. No vendemos planes a personas naturales.
+          <strong>Comercializadores.</strong> Para comprar un plan debes registrar tus datos personales y aceptar estos términos.
         </li>
         <li>
-          Quien registra la empresa declara que es su representante legal o que está autorizado para obligarla, y que los datos que entrega (razón social, NIT y representante legal) son verdaderos y
-          están actualizados. Cada empresa tiene una sola cuenta.
+          Quien registra la cuenta declara que los datos personales que entrega (nombre, documento, celular y ciudad de residencia) son verdaderos y están actualizados. Cada comercializador tiene una sola cuenta.
         </li>
-        <li>Se ingresa con una cuenta de Google. La empresa responde por la seguridad de esa cuenta y por lo que se haga desde ella.</li>
+        <li>Se ingresa con una cuenta de Google. El comercializador responde por la seguridad de esa cuenta y por lo que se haga desde ella.</li>
         <li>
-          Para cumplir las normas de prevención de lavado de activos y financiación del terrorismo, podemos pedir documentos (por ejemplo, el certificado de existencia y representación legal y el
-          RUT), verificar la información y suspender o rechazar operaciones cuando haya alertas.
+          Para cumplir las normas de prevención de lavado de activos y financiación del terrorismo, podemos pedir documentos de identificación, verificar la información y suspender o rechazar operaciones cuando haya alertas.
         </li>
       </ul>
     ),
@@ -48,7 +46,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Un plan es la compra de una cantidad fija de energía solar, medida en kilovatios hora (kWh), que la planta genera para tu empresa durante {PLAN_MONTHS} meses de {DAYS_PER_MONTH} días.
+          Un plan es la compra de una cantidad fija de energía solar, medida en kilovatios hora (kWh), que la planta genera para el comercializador durante {PLAN_MONTHS} meses de {DAYS_PER_MONTH} días.
         </p>
         <ul>
           <li>La energía de cada mes pagado se reparte en partes iguales entre sus {DAYS_PER_MONTH} días.</li>
@@ -62,7 +60,7 @@ const SECTIONS: LegalSection[] = [
         </ul>
         <p>
           La figura jurídica del plan es <Ph>[definir con el asesor legal: por ejemplo, compraventa de energía con mandato de comercialización, o cuentas en participación]</Ph>. Comprar un plan no
-          convierte a tu empresa en accionista de {LEGAL.company} ni en propietaria de equipos de la planta.
+          te convierte en accionista de {LEGAL.company} ni en propietario de equipos de la planta.
         </p>
       </>
     ),
@@ -74,7 +72,7 @@ const SECTIONS: LegalSection[] = [
       <>
         <ul>
           <li>Cada plan tiene un precio por kWh, publicado en la tabla de planes. La energía de todos los planes se vende al precio de venta publicado en esa misma tabla.</li>
-          <li>La utilidad es la diferencia entre el precio de venta y el precio de tu plan. La tabla la muestra como porcentaje sobre el precio del plan.</li>
+          <li>La utilidad bruta es la diferencia entre el precio de venta y el precio de tu plan, antes de costos e impuestos. La tabla la muestra como porcentaje sobre el precio del plan.</li>
           <li>El precio de tu plan y el precio de venta quedan fijos desde la compra y durante todo el plan, aunque después cambien los precios publicados.</li>
         </ul>
         <p>
@@ -141,7 +139,7 @@ const SECTIONS: LegalSection[] = [
             Puedes pedir un retiro desde {formatCop(MIN_WITHDRAWAL_COP)}. La solicitud aparta el monto de tu saldo y la revisa nuestro equipo, que la paga en un plazo de <Ph>[número]</Ph> días
             hábiles.
           </li>
-          <li>Pagamos a una cuenta bancaria a nombre de tu empresa, o en USDT a una wallet cuya propiedad demuestras con una firma. Si la cuenta o la dirección están mal, el dinero podría perderse.</li>
+          <li>Pagamos a una cuenta bancaria a nombre del titular registrado, o en USDT a una wallet cuya propiedad demuestras con una firma. Si la cuenta o la dirección están mal, el dinero podría perderse.</li>
           <li>Podemos pedirte información adicional antes de pagar un retiro, o rechazarlo indicando el motivo. En ese caso el monto vuelve a tu saldo.</li>
         </ul>
       </>
@@ -152,7 +150,7 @@ const SECTIONS: LegalSection[] = [
     title: "Facturación e impuestos",
     body: (
       <p>
-        <Ph>[Definir con el contador y el asesor legal: facturación electrónica de los planes, IVA, retención en la fuente y certificados.]</Ph> Cada empresa responde por sus propias obligaciones
+        <Ph>[Definir con el contador y el asesor legal: facturación electrónica de los planes, IVA, retención en la fuente y certificados.]</Ph> Cada comercializador responde por sus propias obligaciones
         tributarias.
       </p>
     ),
@@ -232,7 +230,7 @@ export default function TerminosPage() {
       title="Términos y Condiciones"
       intro={
         <p>
-          Estos términos regulan el uso de la plataforma {BRAND.name} y la compra de planes de energía. Al registrar tu empresa y comprar un plan, los aceptas en nombre de ella. También aplica
+          Estos términos regulan el uso de la plataforma {BRAND.name} y la compra de planes de energía. Al registrarte como comercializador y comprar un plan, los aceptas. También aplica
           nuestra{" "}
           <Link href="/privacidad" className="link text-ink">
             Política de Tratamiento de Datos

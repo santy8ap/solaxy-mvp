@@ -62,6 +62,7 @@ export interface AdminWithdrawal extends TxDTO {
   userId: string;
   userName: string;
   userEmail: string;
+  fullName: string | null;
   companyName: string | null;
   nit: string | null;
   bankAccountNumber: string | null;

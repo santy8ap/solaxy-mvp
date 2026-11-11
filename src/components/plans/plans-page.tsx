@@ -8,6 +8,7 @@ import { usePortfolio } from "@/components/panel/use-portfolio";
 import { CheckoutDialog, type CheckoutRequest } from "./checkout";
 import { PlanRow } from "./plan-row";
 import { PlansTable } from "./plans-table";
+import { ProfitPreview } from "./profit-preview";
 
 /** Comprar un plan y pagar los meses de los planes que ya se tienen. */
 export function PlansPage() {
@@ -21,7 +22,7 @@ export function PlansPage() {
 
   const buy = (planId: string) => {
     const p = catalog.plans.find((x) => x.id === planId);
-    if (p?.available) setCheckout({ planId: p.id, planName: p.name, periodIndex: 1, months: p.months, kwh: p.monthlyKwh, amountCop: p.monthlyCop });
+    if (p?.available) setCheckout({ planId: p.id, planName: p.name, periodIndex: 1, months: p.months, kwh: p.monthlyKwh, amountCop: p.monthlyCop, priceCopPerKwh: p.priceCopPerKwh, saleCopPerKwh: p.saleCopPerKwh });
   };
 
   // Si llega desde el inicio con un plan elegido (?plan=p360), se abre su pago una sola vez.
@@ -31,7 +32,7 @@ export function PlansPage() {
     if (!p?.available) return;
     const t = setTimeout(() => {
       setOpened(true);
-      setCheckout({ planId: p.id, planName: p.name, periodIndex: 1, months: p.months, kwh: p.monthlyKwh, amountCop: p.monthlyCop });
+      setCheckout({ planId: p.id, planName: p.name, periodIndex: 1, months: p.months, kwh: p.monthlyKwh, amountCop: p.monthlyCop, priceCopPerKwh: p.priceCopPerKwh, saleCopPerKwh: p.saleCopPerKwh });
     }, 0);
     return () => clearTimeout(t);
   }, [preselected, opened, catalog.plans]);
@@ -71,6 +72,7 @@ export function PlansPage() {
             }
           />
         </div>
+        <ProfitPreview key={preselected ?? "catalog"} plans={catalog.plans} initialPlanId={preselected} />
         <div className="mt-8 max-w-[520px]">
           <div className="flex items-baseline justify-between gap-4 text-sm">
             <span className="text-fog">Cupo de la planta</span>

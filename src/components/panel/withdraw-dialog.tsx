@@ -91,7 +91,7 @@ export function WithdrawDialog({ open, onClose, balanceCop, profile }: { open: b
     <Modal open={open} onClose={close} title="Retirar" wide>
       {needsProfile ? (
         <div>
-          <p className="leading-relaxed text-fog">Para retirar necesitamos los datos de tu empresa: solo pagamos a cuentas a su nombre.</p>
+          <p className="leading-relaxed text-fog">Para retirar necesitamos tus datos personales: la cuenta debe pertenecer al titular registrado.</p>
           <div className="mt-7 flex justify-end">
             <Link href="/panel/perfil" className="btn btn-solid" onClick={onClose}>
               Completar los datos
@@ -170,7 +170,7 @@ export function WithdrawDialog({ open, onClose, balanceCop, profile }: { open: b
                   </select>
                 )}
               </Field>
-              <Field label="Número de la cuenta" error={fieldErrors.accountNumber} className="sm:col-span-2" hint={`La cuenta debe estar a nombre de ${profile.companyName} (NIT ${profile.nit}).`}>
+              <Field label="Número de la cuenta" error={fieldErrors.accountNumber} className="sm:col-span-2" hint={profile.companyName && profile.nit ? `La cuenta debe estar a nombre de ${profile.companyName} (NIT ${profile.nit}).` : `La cuenta debe estar a nombre de ${profile.fullName} (${profile.docType} ${profile.docNumber}).`}>
                 {(id, aria) => <input id={id} {...aria} inputMode="numeric" autoComplete="off" value={bank.accountNumber} onChange={(e) => setBank({ ...bank, accountNumber: e.target.value })} className="field num" />}
               </Field>
             </div>

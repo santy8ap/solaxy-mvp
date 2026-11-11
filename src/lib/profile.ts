@@ -4,14 +4,14 @@ import { LEGAL } from "@/config/legal";
 import { db } from "@/lib/db";
 import { companyProfile } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
-import { parseProfile, type DocTypeId } from "@/lib/profile-schema";
+import { hasPersonalDetails, parseProfile, type DocTypeId } from "@/lib/profile-schema";
 
 export const TERMS_VERSION = LEGAL.version;
 
 export interface ProfileDTO {
   companyName: string;
   nit: string;
-  /** Representante legal */
+  /** Titular del paquete: el comercializador. */
   fullName: string;
   docType: DocTypeId;
   docNumber: string;
@@ -19,7 +19,7 @@ export interface ProfileDTO {
   city: string;
   termsVersion: string | null;
   termsAcceptedAt: number | null;
-  /** Datos de la empresa completos y términos vigentes aceptados: puede comprar y retirar */
+  /** Datos personales completos y términos vigentes aceptados: puede comprar y retirar. */
   complete: boolean;
 }
 
@@ -34,8 +34,7 @@ function toDTO(row: typeof companyProfile.$inferSelect): ProfileDTO {
     city: row.city,
     termsVersion: row.termsVersion,
     termsAcceptedAt: row.termsAcceptedAt,
-    // Los perfiles que vienen del modelo anterior no tienen razón social ni NIT: deben completarse.
-    complete: row.termsVersion === TERMS_VERSION && Boolean(row.companyName && row.nit && row.fullName && row.docNumber),
+    complete: row.termsVersion === TERMS_VERSION && row.termsAcceptedAt != null && hasPersonalDetails(row),
   };
 }
 
@@ -44,29 +43,30 @@ export async function getProfile(userId: string): Promise<ProfileDTO | null> {
   return row ? toDTO(row) : null;
 }
 
-/** Guarda los datos de la empresa y la aceptación de la versión vigente de los términos. */
+/** Guarda los datos personales y la aceptación de la versión vigente de los términos. */
 export async function saveProfile(userId: string, input: Record<string, unknown>): Promise<ProfileDTO> {
   const parsed = parseProfile(input);
   if (!parsed.ok) {
-    const first = Object.values(parsed.errors)[0] ?? "Revisa los datos de la empresa";
+    const first = Object.values(parsed.errors)[0] ?? "Revisa tus datos personales";
     throw new MarketError(first, 400, { fields: parsed.errors });
   }
   const now = Date.now();
   const values = { ...parsed.value, termsVersion: TERMS_VERSION, termsAcceptedAt: now, updatedAt: now };
   const [row] = await db
     .insert(companyProfile)
-    .values({ userId, ...values, createdAt: now })
+    // Las columnas antiguas se conservan sin migrar ni inventar una razón social o un NIT.
+    .values({ userId, ...values, companyName: parsed.value.companyName ?? "", nit: parsed.value.nit ?? "", createdAt: now })
     .onConflictDoUpdate({ target: companyProfile.userId, set: values })
     .returning();
   return toDTO(row);
 }
 
-/** Antes de cualquier pago o retiro: datos de la empresa completos y términos vigentes aceptados. */
+/** Antes de cualquier pago o retiro: identidad personal y términos vigentes aceptados. */
 export async function requireCompleteProfile(userId: string): Promise<ProfileDTO> {
   const p = await getProfile(userId);
   if (!p?.complete) {
     throw new MarketError(
-      p?.companyName && p.nit ? "Los términos se actualizaron: revísalos y acéptalos para continuar." : "Completa los datos de tu empresa para continuar.",
+      p && p.termsVersion !== TERMS_VERSION ? "Los términos se actualizaron: revísalos y acéptalos para continuar." : "Completa tus datos personales como comercializador para continuar.",
       412,
       { code: "perfil_incompleto" },
     );
