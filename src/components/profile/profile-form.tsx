@@ -28,7 +28,7 @@ export function ProfileForm({ onSaved, submitLabel = "Guardar mis datos" }: { on
         {error}
       </p>
     ) : (
-      <div className="h-[420px] animate-pulse rounded-2xl bg-silicon-800/60" aria-busy="true" aria-label="Cargando tus datos" />
+      <div className="h-[420px] animate-pulse rounded-none bg-silicon-800/60" aria-busy="true" aria-label="Cargando tus datos" />
     );
   }
   // Al guardar cambia la fecha de aceptación y el formulario arranca con lo guardado.
@@ -87,7 +87,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       {termsChanged && (
-        <p className="rounded-xl border border-sun-400/40 bg-sun-400/10 p-3 text-sm text-sun-200">
+        <p className="rounded-none border border-sun-400/40 bg-sun-400/10 p-3 text-sm text-sun-200">
           Actualizamos los Términos y la Política de Datos. Revísalos y acéptalos para seguir comprando.
         </p>
       )}
@@ -126,7 +126,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
       </div>
 
       <div>
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-silicon-600/70 p-4 text-sm leading-relaxed text-silver-300 hover:border-silicon-500">
+        <label className="flex cursor-pointer items-start gap-3 rounded-none border border-silicon-600/70 p-4 text-sm leading-relaxed text-silver-300 hover:border-silicon-500">
           <input type="checkbox" checked={form.acceptTerms} onChange={(e) => set("acceptTerms", e.target.checked)} className="peer sr-only" aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? "terms-error" : undefined} />
           <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-silicon-500 text-silicon-950 transition-colors peer-checked:border-sun-400 peer-checked:bg-sun-400 peer-focus-visible:ring-2 peer-focus-visible:ring-sun-300">
             {form.acceptTerms && <Check size={14} strokeWidth={3} />}
@@ -151,7 +151,7 @@ function ProfileFields({ initial, onSaved, submitLabel }: { initial: ProfileResp
       </div>
 
       {serverError && (
-        <p role="alert" className="rounded-xl border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
+        <p role="alert" className="rounded-none border border-alert-400/40 bg-alert-400/10 p-3 text-sm text-alert-400">
           {serverError}
         </p>
       )}

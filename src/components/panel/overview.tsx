@@ -112,14 +112,14 @@ export function Overview() {
             Cómo crecen tus ganancias
           </h2>
           <p className="mb-4 mt-1 text-sm text-silver-400">Acumulado de los últimos 90 días</p>
-          {p ? <GrowthChart p={p} liveEarned={earn?.earned} /> : <div className="h-[260px] animate-pulse rounded-xl bg-silicon-800/60" />}
+          {p ? <GrowthChart p={p} liveEarned={earn?.earned} /> : <div className="h-[260px] animate-pulse rounded-none bg-silicon-800/60" />}
         </section>
         <section className="panel p-5 sm:p-7" aria-labelledby="daily-title">
           <h2 id="daily-title" className="text-lg font-semibold text-silver-50">
             Lo que ganas cada día
           </h2>
           <p className="mb-4 mt-1 text-sm text-silver-400">Últimos 30 días; los días nublados ganas menos</p>
-          {p ? <DailyChart p={p} liveToday={earn?.today} /> : <div className="h-[260px] animate-pulse rounded-xl bg-silicon-800/60" />}
+          {p ? <DailyChart p={p} liveToday={earn?.today} /> : <div className="h-[260px] animate-pulse rounded-none bg-silicon-800/60" />}
         </section>
       </div>
 

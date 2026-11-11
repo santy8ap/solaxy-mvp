@@ -34,7 +34,7 @@ export function AdminSidebar() {
   const [out, startOut] = useTransition();
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-dusk-500/25 bg-silicon-950/50 px-4 py-6 lg:flex">
-      <Link href="/" className="px-2" aria-label="Solaxy, inicio">
+      <Link href="/" className="px-2" aria-label="In World Energy, inicio">
         <Logo />
       </Link>
       <span className="mx-2 mt-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-dusk-400/40 bg-dusk-400/10 px-2.5 py-1 text-xs font-medium text-dusk-300">
@@ -48,7 +48,7 @@ export function AdminSidebar() {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] transition-colors ${
+              className={`flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] transition-colors ${
                 active ? "bg-dusk-500/20 font-semibold text-silver-50" : "text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
               }`}
             >
@@ -62,7 +62,7 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col gap-1">
-        <Link href="/panel" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
+        <Link href="/panel" className="flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
           <ArrowLeftCircle size={18} />
           Ver como inversionista
         </Link>
@@ -70,7 +70,7 @@ export function AdminSidebar() {
           type="button"
           disabled={leaving}
           onClick={() => startLeave(() => leaveAdmin())}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
+          className="flex items-center gap-3 rounded-none px-3 py-2.5 text-left text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
         >
           <ShieldCheck size={18} />
           {leaving ? "Saliendo…" : "Salir del modo admin"}
@@ -79,7 +79,7 @@ export function AdminSidebar() {
           type="button"
           disabled={out}
           onClick={() => startOut(() => signOut())}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
+          className="flex items-center gap-3 rounded-none px-3 py-2.5 text-left text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
         >
           <LogOut size={18} />
           {out ? "Cerrando sesión…" : "Cerrar sesión"}
@@ -140,7 +140,7 @@ export function AdminPinWall({ name, email, allowed }: { name: string; email: st
     return (
       <div className="mx-auto mt-16 max-w-[440px]">
         <div className="panel p-8">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-alert-400/15 text-alert-400">
+          <span className="flex h-12 w-12 items-center justify-center rounded-none bg-alert-400/15 text-alert-400">
             <ShieldCheck size={24} />
           </span>
           <h1 className="mt-5 text-2xl font-semibold text-silver-50">Cuenta no autorizada</h1>
@@ -157,7 +157,7 @@ export function AdminPinWall({ name, email, allowed }: { name: string; email: st
   return (
     <div className="mx-auto mt-16 max-w-[420px]">
       <div className="panel p-8">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-dusk-400/15 text-dusk-300">
+        <span className="flex h-12 w-12 items-center justify-center rounded-none bg-dusk-400/15 text-dusk-300">
           <ShieldCheck size={24} />
         </span>
         <h1 className="mt-5 text-2xl font-semibold text-silver-50">Entrar como administrador</h1>

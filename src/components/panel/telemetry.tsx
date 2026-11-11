@@ -122,7 +122,7 @@ export function Telemetry() {
                   width={54}
                 />
                 <Tooltip
-                  cursor={{ stroke: "#b7c1da", strokeOpacity: 0.4 }}
+                  cursor={{ stroke: "#c1c1c1", strokeOpacity: 0.4 }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as (typeof recent)[number];

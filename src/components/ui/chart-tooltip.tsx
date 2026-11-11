@@ -10,7 +10,7 @@ export interface TooltipRow {
 /** Tooltip de gráficas: los valores van en tinta de texto; el color solo marca la serie. */
 export function ChartTooltipCard({ title, rows }: { title: string; rows: TooltipRow[] }) {
   return (
-    <div className="min-w-[180px] rounded-xl border border-silicon-500/60 bg-silicon-950/95 px-3.5 py-3 text-sm shadow-2xl backdrop-blur">
+    <div className="min-w-[180px] rounded-none border border-silicon-500/60 bg-silicon-950/95 px-3.5 py-3 text-sm shadow-2xl backdrop-blur">
       <div className="num mb-2 font-semibold text-silver-50">{title}</div>
       <ul className="space-y-1.5">
         {rows.map((r) => (
@@ -43,10 +43,10 @@ export function LegendItem({ label, color, dashed = false }: { label: string; co
 }
 
 export const SERIES = {
-  solar: "#c2841a",
-  battery: "#8b6cf0",
-  money: "#2aa06e",
-  reference: "#8e9ac0",
-  grid: "rgba(142,154,192,0.12)",
-  axis: "#6b789f",
+  solar: "#8a8a8a",
+  battery: "#7c7c7c",
+  money: "#838383",
+  reference: "#9a9a9a",
+  grid: "rgba(154,154,154,0.12)",
+  axis: "#787878",
 } as const;

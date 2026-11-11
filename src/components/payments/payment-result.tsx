@@ -82,7 +82,7 @@ export function PaymentResult({ orderRef, paymentId }: { orderRef: string; payme
 function Badge({ tone, children }: { tone: "ok" | "wait" | "bad" | "warn"; children: React.ReactNode }) {
   const reduce = useReducedMotion();
   const colors = {
-    ok: "bg-leaf-400/15 text-leaf-300 shadow-[0_0_60px_rgb(52_245_166/0.25)]",
+    ok: "bg-leaf-400/15 text-leaf-300 shadow-[0_0_60px_rgb(198_198_198/0.25)]",
     wait: "bg-sun-400/15 text-sun-300",
     bad: "bg-alert-400/15 text-alert-400",
     warn: "bg-sun-400/15 text-sun-300",

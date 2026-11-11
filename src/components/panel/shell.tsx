@@ -28,7 +28,7 @@ export function Sidebar() {
   const [pending, start] = useTransition();
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-silicon-600/40 bg-silicon-950/40 px-4 py-6 lg:flex">
-      <Link href="/" className="px-2" aria-label="Solaxy, inicio">
+      <Link href="/" className="px-2" aria-label="In World Energy, inicio">
         <Logo />
       </Link>
       <nav className="mt-10 flex flex-col gap-1" aria-label="Panel">
@@ -39,7 +39,7 @@ export function Sidebar() {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] transition-colors ${
+              className={`flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] transition-colors ${
                 active ? "bg-silicon-700/80 font-semibold text-silver-50" : "text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
               }`}
             >
@@ -53,21 +53,21 @@ export function Sidebar() {
         <Link
           href="/panel/perfil"
           aria-current={path === "/panel/perfil" ? "page" : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] transition-colors ${
+          className={`flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] transition-colors ${
             path === "/panel/perfil" ? "bg-silicon-700/80 font-semibold text-silver-50" : "text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
           }`}
         >
           <IdCard size={18} className={path === "/panel/perfil" ? "text-sun-400" : ""} />
           Mis datos
         </Link>
-        <Link href="/admin" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
+        <Link href="/admin" className="flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
           <ShieldCheck size={18} className="text-dusk-300" />
           Administración
         </Link>
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event("solaxy:presenter"))}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
+          className="flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
         >
           <MonitorPlay size={18} />
           Modo presentación
@@ -76,7 +76,7 @@ export function Sidebar() {
           type="button"
           disabled={pending}
           onClick={() => start(() => signOut())}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
+          className="flex items-center gap-3 rounded-none px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
         >
           <LogOut size={18} />
           {pending ? "Saliendo…" : "Salir"}

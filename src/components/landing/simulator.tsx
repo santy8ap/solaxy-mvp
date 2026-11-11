@@ -90,7 +90,7 @@ export function Simulator() {
                   </span>
                   <div
                     className="rounded-t-[4px] transition-[height] duration-500 ease-out"
-                    style={{ height: `${(total / max) * 80}%`, background: "linear-gradient(180deg, #2aa06e, rgb(42 160 110 / 0.35))" }}
+                    style={{ height: `${(total / max) * 80}%`, background: "linear-gradient(180deg, #838383, rgb(131 131 131 / 0.35))" }}
                   />
                   <span className="mt-2 text-center text-sm text-silver-400">Año {y}</span>
                 </div>

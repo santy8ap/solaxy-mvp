@@ -10,7 +10,7 @@ interface Props {
 }
 
 type Tone = "sun" | "dusk" | "leaf" | "idle";
-const TONE: Record<Tone, string> = { sun: "#f6b73c", dusk: "#a68bff", leaf: "#57d69b", idle: "#34488a" };
+const TONE: Record<Tone, string> = { sun: "#bcbcbc", dusk: "#999999", leaf: "#b7b7b7", idle: "#494949" };
 
 /** Línea con pulsos que avanzan más rápido cuanto más potencia pasa. */
 function Flow({ d, kw, tone, reduced }: { d: string; kw: number; tone: Tone; reduced: boolean }) {
@@ -37,18 +37,18 @@ function Flow({ d, kw, tone, reduced }: { d: string; kw: number; tone: Tone; red
 function Node({ x, y, title, value, note, tone, icon }: { x: number; y: number; title: string; value: string; note?: string; tone: Tone; icon: React.ReactNode }) {
   return (
     <g transform={`translate(${x} ${y})`}>
-      <rect x="-82" y="-46" width="164" height="92" rx="16" fill="#0d1937" stroke={tone === "idle" ? "#22346a" : TONE[tone]} strokeOpacity={tone === "idle" ? 1 : 0.55} />
-      <g transform="translate(-64 -28)" color={tone === "idle" ? "#6b789f" : TONE[tone]}>
+      <rect x="-82" y="-46" width="164" height="92" rx="16" fill="#191919" stroke={tone === "idle" ? "#343434" : TONE[tone]} strokeOpacity={tone === "idle" ? 1 : 0.55} />
+      <g transform="translate(-64 -28)" color={tone === "idle" ? "#787878" : TONE[tone]}>
         {icon}
       </g>
-      <text x="-36" y="-14" fontSize="13" fill="#8e9ac0">
+      <text x="-36" y="-14" fontSize="13" fill="#9a9a9a">
         {title}
       </text>
-      <text x="-64" y="16" fontSize="20" fontWeight="650" fill="#f3f6fb" style={{ fontVariantNumeric: "tabular-nums" }}>
+      <text x="-64" y="16" fontSize="20" fontWeight="650" fill="#f6f6f6" style={{ fontVariantNumeric: "tabular-nums" }}>
         {value}
       </text>
       {note && (
-        <text x="-64" y="35" fontSize="12" fill="#8e9ac0" style={{ fontVariantNumeric: "tabular-nums" }}>
+        <text x="-64" y="35" fontSize="12" fill="#9a9a9a" style={{ fontVariantNumeric: "tabular-nums" }}>
           {note}
         </text>
       )}
@@ -116,13 +116,13 @@ export function EnergyFlow({ reading, myKw, ratePerHour }: Props) {
     <>
     <ol className="space-y-2 md:hidden">
       {rows.map((r, i) => (
-        <li key={r.label} className="relative flex items-center justify-between gap-4 rounded-2xl border bg-silicon-950/40 px-4 py-3" style={{ borderColor: r.tone === "idle" ? "#22346a" : `${TONE[r.tone]}66` }}>
+        <li key={r.label} className="relative flex items-center justify-between gap-4 rounded-none border bg-silicon-950/40 px-4 py-3" style={{ borderColor: r.tone === "idle" ? "#343434" : `${TONE[r.tone]}66` }}>
           <div>
             <div className="text-sm text-silver-400">{r.label}</div>
             <div className="num text-lg font-semibold text-silver-50">{r.value}</div>
           </div>
           <div className="num text-right text-sm text-silver-400">{r.note}</div>
-          {i < rows.length - 1 && <span className="absolute -bottom-2 left-8 z-10 h-2 w-0.5" style={{ background: r.tone === "idle" ? "#22346a" : TONE[r.tone] }} aria-hidden="true" />}
+          {i < rows.length - 1 && <span className="absolute -bottom-2 left-8 z-10 h-2 w-0.5" style={{ background: r.tone === "idle" ? "#343434" : TONE[r.tone] }} aria-hidden="true" />}
         </li>
       ))}
     </ol>

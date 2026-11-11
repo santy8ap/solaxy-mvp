@@ -12,7 +12,7 @@ export function AdminOverview() {
 
   return (
     <>
-      <AdminTopbar title="Administración" subtitle="Cómo va Solaxy y qué necesita tu atención." />
+      <AdminTopbar title="Administración" subtitle="Cómo va In World Energy y qué necesita tu atención." />
       {error && !d && <div className="panel p-6 text-alert-400">{error}</div>}
 
       <section className="grid overflow-hidden rounded-[var(--radius-panel)] border border-silicon-600/50 bg-silicon-600/50 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: 1 }} aria-label="Indicadores">
@@ -53,8 +53,8 @@ export function AdminOverview() {
               { href: "/admin/planta", icon: Factory, title: "Configurar la planta", note: "Capacidad, precio, tarifas y comisión" },
             ].map(({ href, icon: Icon, title, note }) => (
               <li key={href}>
-                <Link href={href} className="flex items-center gap-4 rounded-2xl border border-silicon-600/60 p-4 transition-colors hover:border-dusk-400/60 hover:bg-silicon-800/60">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-dusk-400/12 text-dusk-300">
+                <Link href={href} className="flex items-center gap-4 rounded-none border border-silicon-600/60 p-4 transition-colors hover:border-dusk-400/60 hover:bg-silicon-800/60">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-none bg-dusk-400/12 text-dusk-300">
                     <Icon size={19} />
                   </span>
                   <span>

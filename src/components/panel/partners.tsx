@@ -34,7 +34,7 @@ export function Partners() {
 
   return (
     <>
-      <Topbar title="Vista de socios" subtitle="Cómo va Solaxy como negocio: capital, energía vendida y comunidad." />
+      <Topbar title="Vista de socios" subtitle="Cómo va In World Energy como negocio: capital, energía vendida y comunidad." />
 
       <section className="grid overflow-hidden rounded-[var(--radius-panel)] border border-silicon-600/50 bg-silicon-600/50 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: 1 }} aria-label="Indicadores del negocio">
         {[

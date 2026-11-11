@@ -27,7 +27,7 @@ export function GrowthChart({ p, liveEarned }: { p: PortfolioDTO; liveEarned?: n
           <XAxis dataKey="date" tickFormatter={fmtDate} stroke={SERIES.axis} tickLine={false} axisLine={false} fontSize={12} minTickGap={40} />
           <YAxis tickFormatter={(v: number) => formatCopCompact(v)} stroke={SERIES.axis} tickLine={false} axisLine={false} fontSize={12} width={72} />
           <Tooltip
-            cursor={{ stroke: "#b7c1da", strokeOpacity: 0.4 }}
+            cursor={{ stroke: "#c1c1c1", strokeOpacity: 0.4 }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0].payload as (typeof data)[number];
@@ -64,7 +64,7 @@ export function DailyChart({ p, liveToday }: { p: PortfolioDTO; liveToday?: numb
           <XAxis dataKey="date" tickFormatter={fmtDate} stroke={SERIES.axis} tickLine={false} axisLine={false} fontSize={12} minTickGap={36} />
           <YAxis tickFormatter={(v: number) => formatCopCompact(v)} stroke={SERIES.axis} tickLine={false} axisLine={false} fontSize={12} width={64} />
           <Tooltip
-            cursor={{ fill: "rgba(183,193,218,0.06)" }}
+            cursor={{ fill: "rgba(193,193,193,0.06)" }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0].payload as (typeof data)[number];

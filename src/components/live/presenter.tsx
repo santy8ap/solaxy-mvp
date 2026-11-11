@@ -52,7 +52,7 @@ export function PresenterControl() {
           Simulación: {now ? formatTime(now) : ""}, ×{p.speed}
         </button>
       ) : (
-        <div className="w-[300px] rounded-2xl border border-dusk-400/50 bg-silicon-950/95 p-4 text-sm shadow-2xl backdrop-blur" role="dialog" aria-label="Modo presentación">
+        <div className="w-[300px] rounded-none border border-dusk-400/50 bg-silicon-950/95 p-4 text-sm shadow-2xl backdrop-blur" role="dialog" aria-label="Modo presentación">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-silver-50">Modo presentación</span>
             <button type="button" onClick={() => setOpen(false)} className="text-silver-400 hover:text-silver-50" aria-label="Cerrar">

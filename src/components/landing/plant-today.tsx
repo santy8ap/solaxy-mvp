@@ -81,7 +81,7 @@ export function TodayChart({ now, height = 300 }: { now: number | null; height?:
                 tickFormatter={(v: number) => formatNumber(v)}
               />
               <Tooltip
-                cursor={{ stroke: "#b7c1da", strokeOpacity: 0.4, strokeWidth: 1 }}
+                cursor={{ stroke: "#c1c1c1", strokeOpacity: 0.4, strokeWidth: 1 }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const p = payload[0].payload as Point;

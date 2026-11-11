@@ -38,7 +38,7 @@ export function Ownership() {
             {data ? `${formatNumber(data.soldKw)} de ${formatNumber(data.capacityKwp)} kW ya tienen dueño` : "La planta, celda por celda"}
           </h2>
           <p className="mt-4 max-w-[46ch] text-silver-300">
-            Cada celda del mapa equivale a 20 kW de Solaxy Solar I. Cuando compras, tu parte de la energía que se
+            Cada celda del mapa equivale a 20 kW de In World Energy Solar I. Cuando compras, tu parte de la energía que se
             vende se convierte en ganancia, todos los días.
           </p>
           <dl className="mt-8 grid grid-cols-3 gap-6">
@@ -67,10 +67,10 @@ export function Ownership() {
                   className="aspect-square rounded-[5px] border transition-colors duration-700"
                   style={{
                     transitionDelay: `${i * 12}ms`,
-                    borderColor: owned ? "rgb(246 183 60 / 0.55)" : "rgb(52 72 138 / 0.6)",
+                    borderColor: owned ? "rgb(188 188 188 / 0.55)" : "rgb(73 73 73 / 0.6)",
                     background: owned
-                      ? "linear-gradient(145deg, rgb(255 208 113 / 0.85), rgb(194 132 26 / 0.85))"
-                      : "repeating-linear-gradient(90deg, rgb(183 193 218 / 0.08) 0 1px, transparent 1px 6px), rgb(13 25 55 / 0.8)",
+                      ? "linear-gradient(145deg, rgb(211 211 211 / 0.85), rgb(138 138 138 / 0.85))"
+                      : "repeating-linear-gradient(90deg, rgb(193 193 193 / 0.08) 0 1px, transparent 1px 6px), rgb(25 25 25 / 0.8)",
                   }}
                 />
               );

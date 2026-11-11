@@ -126,7 +126,7 @@ function payButtonLabel(method: PayMethod | null, walletConnected: boolean, wall
 function payFootnote(method: PayMethod | null) {
   if (!method) return "";
   if (method.kind === "mercadopago") return "Pagas en Mercado Pago. Tus kW se asignan apenas el pago quede aprobado.";
-  if (method.kind === "crypto") return `Envías ${method.asset} desde tu wallet a la billetera de Solaxy en BNB Chain. Tus kW se asignan tras las confirmaciones de la red.`;
+  if (method.kind === "crypto") return `Envías ${method.asset} desde tu wallet a la billetera de In World Energy en BNB Chain. Tus kW se asignan tras las confirmaciones de la red.`;
   return "Pago simulado: firmas la orden con tu wallet y no se mueve dinero.";
 }
 
@@ -176,7 +176,7 @@ function BuyPlant({
               type="button"
               onClick={() => setKw(p.kw)}
               aria-pressed={kw === p.kw}
-              className={`rounded-2xl border p-4 text-left transition-colors ${kw === p.kw ? "border-sun-400/70 bg-sun-400/10" : "border-silicon-600/70 hover:border-silicon-500"}`}
+              className={`rounded-none border p-4 text-left transition-colors ${kw === p.kw ? "border-sun-400/70 bg-sun-400/10" : "border-silicon-600/70 hover:border-silicon-500"}`}
             >
               <div className="text-sm text-silver-400">{p.name}</div>
               <div className="display mt-1 text-2xl text-silver-50">{formatNumber(p.kw, p.kw % 1 ? 1 : 0)} kW</div>
@@ -194,7 +194,7 @@ function BuyPlant({
         </div>
         <div className="mt-7">
           {loadingMethods ? (
-            <div className="h-24 animate-pulse rounded-2xl bg-silicon-800/60" aria-busy="true" aria-label="Cargando medios de pago" />
+            <div className="h-24 animate-pulse rounded-none bg-silicon-800/60" aria-busy="true" aria-label="Cargando medios de pago" />
           ) : (
             <MethodSelect methods={methods} value={method?.id ?? ""} onChange={setPayId} />
           )}
