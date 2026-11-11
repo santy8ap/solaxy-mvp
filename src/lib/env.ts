@@ -5,8 +5,8 @@ export const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   /** Cuenta de pruebas: solo existe en modo de pruebas (DEMO_MODE distinto de false). */
-  demoEmail: "demo@solaxy.local",
-  demoPassword: process.env.DEMO_PASSWORD || "solaxy-demo-2026",
+  demoEmail: "pruebas@inworldenergy.local",
+  demoPassword: process.env.DEMO_PASSWORD || "iwe-pruebas-2026",
   demoName: "Empresa de Pruebas",
 };
 
@@ -26,7 +26,7 @@ function strict() {
   return Boolean(process.env.VERCEL) || !isDemoMode();
 }
 
-const FALLBACK_SECRET = "solaxy-demo-secret-cambiar-en-produccion-7f3a9c21e8b4";
+const FALLBACK_SECRET = "iwe-pruebas-secreto-cambiar-en-produccion-7f3a9c21e8b4";
 /** Solo para `next build`: nadie inicia sesión durante el build, así que basta una clave efímera. */
 let buildSecret: string | null = null;
 

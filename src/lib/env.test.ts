@@ -31,7 +31,7 @@ describe("clave secreta", () => {
     const { authSecret } = await import("@/lib/env");
     const secret = authSecret();
     expect(secret.length).toBeGreaterThan(30);
-    expect(secret).not.toMatch(/solaxy-demo-secret/);
+    expect(secret).not.toMatch(/iwe-pruebas-secreto/);
   });
 
   it("fuera del modo demo tampoco usa la clave de respaldo", async () => {
@@ -72,18 +72,18 @@ describe("PIN de administrador", () => {
 
   it("con dinero real solo pueden ser administradores los correos de ADMIN_EMAILS", async () => {
     vi.stubEnv("DEMO_MODE", "false");
-    vi.stubEnv("ADMIN_EMAILS", " Socio@Solaxy.co ,ops@solaxy.co");
+    vi.stubEnv("ADMIN_EMAILS", " Socio@InWorldEnergy.co ,ops@inworldenergy.co");
     const { adminEmailAllowed } = await import("@/lib/env");
-    expect(adminEmailAllowed("socio@solaxy.co")).toBe(true);
-    expect(adminEmailAllowed("OPS@solaxy.co")).toBe(true);
+    expect(adminEmailAllowed("socio@inworldenergy.co")).toBe(true);
+    expect(adminEmailAllowed("OPS@inworldenergy.co")).toBe(true);
     expect(adminEmailAllowed("intruso@gmail.com")).toBe(false);
     vi.stubEnv("ADMIN_EMAILS", "");
-    expect(adminEmailAllowed("socio@solaxy.co")).toBe(false);
+    expect(adminEmailAllowed("socio@inworldenergy.co")).toBe(false);
   });
 
   it("en modo demo, sin ADMIN_EMAILS, cualquiera con el PIN puede entrar", async () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "");
-    expect((await import("@/lib/env")).adminEmailAllowed("demo@solaxy.local")).toBe(true);
+    expect((await import("@/lib/env")).adminEmailAllowed("pruebas@inworldenergy.local")).toBe(true);
   });
 });

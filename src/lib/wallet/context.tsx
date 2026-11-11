@@ -1,18 +1,17 @@
 "use client";
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { encodeFunctionData, erc20Abi, formatEther, toHex } from "viem";
+import { BRAND } from "@/config/brand";
 import { postJson } from "@/lib/client/use-json";
-import { demoAccount } from "./demo";
 import { startDiscovery } from "./discovery";
 import { CHAINS, type DiscoveredWallet, type Eip1193Provider, type WalletKind, type WalletState } from "./types";
 
-const LAST = "solaxy:wallet-ultima";
+const LAST = "iwe:wallet-ultima";
 export const WC_PROJECT_ID = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID ?? "";
 
 interface WalletApi extends WalletState {
   connectInjected(w: DiscoveredWallet): Promise<void>;
   connectWalletConnect(onUri: (uri: string) => void): Promise<void>;
-  connectDemo(): Promise<void>;
   disconnect(): Promise<void>;
   signMessage(message: string): Promise<`0x${string}`>;
   /** Pide a la wallet cambiar de red (y agregarla si no la conoce). */
@@ -145,8 +144,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           showQrModal: false,
           optionalChains: [56, 97, 1],
           metadata: {
-            name: "Solaxy",
-            description: "Invierte en energía solar",
+            name: BRAND.name,
+            description: BRAND.tagline,
             url: window.location.origin,
             icons: [`${window.location.origin}/icon.svg`],
           },
@@ -163,13 +162,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     },
     [finish],
   );
-
-  const connectDemo = useCallback(async () => {
-    const acct = demoAccount();
-    await finish("demo", null, { name: "Wallet de demostración", icon: "" }, acct.address);
-    setState((s) => ({ ...s, chainId: 56, balance: "Sin fondos (demo)" }));
-    setConnectOpen(false);
-  }, [finish]);
 
   const disconnect = useCallback(async () => {
     try {
@@ -188,7 +180,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const signMessage = useCallback(
     async (message: string): Promise<`0x${string}`> => {
       if (state.status !== "connected" || !state.address) throw new Error("Conecta una wallet primero.");
-      if (state.kind === "demo") return demoAccount().signMessage({ message });
       const provider = providerRef.current;
       if (!provider) throw new Error("La wallet se desconectó. Conéctala de nuevo.");
       try {
@@ -197,13 +188,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error(friendlyError(err));
       }
     },
-    [state.status, state.address, state.kind],
+    [state.status, state.address],
   );
 
   const ensureChain = useCallback(
     async (chainId: number) => {
       if (state.status !== "connected") throw new Error("Conecta una wallet primero.");
-      if (state.kind === "demo") throw new Error("La wallet de demostración no puede pagar: conecta Trust Wallet o MetaMask.");
       const provider = providerRef.current;
       if (!provider) throw new Error("La wallet se desconectó. Conéctala de nuevo.");
       const current = Number(await provider.request({ method: "eth_chainId" }).catch(() => state.chainId));
@@ -230,13 +220,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, chainId: after }));
       if (after !== chainId) throw new Error("La wallet sigue en otra red. Cámbiala a BNB Chain e inténtalo de nuevo.");
     },
-    [state.status, state.kind, state.chainId],
+    [state.status, state.chainId],
   );
 
   const sendPayment = useCallback(
     async (p: PaymentRequest): Promise<`0x${string}`> => {
       if (state.status !== "connected" || !state.address) throw new Error("Conecta una wallet primero.");
-      if (state.kind === "demo") throw new Error("La wallet de demostración no tiene fondos: conecta Trust Wallet o MetaMask.");
       const provider = providerRef.current;
       if (!provider) throw new Error("La wallet se desconectó. Conéctala de nuevo.");
       const tx =
@@ -249,7 +238,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error(friendlyError(err));
       }
     },
-    [state.status, state.address, state.kind],
+    [state.status, state.address],
   );
 
   // Reconexión silenciosa al volver al panel.
@@ -257,14 +246,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     startDiscovery();
     const last = readLast();
     if (!last) return;
-    if (last.kind === "demo") {
-      // La wallet demo solo vuelve si el servidor sigue en modo demo.
-      void fetch("/api/config", { cache: "no-store" })
-        .then((r) => r.json() as Promise<{ demoMode?: boolean }>)
-        .then((c) => (c.demoMode ? connectDemo() : undefined))
-        .catch(() => undefined);
-      return;
-    }
     if (last.kind === "injected") {
       const t = setTimeout(async () => {
         const { getWallets } = await import("./discovery");
@@ -279,14 +260,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }, 600);
       return () => clearTimeout(t);
     }
-  }, [connectDemo, finish]);
+  }, [finish]);
 
   const api = useMemo<WalletApi>(
     () => ({
       ...state,
       connectInjected,
       connectWalletConnect,
-      connectDemo,
       disconnect,
       signMessage,
       ensureChain,
@@ -295,7 +275,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       closeConnect: () => setConnectOpen(false),
       connectOpen,
     }),
-    [state, connectInjected, connectWalletConnect, connectDemo, disconnect, signMessage, ensureChain, sendPayment, connectOpen],
+    [state, connectInjected, connectWalletConnect, disconnect, signMessage, ensureChain, sendPayment, connectOpen],
   );
 
   return <Ctx value={api}>{children}</Ctx>;

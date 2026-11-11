@@ -56,3 +56,8 @@ export function nextSunriseMs(s: SolarDay, ts: number) {
   const today = dayStartMs(localDayIndex(ts)) + s.startHour * HOUR_MS;
   return ts < today ? today : today + DAY_MS;
 }
+
+/** Cuándo termina la generación del día de `ts`. */
+export function sunsetMs(s: SolarDay, ts: number) {
+  return dayStartMs(localDayIndex(ts)) + s.endHour * HOUR_MS;
+}

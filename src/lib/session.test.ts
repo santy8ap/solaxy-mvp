@@ -4,7 +4,7 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createUser } from "../../tests/helpers";
 
-process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-session-")), "test.db")}`;
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-session-")), "test.db")}`;
 
 let session: typeof import("@/lib/session");
 

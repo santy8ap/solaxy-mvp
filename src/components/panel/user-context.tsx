@@ -6,6 +6,8 @@ export interface PanelUser {
   name: string;
   email: string;
   image: string | null;
+  /** Su correo está autorizado como administrador: se le muestra el acceso al admin. */
+  canAdmin: boolean;
 }
 
 const Ctx = createContext<PanelUser | null>(null);

@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createUser } from "../../../tests/helpers";
 
-process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-golive-")), "test.db")}`;
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-golive-")), "test.db")}`;
 vi.stubEnv("BETTER_AUTH_SECRET", "secreto-de-prueba-suficientemente-largo-123");
 
 let status: typeof import("@/lib/admin/config-status");
@@ -59,7 +59,7 @@ describe("lista de configuración", () => {
   });
 
   it("reconoce las credenciales de prueba nuevas (APP_USR- de una cuenta de prueba): aviso en pruebas, bloqueo con dinero real", async () => {
-    delete (globalThis as { __solaxyMpAccount?: unknown }).__solaxyMpAccount;
+    delete (globalThis as { __iweMpAccount?: unknown }).__iweMpAccount;
     vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "APP_USR-cuenta-de-prueba");
     vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ site_id: "MCO", nickname: "TESTUSER1", tags: ["test_user"] })));
     try {
@@ -68,7 +68,7 @@ describe("lista de configuración", () => {
       expect((await byId())["mp-token"].state).toBe("falta");
     } finally {
       vi.unstubAllGlobals();
-      delete (globalThis as { __solaxyMpAccount?: unknown }).__solaxyMpAccount;
+      delete (globalThis as { __iweMpAccount?: unknown }).__iweMpAccount;
     }
   });
 
@@ -105,15 +105,15 @@ describe("borrar los datos de prueba", () => {
   it("no se puede si ya hay pagos reales", async () => {
     vi.stubEnv("DEMO_MODE", "false");
     const { db } = dbMod;
-    await db.insert(schema.ledgerTx).values({ id: "SLX-REAL000001", userId: "real-1", kind: "plan_mes", status: "confirmada", amountCop: 20_880_000, createdAt: Date.now(), method: "manual", providerId: "TRANSF-REAL-1" });
+    await db.insert(schema.ledgerTx).values({ id: "IWE-REAL000001", userId: "real-1", kind: "plan_mes", status: "confirmada", amountCop: 20_880_000, createdAt: Date.now(), method: "manual", providerId: "TRANSF-REAL-1" });
     await expect(reset.resetDemoData(actor, PHRASE)).rejects.toMatchObject({ status: 409 });
-    await db.delete(schema.ledgerTx).where(drizzle.eq(schema.ledgerTx.id, "SLX-REAL000001"));
+    await db.delete(schema.ledgerTx).where(drizzle.eq(schema.ledgerTx.id, "IWE-REAL000001"));
   });
 
   it("borra la cuenta de pruebas, los planes y los movimientos, y conserva las cuentas reales con los datos de su empresa", async () => {
     const { db } = dbMod;
     const now = new Date();
-    await db.insert(schema.user).values({ id: "demo-1", name: "Empresa de Pruebas", email: "demo@solaxy.local", emailVerified: true, createdAt: now, updatedAt: now });
+    await db.insert(schema.user).values({ id: "demo-1", name: "Empresa de Pruebas", email: "pruebas@inworldenergy.local", emailVerified: true, createdAt: now, updatedAt: now });
     await profile.saveProfile("demo-1", { companyName: "Empresa de Pruebas", nit: "900123456-8", fullName: "Persona Demo", docType: "CC", docNumber: "1036123456", phone: "3001234567", city: "Medellín", acceptTerms: true });
     await pay.payWithTestPayment({ userId: "demo-1", planId: "p360" });
     vi.stubEnv("DEMO_MODE", "false");

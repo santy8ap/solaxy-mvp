@@ -12,7 +12,7 @@ export interface MpAccount {
 const FRESH_MS = 6 * 60 * 60_000;
 const RETRY_MS = 60_000;
 
-const g = globalThis as unknown as { __solaxyMpAccount?: { token: string; at: number; ttl: number; account: MpAccount | null } };
+const g = globalThis as unknown as { __iweMpAccount?: { token: string; at: number; ttl: number; account: MpAccount | null } };
 
 /**
  * La cuenta de Mercado Pago del Access Token, consultada una vez y recordada.
@@ -21,7 +21,7 @@ const g = globalThis as unknown as { __solaxyMpAccount?: { token: string; at: nu
 export async function mercadoPagoAccount(deps: { fetch?: typeof fetch } = {}): Promise<MpAccount | null> {
   const cfg = mercadoPagoConfig();
   if (!cfg.enabled) return null;
-  const cached = g.__solaxyMpAccount;
+  const cached = g.__iweMpAccount;
   if (cached && cached.token === cfg.accessToken && Date.now() - cached.at < cached.ttl) return cached.account;
   let account: MpAccount | null = null;
   try {
@@ -37,7 +37,7 @@ export async function mercadoPagoAccount(deps: { fetch?: typeof fetch } = {}): P
   } catch {
     /* sin respuesta: se vuelve a intentar en un minuto */
   }
-  g.__solaxyMpAccount = { token: cfg.accessToken, at: Date.now(), ttl: account ? FRESH_MS : RETRY_MS, account };
+  g.__iweMpAccount = { token: cfg.accessToken, at: Date.now(), ttl: account ? FRESH_MS : RETRY_MS, account };
   return account;
 }
 

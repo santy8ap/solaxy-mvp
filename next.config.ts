@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  /** Rutas de la versión anterior (compra de kW): llevan a su equivalente de ahora. */
+  async redirects() {
+    return [
+      { source: "/panel/mercado", destination: "/panel/planes", permanent: false },
+      { source: "/panel/telemetria", destination: "/panel", permanent: false },
+      { source: "/panel/socios", destination: "/panel", permanent: false },
+      { source: "/admin/usuarios", destination: "/admin/clientes", permanent: false },
+    ];
+  },
   turbopack: {
     rules: {
       "*.css": {

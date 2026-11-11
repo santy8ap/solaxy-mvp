@@ -3,7 +3,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { SolarDay } from "@/config/solar";
 import { db } from "@/lib/db";
 import { ledgerTx } from "@/lib/db/schema";
-import { GRACE_MS, generatedKwh, todayKwh, type SubscriptionState } from "@/lib/energy/plan-math";
+import { GRACE_MS, generatedKwh, type SubscriptionState } from "@/lib/energy/plan-math";
+import { summarize } from "@/lib/energy/summary";
 import { listSubscriptions, periodsOf, stateOf, type SubscriptionWithPeriods } from "@/lib/plans/service";
 import { readConfig } from "@/lib/settings";
 
@@ -114,27 +115,7 @@ export function toSubscriptionDTO(sub: SubscriptionWithPeriods, solar: SolarDay,
   };
 }
 
-/** Energía y dinero de los planes de un usuario en el instante `now`. */
-export function summarize(subs: readonly SubscriptionDTO[], solar: SolarDay, now: number) {
-  let kwh = 0;
-  let today = 0;
-  let sold = 0;
-  let cost = 0;
-  let dailyKwh = 0;
-  let dailyProfit = 0;
-  for (const s of subs) {
-    const g = generatedKwh(solar, s.dailyKwh, s.periods, now);
-    kwh += g;
-    today += todayKwh(solar, s.dailyKwh, s.periods, now);
-    sold += g * s.saleCopPerKwh;
-    cost += g * s.priceCopPerKwh;
-    if (s.periods.some((p) => p.startsAt <= now && now < p.endsAt)) {
-      dailyKwh += s.dailyKwh;
-      dailyProfit += s.dailyKwh * (s.saleCopPerKwh - s.priceCopPerKwh);
-    }
-  }
-  return { generatedKwh: kwh, todayKwh: today, soldCop: sold, costCop: cost, profitCop: sold - cost, dailyKwh, dailyProfitCop: dailyProfit };
-}
+export { summarize };
 
 /** Retiros ya pagados y retiros en revisión (estos apartan saldo hasta que el admin decida). */
 async function withdrawalTotals(userId: string) {

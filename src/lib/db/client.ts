@@ -10,13 +10,13 @@ export type Db = LibSQLDatabase<typeof schema>;
  * Dónde vive la base de datos:
  * - TURSO_DATABASE_URL / DATABASE_URL si están definidas (Turso u otro libSQL)
  * - en Vercel sin Turso: archivo temporal (los datos se pierden al reiniciar)
- * - en tu PC: ./data/solaxy.db (se crea solo)
+ * - en tu PC: ./data/iwe.db (se crea solo)
  */
 export function resolveDatabaseUrl(): string {
   const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
   if (url) return url;
-  if (process.env.VERCEL) return "file:/tmp/solaxy.db";
-  return "file:./data/solaxy.db";
+  if (process.env.VERCEL) return "file:/tmp/iwe.db";
+  return "file:./data/iwe.db";
 }
 
 export function createDb(url = resolveDatabaseUrl(), authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN) {

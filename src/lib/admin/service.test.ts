@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DAY_MS, bogotaMs } from "@/lib/time";
 import { createUser } from "../../../tests/helpers";
 
-process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-admin-")), "test.db")}`;
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-admin-")), "test.db")}`;
 vi.stubEnv("BETTER_AUTH_SECRET", "secreto-de-prueba-suficientemente-largo-123");
 
 let admin: typeof import("@/lib/admin/service");
@@ -114,8 +114,12 @@ describe("clientes y resumen", () => {
     expect(o.plantDailyKwh).toBeCloseTo((8000 * 13 * 2) / Math.PI, 6);
     expect(o).toMatchObject({ contractedDailyKwh: 4000, activePlans: 1, clients: 1, pendingWithdrawals: 0 });
     expect(o.availableDailyKwh).toBeCloseTo(o.plantDailyKwh - 4000, 6);
-    // Dos meses del Plan 360 y uno del Plan 720.
+    // Dos meses del Plan 360 (transferencias registradas) y uno del Plan 720 (pago de prueba).
     expect(o.collectedCop).toBe(40_800_000 * 2 + 76_800_000);
+    // Con dinero real, lo cobrado no cuenta los pagos de prueba.
+    vi.stubEnv("DEMO_MODE", "false");
+    expect((await admin.adminOverview()).collectedCop).toBe(40_800_000 * 2);
+    vi.stubEnv("DEMO_MODE", "");
     // a1: 24.000 kWh; a2: 40.000 kWh antes del cierre. Todo a $ 400.
     expect(o.owedCop).toBe(64_000 * 400);
     vi.setSystemTime(T0);

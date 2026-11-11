@@ -8,6 +8,7 @@ import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
 import { newId, orderCode, simulatedTxHash } from "@/lib/ids";
 import { fulfillOrder } from "@/lib/orders";
+import { collectedWhere } from "@/lib/payments/real-money";
 import { contractedDailyKwh, getSubscription, listAllSubscriptions, resolvePlanPayment, stateOf } from "@/lib/plans/service";
 import { validateSettings, type PlantSettings } from "@/lib/plant-settings";
 import { summarize, toSubscriptionDTO, toTxDTO } from "@/lib/portfolio";
@@ -311,7 +312,7 @@ export async function adminOverview() {
       toRefund: sql<number>`coalesce(sum(case when ${ledgerTx.status} = 'por_reembolsar' then 1 else 0 end), 0)`,
     })
     .from(ledgerTx)
-    .where(eq(ledgerTx.kind, "plan_mes"));
+    .where(and(eq(ledgerTx.kind, "plan_mes"), collectedWhere()));
   const paidOut = Number(w?.paidCop ?? 0);
   return {
     settings,
@@ -321,7 +322,7 @@ export async function adminOverview() {
     activePlans: plans.filter((x) => x.state === "activa").length,
     pausedPlans: plans.filter((x) => x.state === "en_pausa").length,
     clients: new Set(live.map((x) => subs.find((s) => s.id === x.id)?.userId)).size,
-    /** Mensualidades cobradas (incluye pagos de prueba mientras el modo de pruebas esté activo) */
+    /** Mensualidades cobradas. Incluye los pagos de prueba solo mientras el modo de pruebas está activo. */
     collectedCop: Number(p?.collectedCop ?? 0),
     generatedKwh: totals.generatedKwh,
     soldCop: Math.floor(totals.soldCop),

@@ -5,8 +5,8 @@ import { account, appMeta, companyProfile, ledgerTx, planPeriod, planSubscriptio
 import { env, isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
 import { MP_SANDBOX_NETWORK } from "@/lib/payments/mercadopago-service";
+import { realPaymentWhere } from "@/lib/payments/real-money";
 import { readSettings } from "@/lib/settings";
-import { realPaymentWhere } from "./payments";
 import { audit, type Actor } from "./service";
 
 export const RESET_PHRASE = "BORRAR DATOS DE PRUEBA";

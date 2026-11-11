@@ -96,7 +96,7 @@ export function verifyCryptoPayment(input: VerifyInput): VerifyResult {
       : { state: "esperando", confirmations: 0 };
   }
   if (!same(tx.from, order.payer)) return { state: "fallida", reason: "La transacción no salió de la wallet de la orden." };
-  if (asset === "BNB" && !same(tx.to, cfg.treasury)) return { state: "fallida", reason: "La transacción no fue enviada a la billetera de Solaxy." };
+  if (asset === "BNB" && !same(tx.to, cfg.treasury)) return { state: "fallida", reason: "La transacción no fue enviada a la billetera de la empresa." };
   if (!receipt) return { state: "esperando", confirmations: 0 };
   if (receipt.status !== "success") return { state: "fallida", reason: "La transacción falló en la red (revertida). No se movieron fondos." };
 
@@ -112,7 +112,7 @@ export function verifyCryptoPayment(input: VerifyInput): VerifyResult {
 
   const received = asset === "BNB" ? tx.value : usdtReceived(receipt, input);
   if (received === 0n) {
-    return { state: "fallida", reason: "No encontramos una transferencia de USDT hacia la billetera de Solaxy en esta transacción." };
+    return { state: "fallida", reason: "No encontramos una transferencia de USDT hacia la billetera de la empresa en esta transacción." };
   }
   if (received < order.expectedBaseUnits) {
     return {

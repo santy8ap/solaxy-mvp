@@ -1,6 +1,6 @@
 // 1) Si faltan los datos del inversionista, el pago los pide antes de seguir.
 // 2) En modo demo, el pago simulado (firma con la wallet demo) sigue funcionando.
-// Uso: node e2e/demo-and-profile.cjs [carpeta-de-capturas]   (usa la base local data/solaxy.db)
+// Uso: node e2e/demo-and-profile.cjs [carpeta-de-capturas]   (usa la base local data/iwe.db)
 const { chromium } = require("playwright");
 const { createClient } = require("@libsql/client");
 const path = require("node:path");
@@ -14,7 +14,7 @@ function check(cond, msg) {
 
 (async () => {
   const db = createClient({ url: `file:${path.join(__dirname, "..", "data", "solaxy.db")}` });
-  await db.execute("DELETE FROM investor_profile WHERE user_id = (SELECT id FROM user WHERE email = 'demo@solaxy.local')");
+  await db.execute("DELETE FROM investor_profile WHERE user_id = (SELECT id FROM user WHERE email = 'pruebas@inworldenergy.local')");
 
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });

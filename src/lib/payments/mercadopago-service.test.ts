@@ -6,7 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { MpPayment } from "@/lib/payments/mercadopago";
 import { createUser } from "../../../tests/helpers";
 
-process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-mp-")), "test.db")}`;
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-mp-")), "test.db")}`;
 const TOKEN = "APP_USR-token-de-prueba";
 const SECRET = "mp_secret_de_prueba";
 vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", TOKEN);
@@ -117,7 +117,7 @@ describe("orden de un mes con Mercado Pago", () => {
     expect(row.subscriptionId).toMatch(/^PLN-[0-9A-F]{8}$/);
     const pref = mp.preferences.at(-1)!.body as { external_reference: string; items: { title: string; unit_price: number; currency_id: string }[]; back_urls: { success: string } };
     expect(pref.external_reference).toBe(o.orderId);
-    expect(pref.items[0]).toMatchObject({ title: "Plan 180 · mes 1 de 3 · Solaxy", unit_price: MONTH_180, currency_id: "COP" });
+    expect(pref.items[0]).toMatchObject({ title: "Plan 180 · mes 1 de 3 · In World Energy", unit_price: MONTH_180, currency_id: "COP" });
     expect(pref.back_urls.success).toMatch(new RegExp(`/pagos/resultado\\?ref=${o.orderId}$`));
     expect(o.checkoutUrl).toMatch(/^https:\/\/mp\.falso\/checkout\?pref=/);
     // Todavía no se paga: el plan es un borrador que no ocupa cupo ni se muestra.
@@ -240,7 +240,7 @@ describe("confirmación del pago", () => {
   it("un pago de otra integración (referencia desconocida) no hace nada", async () => {
     const p = pay("OTRA-TIENDA-1", 1000, "approved");
     expect((await svc.handleMercadoPagoNotification(notification(p.id), deps)).status).toBe(200);
-    expect(await svc.syncMercadoPagoOrder({ orderId: "SLX-NOEXISTE00" }, deps)).toBeNull();
+    expect(await svc.syncMercadoPagoOrder({ orderId: "IWE-NOEXISTE00" }, deps)).toBeNull();
   });
 
   it("si un pago aprobado luego se devuelve, la orden queda marcada para revisión", async () => {

@@ -49,7 +49,7 @@ const near = (a, b) => Math.abs(a - b) < 1e-6;
   await page.getByRole("button", { name: /^Pagar \$/ }).click();
   await page.waitForURL(new RegExp(`^${fake}/checkout/v1/redirect`), { timeout: 60000 });
   check(true, "el mercado abre el Checkout Pro de Mercado Pago");
-  check((await page.locator("#cliente").innerText()).includes("Laura Gómez · demo@solaxy.local"), "el checkout recibe el nombre y el correo del comprador");
+  check((await page.locator("#cliente").innerText()).includes("Laura Gómez · pruebas@inworldenergy.local"), "el checkout recibe el nombre y el correo del comprador");
   check(/^SLX-[0-9A-F]{10}$/.test(await page.locator("#ref").innerText()), "la referencia del pago es el código de la orden");
   check(/^\d+ COP$/.test(await page.locator("#monto").innerText()), `el monto va en pesos (${await page.locator("#monto").innerText()})`);
   await page.getByRole("button", { name: "Aprobar" }).click();

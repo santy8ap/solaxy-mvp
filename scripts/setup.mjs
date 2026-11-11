@@ -41,4 +41,4 @@ console.log(`✓ Admin: ${has("ADMIN_PIN") ? "PIN configurado en .env.local" : "
 console.log(`✓ Mercado Pago: ${has("MERCADOPAGO_ACCESS_TOKEN") ? "configurado" : "sin configurar"}`);
 console.log(`✓ Cripto directo: ${has("CRYPTO_TREASURY_ADDRESS") ? "configurado" : "sin configurar"}`);
 console.log(`✓ Trust Wallet por QR: ${has("NEXT_PUBLIC_REOWN_PROJECT_ID") ? "configurado" : "sin configurar (funcionan la extensión y la wallet demo)"}`);
-console.log("✓ Base de datos: se crea sola en data/solaxy.db al abrir la app\n");
+console.log("✓ Base de datos: se crea sola en data/iwe.db al abrir la app\n");

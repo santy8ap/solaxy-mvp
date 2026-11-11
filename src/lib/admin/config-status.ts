@@ -60,7 +60,7 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Base",
     title: "Base de datos persistente",
     state: turso ? "ok" : process.env.VERCEL ? "falta" : "info",
-    detail: turso ? "Conectada a Turso." : process.env.VERCEL ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel → Storage." : "Archivo local (data/solaxy.db).",
+    detail: turso ? "Conectada a Turso." : process.env.VERCEL ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel › Storage." : "Archivo local (data/iwe.db).",
     vars: ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"],
     required: Boolean(process.env.VERCEL),
   });
@@ -117,7 +117,7 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     title: "Access Token de Mercado Pago",
     state: !mp.enabled ? "falta" : mpTest ? (demo ? "aviso" : "falta") : "ok",
     detail: !mp.accessToken
-      ? "En Mercado Pago → Tus integraciones → tu aplicación → Credenciales: las de prueba para probar, las de producción para cobrar."
+      ? "En Mercado Pago › Tus integraciones › tu aplicación › Credenciales: las de prueba para probar, las de producción para cobrar."
       : !mp.enabled
         ? "No parece un Access Token de Mercado Pago (empieza por APP_USR- o TEST-)."
         : mpTest
@@ -133,7 +133,7 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Mercado Pago",
     title: "Notificaciones (webhook)",
     state: mp.webhookSecret ? "ok" : "falta",
-    detail: `${mp.webhookSecret ? "Clave secreta configurada." : "Falta la clave secreta de las notificaciones."} En Mercado Pago → Webhooks, la URL debe ser ${webhookUrl} con el evento Pagos.`,
+    detail: `${mp.webhookSecret ? "Clave secreta configurada." : "Falta la clave secreta de las notificaciones."} En Mercado Pago › Webhooks, la URL debe ser ${webhookUrl} con el evento Pagos.`,
     vars: ["MERCADOPAGO_WEBHOOK_SECRET"],
     required: true,
   });

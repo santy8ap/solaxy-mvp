@@ -1,11 +1,12 @@
+import type { AdminAction } from "@/lib/db/schema";
 import type { PlantSettings } from "@/lib/plant-settings";
-import type { TxDTO } from "@/lib/portfolio";
+import type { SubscriptionDTO, TxDTO } from "@/lib/portfolio";
 
 export interface AuditEntry {
   id: string;
   actorUserId: string;
   actorName: string;
-  action: "ajuste_kw" | "config_planta" | "aprobar_retiro" | "rechazar_retiro";
+  action: AdminAction | string;
   targetUserId: string | null;
   summary: string;
   detail: string | null;
@@ -14,48 +15,72 @@ export interface AuditEntry {
 
 export interface OverviewDTO {
   settings: PlantSettings;
-  capacityKwp: number;
-  soldKw: number;
-  availableKw: number;
-  investors: number;
-  capitalCop: number;
+  plantDailyKwh: number;
+  contractedDailyKwh: number;
+  availableDailyKwh: number;
+  activePlans: number;
+  pausedPlans: number;
+  clients: number;
+  collectedCop: number;
+  generatedKwh: number;
+  soldCop: number;
+  owedCop: number;
+  paidOutCop: number;
   pendingWithdrawals: number;
   pendingWithdrawalsCop: number;
-  activeOffers: number;
+  paymentsToRefund: number;
   recent: AuditEntry[];
 }
 
-export interface AdminUserRow {
+export interface AdminClient {
   id: string;
   name: string;
-  email: string | null;
-  real: boolean;
-  kw: number;
-  investedCop: number;
-  earnedCop: number;
-  lastActivity: number | null;
+  email: string;
+  createdAt: number;
   profile: {
+    companyName: string;
+    nit: string;
     fullName: string;
     docType: string;
     docNumber: string;
     phone: string;
     city: string;
-    termsVersion: string | null;
     termsAcceptedAt: number | null;
-    /** Aceptó la versión vigente de los términos */
+    /** Datos completos y versión vigente de los términos aceptada */
     termsCurrent: boolean;
   } | null;
+  plans: SubscriptionDTO[];
+  generatedKwh: number;
+  soldCop: number;
+  profitCop: number;
+  withdrawnCop: number;
+  reservedCop: number;
+  balanceCop: number;
 }
 
 export interface AdminWithdrawal extends TxDTO {
   userId: string;
   userName: string;
+  userEmail: string;
+  companyName: string | null;
+  nit: string | null;
+  bankAccountNumber: string | null;
   signed: boolean;
 }
 
-export const ACTION_LABEL: Record<AuditEntry["action"], string> = {
-  ajuste_kw: "Ajuste de kW",
+const ACTION_LABEL: Record<string, string> = {
   config_planta: "Configuración",
+  pago_manual: "Pago manual",
+  cerrar_plan: "Plan cerrado",
   aprobar_retiro: "Retiro aprobado",
   rechazar_retiro: "Retiro rechazado",
+  reverificar_pago: "Pago re-verificado",
+  registrar_hash: "Hash registrado",
+  marcar_reembolso: "Reembolso",
+  borrar_datos_prueba: "Datos de prueba",
+  // Acciones del modelo anterior que siguen en la bitácora
+  ajuste_kw: "Ajuste (modelo anterior)",
+  borrar_datos_demo: "Datos de prueba",
 };
+
+export const actionLabel = (action: string) => ACTION_LABEL[action] ?? action;

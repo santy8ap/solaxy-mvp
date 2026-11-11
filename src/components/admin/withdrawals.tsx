@@ -1,238 +1,226 @@
 "use client";
-import { Check, Copy, ShieldCheck, X } from "lucide-react";
+import { Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import type { PlantSettings } from "@/lib/plant-settings";
 import { useAppConfig } from "@/lib/client/use-app-config";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
-import { useSettings } from "@/lib/client/use-settings";
 import { formatAsset, formatCop, formatDateTime } from "@/lib/format";
+import { accountTypeLabel } from "@/lib/withdrawal-schema";
+import { isEvmHash } from "@/components/panel/tx-meta";
+import { ErrorNote, Field } from "@/components/ui/field";
+import { Status } from "@/components/ui/status";
 import { toast } from "@/components/ui/toast";
 import { AdminTopbar } from "./shell";
 import type { AdminWithdrawal } from "./types";
 
-async function saveSettings(next: PlantSettings) {
-  const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((json as { error?: string }).error ?? "No se pudo guardar");
-  return json as PlantSettings;
-}
+const LIST_URL = "/api/admin/withdrawals";
 
-function Switch({ checked, onChange, disabled, label }: { checked: boolean; onChange(v: boolean): void; disabled?: boolean; label: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ${checked ? "bg-dusk-500" : "bg-silicon-600"} disabled:opacity-50`}
-    >
-      <span className={`absolute top-1 h-5 w-5 rounded-full bg-silver-50 shadow transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-1"}`} />
-    </button>
-  );
-}
-
+/** Un dato que el administrador va a pegar en el banco o en la wallet: se copia con un toque. */
 function CopyValue({ value, label }: { value: string; label: string }) {
   return (
     <button
       type="button"
       onClick={() => {
         void navigator.clipboard.writeText(value).then(
-          () => toast(`${label} copiado`),
-          () => toast("No se pudo copiar", "error"),
+          () => toast(`${label}: copiado.`),
+          () => toast("No se pudo copiar.", "error"),
         );
       }}
-      className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-silicon-600/70 px-2 py-1 text-left font-mono text-xs text-silver-200 hover:border-silicon-500"
-      title={`Copiar ${label.toLowerCase()}`}
+      className="num group inline-flex max-w-full items-start gap-2 text-left hover:text-ink"
+      aria-label={`Copiar ${label.toLowerCase()}: ${value}`}
     >
       <span className="break-all">{value}</span>
-      <Copy size={12} className="shrink-0 text-silver-400" />
+      <Copy size={13} strokeWidth={1.5} className="mt-1 shrink-0 text-mute group-hover:text-ink" aria-hidden="true" />
     </button>
   );
 }
 
-export function AdminWithdrawals() {
-  const { data, loading } = useJson<{ withdrawals: AdminWithdrawal[] }>("/api/admin/withdrawals", { refreshMs: 4000 });
-  const { settings, reload } = useSettings();
-  const { config } = useAppConfig();
-  const realMoney = config ? !config.demoMode : false;
-  const [busy, setBusy] = useState<string | null>(null);
-  const [rejecting, setRejecting] = useState<string | null>(null);
-  const [approving, setApproving] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
-  const [reference, setReference] = useState("");
-  const list = data?.withdrawals ?? [];
-  const pending = list.filter((w) => w.status === "por_aprobar");
-  const done = list.filter((w) => w.status !== "por_aprobar").slice(0, 15);
+function Datum({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="cap">{label}</dt>
+      <dd className="mt-1.5 break-words">{children}</dd>
+    </div>
+  );
+}
 
-  const decide = async (w: AdminWithdrawal, decision: "aprobar" | "rechazar") => {
-    setBusy(w.id);
+const ownerOf = (w: AdminWithdrawal) => w.companyName || w.userName;
+
+function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: boolean }) {
+  const [mode, setMode] = useState<null | "aprobar" | "rechazar">(null);
+  const [reference, setReference] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const toBank = !!w.bankName;
+
+  const decide = async (decision: "aprobar" | "rechazar") => {
+    setBusy(true);
+    setError(null);
     try {
-      await postJson(`/api/admin/withdrawals/${w.id}`, { decision, reason, reference });
-      toast(decision === "aprobar" ? `Aprobaste el retiro de ${formatCop(w.amountCop)} de ${w.userName}` : `Rechazaste el retiro de ${w.userName}`);
-      setRejecting(null);
-      setApproving(null);
-      setReason("");
-      setReference("");
-      void refetch("/api/admin/withdrawals");
+      await postJson(`${LIST_URL}/${w.id}`, { decision, reason, reference });
+      toast(decision === "aprobar" ? `Retiro de ${formatCop(w.amountCop)} aprobado.` : "Retiro rechazado: el saldo volvió a quedar disponible.");
+      void refetch(LIST_URL);
       void refetch("/api/admin/overview");
     } catch (e) {
-      toast((e as Error).message, "error");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const toggle = async (value: boolean) => {
-    setBusy("toggle");
-    try {
-      await saveSettings({ ...settings, withdrawalApproval: value });
-      await reload();
-      toast(value ? "Los retiros ahora esperan tu aprobación." : "Los retiros se aprobarán solos.");
-    } catch (e) {
-      toast((e as Error).message, "error");
-    } finally {
-      setBusy(null);
+      setError((e as Error).message);
+      setBusy(false);
     }
   };
 
   return (
-    <>
-      <AdminTopbar title="Retiros" subtitle="Revisa y aprueba los retiros de ganancias antes de enviarlos." />
-
-      <section className="panel flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+    <li className="border-b border-line py-8">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-x-12 gap-y-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
         <div>
-          <h2 className="font-semibold text-silver-50">Requerir aprobación de retiros</h2>
-          <p className="mt-1 text-sm text-silver-400">
-            {realMoney
-              ? "Con dinero real, cada retiro espera aquí: tú haces el envío y registras su referencia. Mientras tanto se aparta el saldo del usuario."
-              : settings.withdrawalApproval
-                ? "Cada retiro espera aquí hasta que lo apruebes o lo rechaces. Mientras tanto aparta el saldo del usuario."
-                : "Los retiros se envían apenas el usuario los firma (solo en modo demo)."}
+          <p className="cap">{ownerOf(w)}</p>
+          <p className="figure mt-3 text-[clamp(2.6rem,6vw,4rem)]">{formatCop(w.amountCop)}</p>
+          <p className="num mt-3 text-sm text-mute">
+            Pedido el {formatDateTime(w.createdAt)}
+            <br />
+            {w.id}
           </p>
         </div>
-        <Switch checked={realMoney || settings.withdrawalApproval} onChange={(v) => void toggle(v)} disabled={realMoney || busy === "toggle"} label="Requerir aprobación de retiros" />
-      </section>
-
-      <section className="mt-5" aria-labelledby="pending-title">
-        <h2 id="pending-title" className="mb-3 text-lg font-semibold text-silver-50">
-          Por aprobar <span className="num text-silver-400">({pending.length})</span>
-        </h2>
-        <ul className="space-y-3">
-          {pending.map((w) => (
-            <li key={w.id} className="panel p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold text-silver-50">{w.userName}</div>
-                  <div className="num mt-1 text-2xl font-semibold text-silver-50">{formatCop(w.amountCop)}</div>
-                  <div className="num text-sm text-silver-400">
-                    {w.assetAmount != null && w.asset ? formatAsset(w.assetAmount, w.asset) : ""} a {w.walletName} · {w.network ?? "BNB Smart Chain (BEP-20)"}
-                  </div>
-                  {w.walletAddress && (
-                    <div className="mt-2">
-                      <CopyValue value={w.walletAddress} label="Dirección" />
-                    </div>
-                  )}
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-silver-500">
-                    <span className="num">{formatDateTime(w.createdAt)}</span>
-                    {w.signed && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-leaf-400/10 px-2 py-0.5 text-leaf-300">
-                        <ShieldCheck size={12} /> Firma de la wallet verificada
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-ghost !py-2.5 text-sm"
-                    disabled={busy === w.id}
-                    onClick={() => {
-                      setApproving(null);
-                      setRejecting(rejecting === w.id ? null : w.id);
-                    }}
-                  >
-                    <X size={16} /> Rechazar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-dusk !py-2.5 text-sm"
-                    disabled={busy === w.id}
-                    onClick={() => {
-                      setRejecting(null);
-                      setApproving(approving === w.id ? null : w.id);
-                    }}
-                  >
-                    <Check size={16} /> Aprobar
-                  </button>
-                </div>
-              </div>
-              {approving === w.id && (
-                <div className="mt-4 border-t border-silicon-600/50 pt-4">
-                  <label htmlFor={`ref-${w.id}`} className="text-sm text-silver-300">
-                    Referencia del envío {realMoney ? "" : "(opcional en modo demo)"}
-                  </label>
-                  <p className="mt-1 text-xs text-silver-500">
-                    Primero envía el dinero a la dirección de arriba. Luego pega aquí el hash de la transacción o el número del comprobante bancario.
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <input
-                      id={`ref-${w.id}`}
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                      maxLength={120}
-                      placeholder="0x… o número de comprobante"
-                      className="field num min-w-[240px] flex-1"
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-dusk text-sm"
-                      disabled={busy === w.id || (realMoney && reference.trim().length < 6)}
-                      onClick={() => void decide(w, "aprobar")}
-                    >
-                      {busy === w.id ? "Aprobando…" : "Confirmar aprobación"}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {rejecting === w.id && (
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-silicon-600/50 pt-4">
-                  <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder="Motivo del rechazo (lo verá el usuario)" className="field min-w-[220px] flex-1" aria-label="Motivo del rechazo" />
-                  <button type="button" className="btn btn-ghost text-sm" disabled={busy === w.id} onClick={() => void decide(w, "rechazar")}>
-                    Confirmar rechazo
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-          {!loading && pending.length === 0 && (
-            <li className="panel-quiet p-8 text-center text-silver-400">No hay retiros esperando. Cuando un usuario pida uno, aparecerá aquí al instante.</li>
+        <div>
+          {toBank ? (
+            <>
+              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
+                <Datum label="Banco">{w.bankName}</Datum>
+                <Datum label="Tipo de cuenta">{accountTypeLabel(w.bankAccountType)}</Datum>
+                <Datum label="Número de cuenta">{w.bankAccountNumber ? <CopyValue value={w.bankAccountNumber} label="Número de cuenta" /> : "Sin registrar"}</Datum>
+              </dl>
+              <p className="mt-5 max-w-[62ch] text-sm leading-relaxed text-fog">
+                Antes de transferir, verifica en el banco que la cuenta esté a nombre de {ownerOf(w)}
+                {w.nit ? ` (NIT ${w.nit})` : ""}. Solo se paga a cuentas de la misma empresa.
+              </p>
+            </>
+          ) : (
+            <>
+              <dl className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-5 sm:grid-cols-[auto_minmax(0,1fr)]">
+                <Datum label="Enviar">{w.assetAmount != null && w.asset ? <span className="num">{formatAsset(w.assetAmount, w.asset)}</span> : "USDT"}</Datum>
+                <Datum label={`Dirección en ${w.network ?? "BNB Smart Chain (BEP-20)"}`}>{w.walletAddress ? <CopyValue value={w.walletAddress} label="Dirección" /> : "Sin registrar"}</Datum>
+              </dl>
+              <p className="mt-5 flex max-w-[62ch] items-start gap-2 text-sm leading-relaxed text-fog">
+                <ShieldCheck size={15} strokeWidth={1.5} className="mt-0.5 shrink-0" aria-hidden="true" />
+                {w.signed ? `${ownerOf(w)} firmó la solicitud con esa wallet (${w.walletName ?? "wallet"}): es suya.` : "La solicitud no trae la firma de la wallet: no la apruebes sin confirmar la dirección con la empresa."}
+              </p>
+            </>
           )}
-        </ul>
+
+          <div className="mt-7 flex flex-wrap gap-3">
+            <button type="button" className={`btn ${mode === "aprobar" ? "btn-solid" : "btn-ghost"}`} aria-expanded={mode === "aprobar"} disabled={busy} onClick={() => setMode(mode === "aprobar" ? null : "aprobar")}>
+              Ya lo pagué
+            </button>
+            <button type="button" className={`btn ${mode === "rechazar" ? "btn-solid" : "btn-ghost"}`} aria-expanded={mode === "rechazar"} disabled={busy} onClick={() => setMode(mode === "rechazar" ? null : "rechazar")}>
+              Rechazar
+            </button>
+          </div>
+
+          {mode === "aprobar" && (
+            <form
+              className="mt-7 max-w-[520px] space-y-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void decide("aprobar");
+              }}
+            >
+              <Field
+                label="Referencia del envío"
+                hint={`${toBank ? "El número del comprobante de la transferencia." : "El hash de la transacción (0x…)."} La empresa lo verá en sus movimientos.${realMoney ? "" : " En modo de pruebas puedes dejarla vacía."}`}
+              >
+                {(id, aria) => <input id={id} {...aria} value={reference} onChange={(e) => setReference(e.target.value)} maxLength={120} autoComplete="off" className="field num" />}
+              </Field>
+              <button type="submit" className="btn btn-solid" disabled={busy || (realMoney && reference.trim().length < 6)}>
+                {busy ? "Guardando…" : "Confirmar el pago"}
+              </button>
+            </form>
+          )}
+          {mode === "rechazar" && (
+            <form
+              className="mt-7 max-w-[520px] space-y-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void decide("rechazar");
+              }}
+            >
+              <Field label="Motivo del rechazo" hint="La empresa lo verá en sus movimientos y el saldo vuelve a quedar disponible.">
+                {(id, aria) => <input id={id} {...aria} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} autoComplete="off" className="field" />}
+              </Field>
+              <button type="submit" className="btn btn-solid" disabled={busy || reason.trim().length < 4}>
+                {busy ? "Guardando…" : "Confirmar el rechazo"}
+              </button>
+            </form>
+          )}
+          {error && <ErrorNote className="mt-5">{error}</ErrorNote>}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function ReviewedWithdrawal({ w }: { w: AdminWithdrawal }) {
+  const paid = w.status === "confirmada";
+  return (
+    <li className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[9.5rem_minmax(0,1fr)_auto] sm:items-baseline">
+      <p className="num text-sm text-mute">{formatDateTime(w.confirmedAt ?? w.createdAt)}</p>
+      <div className="min-w-0">
+        <p className="font-medium">{ownerOf(w)}</p>
+        <p className="mt-1 break-words text-sm leading-relaxed text-mute">
+          {w.bankName ? `${w.bankName}, ${accountTypeLabel(w.bankAccountType).toLowerCase()} ${w.bankAccountNumber ?? ""}` : `${w.walletName ?? "Wallet"} ${w.walletAddress ?? ""}`}
+        </p>
+        {paid && w.txHash && (
+          <p className="num mt-1 break-all text-xs text-dim">
+            {isEvmHash(w.txHash) ? "Hash" : "Comprobante"} {w.txHash}
+          </p>
+        )}
+        {!paid && w.note && <p className="mt-1 text-sm leading-relaxed text-fog">Motivo: {w.note}</p>}
+      </div>
+      <div className="flex items-baseline justify-between gap-6 sm:block sm:text-right">
+        <p className={`num text-lg ${paid ? "" : "text-dim line-through"}`}>{formatCop(w.amountCop)}</p>
+        <p className="sm:mt-2">
+          <Status tone={paid ? "ok" : "off"}>{paid ? "Pagado" : "Rechazado"}</Status>
+        </p>
+      </div>
+    </li>
+  );
+}
+
+export function AdminWithdrawals() {
+  const { data, loading, error } = useJson<{ withdrawals: AdminWithdrawal[] }>(LIST_URL, { refreshMs: 10_000 });
+  const { config } = useAppConfig();
+  const realMoney = config ? !config.demoMode : true;
+  const list = data?.withdrawals ?? [];
+  const pending = list.filter((w) => w.status === "por_aprobar");
+  const reviewed = list.filter((w) => w.status !== "por_aprobar").slice(0, 30);
+
+  return (
+    <>
+      <AdminTopbar title="Retiros" subtitle="Cada retiro espera aquí con el saldo apartado. Haces el envío desde el banco o la wallet de la empresa y registras su referencia." />
+      {error && <ErrorNote className="mb-8">{error}</ErrorNote>}
+
+      <section aria-labelledby="pending-title">
+        <h2 id="pending-title" className="border-b border-line-strong pb-4 text-xl font-medium">
+          Por revisar <span className="num text-mute">{pending.length}</span>
+        </h2>
+        {loading && !data ? (
+          <div className="skeleton mt-6 h-40" aria-busy="true" aria-label="Cargando los retiros" />
+        ) : pending.length ? (
+          <ul>
+            {pending.map((w) => (
+              <PendingWithdrawal key={w.id} w={w} realMoney={realMoney} />
+            ))}
+          </ul>
+        ) : (
+          <p className="py-10 text-mute">No hay retiros esperando. Cuando una empresa pida uno, aparece aquí.</p>
+        )}
       </section>
 
-      {done.length > 0 && (
-        <section className="panel mt-6 p-5 sm:p-6" aria-labelledby="done-title">
-          <h2 id="done-title" className="text-lg font-semibold text-silver-50">
-            Revisados recientemente
+      {reviewed.length > 0 && (
+        <section className="mt-14" aria-labelledby="reviewed-title">
+          <h2 id="reviewed-title" className="border-b border-line-strong pb-4 text-xl font-medium">
+            Revisados
           </h2>
-          <ul className="mt-3 divide-y divide-silicon-600/40">
-            {done.map((w) => (
-              <li key={w.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                <div>
-                  <span className="font-medium text-silver-50">{w.userName}</span>
-                  <span className="num ml-2 text-silver-400">{formatDateTime(w.createdAt)}</span>
-                  {w.status === "rechazada" && w.note && <div className="text-xs text-silver-500">Motivo: {w.note}</div>}
-                  {w.status === "confirmada" && w.txHash && <div className="num break-all text-xs text-silver-500">Referencia: {w.txHash}</div>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="num font-semibold text-silver-100">{formatCop(w.amountCop)}</span>
-                  <span className={`rounded-full px-2.5 py-1 text-xs ${w.status === "confirmada" ? "bg-leaf-400/12 text-leaf-300" : "bg-alert-400/12 text-alert-400"}`}>
-                    {w.status === "confirmada" ? "Aprobado" : "Rechazado"}
-                  </span>
-                </div>
-              </li>
+          <ul>
+            {reviewed.map((w) => (
+              <ReviewedWithdrawal key={w.id} w={w} />
             ))}
           </ul>
         </section>
@@ -240,5 +228,3 @@ export function AdminWithdrawals() {
     </>
   );
 }
-
-export { saveSettings, Switch };

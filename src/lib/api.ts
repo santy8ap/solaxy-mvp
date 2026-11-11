@@ -11,7 +11,7 @@ export function handleError(err: unknown) {
   if (err instanceof ZodError) {
     return Response.json({ error: err.issues[0]?.message ?? "Datos inválidos" }, { status: 400 });
   }
-  console.error("[solaxy] error en API:", err);
+  console.error("[iwe] error en API:", err);
   return Response.json({ error: "Error inesperado del servidor" }, { status: 500 });
 }
 

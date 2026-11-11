@@ -91,6 +91,8 @@ export async function getCatalog(now = Date.now()) {
   const contracted = await contractedDailyKwh(now);
   const available = Math.max(0, plantDailyKwh - contracted);
   return {
+    /** Hora del servidor: el navegador sincroniza con ella el reloj solar */
+    asOf: now,
     plantName: settings.name,
     location: settings.location,
     solar,

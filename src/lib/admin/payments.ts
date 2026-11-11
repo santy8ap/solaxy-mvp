@@ -1,12 +1,13 @@
 import "server-only";
-import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { companyProfile, ledgerTx, planSubscription, user, type PaymentMethod, type TxStatus } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
 import { getOrder, type OrderRow } from "@/lib/orders";
 import { submitCryptoPayment, verifyCryptoOrder, type CryptoDeps } from "@/lib/payments/crypto-service";
-import { MP_SANDBOX_NETWORK, syncMercadoPagoOrder } from "@/lib/payments/mercadopago-service";
+import { syncMercadoPagoOrder } from "@/lib/payments/mercadopago-service";
+import { collectedWhere } from "@/lib/payments/real-money";
 import { toTxDTO, type TxDTO } from "@/lib/portfolio";
 import { readSettings } from "@/lib/settings";
 import { dayStartMs, localDayIndex } from "@/lib/time";
@@ -75,17 +76,9 @@ export async function listPayments({ status = "todos", method = "todos", limit =
   return rows.map((r) => toRow(r.t, r));
 }
 
-/** Pagos con dinero real: Mercado Pago (no de pruebas), cripto en la red principal y pagos registrados por el admin. */
-export const realPaymentWhere = or(
-  and(eq(ledgerTx.method, "mercadopago"), or(isNull(ledgerTx.network), ne(ledgerTx.network, MP_SANDBOX_NETWORK))),
-  and(eq(ledgerTx.method, "crypto"), or(isNull(ledgerTx.chainId), ne(ledgerTx.chainId, 97))),
-  eq(ledgerTx.method, "manual"),
-);
-
-/** Números para el encabezado de la sección Pagos (solo dinero real: los pagos de prueba no cuentan como recaudo). */
+/** Números para el encabezado de la sección Pagos. Qué cuenta como recaudo lo decide `collectedWhere`. */
 export async function paymentSummary(now = Date.now()) {
   await readSettings();
-  const real = realPaymentWhere;
   const today = dayStartMs(localDayIndex(now));
   const [totals] = await db
     .select({
@@ -95,7 +88,7 @@ export async function paymentSummary(now = Date.now()) {
       toRefund: sql<number>`sum(case when ${ledgerTx.status} = 'por_reembolsar' then 1 else 0 end)`,
     })
     .from(ledgerTx)
-    .where(and(real, eq(ledgerTx.kind, "plan_mes")));
+    .where(and(collectedWhere(), eq(ledgerTx.kind, "plan_mes")));
   return { totalCop: totals?.totalCop ?? 0, todayCop: totals?.todayCop ?? 0, inProgress: totals?.inProgress ?? 0, toRefund: totals?.toRefund ?? 0 };
 }
 

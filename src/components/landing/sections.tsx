@@ -1,57 +1,100 @@
 import Link from "next/link";
 import { BRAND } from "@/config/brand";
+import { PLANS, PLAN_MONTHS } from "@/config/plans";
+import { SOLAR } from "@/config/solar";
+import { DAYS_PER_MONTH, GRACE_DAYS } from "@/lib/energy/plan-math";
 import { isDemoMode } from "@/lib/env";
-import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
+import { formatCop, formatHourLabel, formatNumber } from "@/lib/format";
+import { MIN_WITHDRAWAL_COP } from "@/lib/withdrawal-schema";
 import { Logo } from "@/components/ui/logo";
+import { CatalogValue } from "./catalog-value";
 
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-40 border-b border-silicon-600/40 bg-silicon-900/75 backdrop-blur-md">
-      <nav className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-5 sm:px-8" aria-label="Principal">
+    <header className="sticky top-0 z-40 border-b border-line bg-void/90 backdrop-blur-md">
+      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between gap-6 px-5 sm:px-8">
         <Link href="/" aria-label={`${BRAND.name}, inicio`}>
           <Logo />
         </Link>
-        <div className="hidden items-center gap-7 text-sm text-silver-300 md:flex">
-          <a href="#como-funciona" className="hover:text-silver-50">Cómo funciona</a>
-          <a href="#planta" className="hover:text-silver-50">La planta</a>
-          <a href="#simulador" className="hover:text-silver-50">Simulador</a>
-          <a href="#preguntas" className="hover:text-silver-50">Preguntas</a>
-        </div>
-        <Link href="/ingresar" className="btn btn-ghost !px-4 !py-2.5 text-sm">
+        <nav className="hidden items-center gap-9 text-sm text-fog md:flex" aria-label="Secciones">
+          <a href="#reloj" className="hover:text-ink">
+            Reloj solar
+          </a>
+          <a href="#planes" className="hover:text-ink">
+            Planes
+          </a>
+          <a href="#como-funciona" className="hover:text-ink">
+            Cómo funciona
+          </a>
+          <a href="#preguntas" className="hover:text-ink">
+            Preguntas
+          </a>
+        </nav>
+        <Link href="/ingresar" className="btn btn-ghost !min-h-10 !px-4 !py-2.5">
           Ingresar
         </Link>
-      </nav>
+      </div>
     </header>
   );
 }
 
-const STEPS = [
+export function Hero() {
+  return (
+    <section className="mx-auto max-w-[1240px] px-5 pb-12 pt-14 sm:px-8 sm:pb-16 sm:pt-20">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[1fr_minmax(0,40ch)] lg:items-end lg:gap-16">
+        <h1 className="display text-[clamp(3.6rem,11.5vw,9.5rem)]">
+          Compra energía solar por planes.
+        </h1>
+        <div className="lg:pb-3">
+          <p className="text-lg leading-relaxed text-fog">
+            Tu empresa compra energía a precio de plan, desde <CatalogValue pick="lowestPrice" /> el kWh. La planta la genera cada día y se vende a <CatalogValue pick="sale" />. La diferencia
+            es tu utilidad, y la ves crecer mientras sale el sol.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#planes" className="btn btn-solid">
+              Ver los planes
+            </a>
+            <Link href="/ingresar" className="btn btn-ghost">
+              Ingresar
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const STEPS: { title: string; text: React.ReactNode }[] = [
   {
-    title: "Entra con tu cuenta de Google",
-    body: "Tu panel queda listo en segundos. No necesitas papeleo para empezar a ver la planta.",
+    title: "Registra tu empresa",
+    text: "Entra con tu cuenta de Google y completa la razón social, el NIT y los datos del representante legal.",
   },
   {
-    title: "Compra kW con tu wallet",
-    body: "Desde 0,1 kW. Pagas con Trust Wallet, MetaMask o cualquier wallet compatible, en USDT, BNB, ETH o BTC.",
+    title: "Elige un plan y paga el primer mes",
+    text: "Con tarjeta, PSE o Nequi a través de Mercado Pago, o con USDT o BNB desde tu wallet. La energía empieza a contar cuando el pago queda confirmado.",
   },
   {
-    title: "Gana con cada kWh que se entrega",
-    body: "La energía de la planta se vende de día y, con la batería, también de noche. Tu parte se suma a tu saldo segundo a segundo.",
+    title: "Mira tu energía y retira",
+    text: (
+      <>
+        Tu energía se genera cada día con el sol y se vende a <CatalogValue pick="sale" /> el kWh. El saldo lo retiras a la cuenta bancaria de tu empresa.
+      </>
+    ),
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="como-funciona" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 py-20 sm:px-8" aria-labelledby="como-title">
-      <h2 id="como-title" className="display max-w-[18ch] text-[clamp(2rem,3.6vw,3rem)] text-silver-50">
-        Tres pasos entre tu wallet y el sol
-      </h2>
-      <ol className="mt-12 grid gap-px overflow-hidden rounded-[var(--radius-panel)] border border-silicon-600/50 bg-silicon-600/50 md:grid-cols-3">
+    <section id="como-funciona" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8">
+      <h2 className="display text-[clamp(3rem,7vw,5.5rem)]">Cómo funciona</h2>
+      <ol className="mt-10 grid gap-0 border-t border-line-strong md:grid-cols-3">
         {STEPS.map((s, i) => (
-          <li key={s.title} className="bg-silicon-850 p-7">
-            <span className="display text-5xl text-sun-400">{i + 1}</span>
-            <h3 className="mt-6 text-xl font-semibold text-silver-50">{s.title}</h3>
-            <p className="mt-3 leading-relaxed text-silver-300">{s.body}</p>
+          <li key={s.title} className="border-b border-line py-8 md:border-b-0 md:border-l md:py-10 md:pl-8 md:pr-8 md:first:border-l-0 md:first:pl-0">
+            <span className="figure block text-[4.5rem] text-dim" aria-hidden="true">
+              {i + 1}
+            </span>
+            <h3 className="mt-4 text-xl font-medium">{s.title}</h3>
+            <p className="mt-3 leading-relaxed text-fog">{s.text}</p>
           </li>
         ))}
       </ol>
@@ -59,123 +102,67 @@ export function HowItWorks() {
   );
 }
 
-function Glyph({ children, tone }: { children: React.ReactNode; tone: string }) {
-  return (
-    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-lg font-bold" style={{ borderColor: tone, color: tone }}>
-      {children}
-    </span>
-  );
-}
+const SIZES = PLANS.map((p) => formatNumber(p.totalKwh));
+const SUNRISE = formatHourLabel(SOLAR.startHour);
+const SUNSET = formatHourLabel(SOLAR.endHour);
 
-const WALLETS = [
-  { name: "Trust Wallet", note: "Extensión o celular con QR", glyph: "TW", tone: "#7fb2ff" },
-  { name: "MetaMask", note: "Extensión del navegador", glyph: "MM", tone: "#f6b73c" },
-];
-
-function paymentMethods() {
-  const methods: { name: string; note: string; glyph: string; tone: string }[] = [];
-  if (mercadoPagoConfig().enabled) {
-    methods.push(
-      { name: "Tarjeta", note: "Crédito o débito, con Mercado Pago", glyph: "$", tone: "#57d69b" },
-      { name: "PSE y Nequi", note: "Desde tu banco o tu billetera (por PSE)", glyph: "⇄", tone: "#7fb2ff" },
-    );
-  }
-  if (cryptoConfig().enabled) {
-    methods.push(
-      { name: "USDT", note: "BNB Smart Chain, directo a Solaxy", glyph: "₮", tone: "#57d69b" },
-      { name: "BNB", note: "BNB Smart Chain, directo a Solaxy", glyph: "◆", tone: "#f6b73c" },
-      ...WALLETS,
-    );
-  }
-  if (isDemoMode()) {
-    methods.push(...(cryptoConfig().enabled ? [] : WALLETS), { name: "Pago simulado", note: "Firma con tu wallet, sin mover fondos", glyph: "D", tone: "#a68bff" });
-  }
-  return methods;
-}
-
-export function Payments() {
-  const demo = isDemoMode();
-  const methods = paymentMethods();
-  return (
-    <section className="mx-auto max-w-[1240px] px-5 py-20 sm:px-8" aria-labelledby="pagos-title">
-      <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
-        <div>
-          <h2 id="pagos-title" className="display text-[clamp(2rem,3.6vw,3rem)] text-silver-50">
-            Paga como prefieras
-          </h2>
-          <p className="mt-4 max-w-[42ch] text-silver-300">
-            Con tarjeta, PSE o Nequi a través de Mercado Pago, o con USDT y BNB desde tu wallet directo a la billetera de Solaxy. Tus kW se asignan apenas
-            se confirma el pago.
-          </p>
-          {demo && <p className="mt-3 max-w-[42ch] text-sm text-silver-500">En modo demo también puedes simular un pago firmando con tu wallet, sin mover fondos.</p>}
-        </div>
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {methods.map((m) => (
-            <li key={m.name} className="panel-quiet flex items-center gap-4 p-4">
-              <Glyph tone={m.tone}>{m.glyph}</Glyph>
-              <div>
-                <div className="font-semibold text-silver-50">{m.name}</div>
-                <div className="text-sm text-silver-400">{m.note}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-const FAQ = [
+const FAQ: { q: string; a: React.ReactNode }[] = [
   {
-    q: "¿Qué compro exactamente?",
-    a: "Una participación de la planta medida en kW. Si compras 2 kW de una planta de 2.000 kW, te corresponde el 0,1 % de la energía que entrega y de lo que se cobra por ella.",
+    q: "¿Qué compra mi empresa exactamente?",
+    a: `Una cantidad de energía solar para ${PLAN_MONTHS} meses: ${SIZES.slice(0, -1).join(", ")} o ${SIZES.at(-1)} kWh, según el plan. La planta la genera día a día, siguiendo la curva del reloj solar.`,
   },
   {
-    q: "¿De dónde salen las ganancias?",
-    a: "De vender la energía. Cada kWh entregado se cobra a la tarifa del momento, más alta en la hora pico de la noche. Solaxy descuenta el 18 % para operación, mantenimiento y la plataforma, y el resto se reparte según los kW de cada persona.",
+    q: "¿De dónde sale la utilidad?",
+    a: (
+      <>
+        Tu empresa paga cada kWh al precio de su plan y esa energía se vende a <CatalogValue pick="sale" /> el kWh. La diferencia es la utilidad. En el plan de <CatalogValue pick="topKwh" /> kWh,
+        por ejemplo, pagas <CatalogValue pick="lowestPrice" /> y se vende a <CatalogValue pick="sale" />: <CatalogValue pick="topProfitPct" /> sobre lo que pagaste.
+      </>
+    ),
   },
   {
-    q: "¿Qué pasa de noche o cuando está nublado?",
-    a: "De noche la batería entrega la energía que guardó durante el día, entre las 6 y las 10 p. m. Los días nublados la planta produce menos. Por eso la rentabilidad es una estimación y no una tasa fija.",
+    q: "¿Cómo se paga?",
+    a: `Mes a mes. Cada pago activa ${DAYS_PER_MONTH} días de energía. Si no pagas el mes siguiente, la energía se pausa; tienes ${GRACE_DAYS} días para ponerte al día antes de que el plan se cierre. Los meses que no pagas no se cobran ni se generan.`,
   },
   {
-    q: "¿Puedo vender mis kW?",
-    a: "Sí. Puedes publicarlos en el mercado entre usuarios al precio que elijas, o venderlos al instante a la plataforma por el 97 % del precio actual.",
+    q: "¿Cuándo puedo retirar?",
+    a: `Cuando quieras, desde ${formatCop(MIN_WITHDRAWAL_COP)}. Cada kWh generado se abona a tu saldo al precio de venta. Nuestro equipo revisa cada retiro y lo paga a la cuenta bancaria a nombre de tu empresa, o en USDT a tu wallet.`,
   },
   {
-    q: "¿Cómo retiro mis ganancias?",
-    a: "Tus ganancias se acumulan en tu saldo. Cuando quieras, pides el retiro a tu wallet en USDT y lo firmas; el equipo de Solaxy revisa la solicitud y te envía el dinero.",
+    q: "¿Qué pasa de noche o con mal tiempo?",
+    a: `La planta genera de ${SUNRISE} a ${SUNSET}, así que de noche el contador se detiene y vuelve a subir al amanecer. La energía de tu plan es una cantidad fija por día: no cambia con el clima.`,
+  },
+  {
+    q: "¿El reloj solar es una medición en vivo?",
+    a: "No. Es la curva de generación de la planta: muestra cómo se reparte la energía a lo largo del día, y con ella se calcula la energía de cada plan.",
   },
 ];
 
-const FAQ_DEMO = {
-  q: "¿Esto ya funciona con dinero real?",
-  a: "En este modo demo, no: la planta, la telemetría y los pagos simulados no mueven fondos. La conexión de la wallet y la verificación de la firma sí son reales.",
-};
-
-const FAQ_LIVE = {
-  q: "¿Esto ya funciona con dinero real?",
-  a: "Sí. Los pagos con tarjeta, PSE y Nequi se procesan con Mercado Pago, y los pagos en USDT o BNB llegan directo a la billetera de Solaxy en BNB Chain. La planta todavía no tiene sus medidores conectados a la plataforma: la telemetría es una simulación y las ganancias que ves son estimadas.",
+const FAQ_TEST: (typeof FAQ)[number] = {
+  q: "¿Esta página ya cobra dinero real?",
+  a: "Todavía no. Está en modo de pruebas: los pagos son de prueba y no se mueve dinero real.",
 };
 
 export function Faq() {
+  const items = isDemoMode() ? [...FAQ, FAQ_TEST] : FAQ;
   return (
-    <section id="preguntas" className="mx-auto max-w-[900px] scroll-mt-24 px-5 py-20 sm:px-8" aria-labelledby="faq-title">
-      <h2 id="faq-title" className="display text-[clamp(2rem,3.6vw,3rem)] text-silver-50">
-        Preguntas frecuentes
-      </h2>
-      <div className="mt-10 divide-y divide-silicon-600/50 border-y border-silicon-600/50">
-        {[...FAQ, isDemoMode() ? FAQ_DEMO : FAQ_LIVE].map((f) => (
-          <details key={f.q} className="group py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-semibold text-silver-50 [&::-webkit-details-marker]:hidden">
-              {f.q}
-              <span className="text-2xl font-normal text-sun-400 transition-transform duration-200 group-open:rotate-45" aria-hidden="true">
-                +
-              </span>
-            </summary>
-            <p className="mt-3 max-w-[68ch] leading-relaxed text-silver-300">{f.a}</p>
-          </details>
-        ))}
+    <section id="preguntas" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
+        <h2 className="display text-[clamp(3rem,7vw,5.5rem)]">Preguntas</h2>
+        <div className="border-t border-line-strong">
+          {items.map((f) => (
+            <details key={f.q} className="group border-b border-line">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-lg [&::-webkit-details-marker]:hidden">
+                {f.q}
+                <span className="relative h-3.5 w-3.5 shrink-0" aria-hidden="true">
+                  <span className="absolute left-0 top-1/2 h-px w-full bg-ink" />
+                  <span className="absolute left-1/2 top-0 h-full w-px bg-ink transition-transform group-open:scale-y-0" />
+                </span>
+              </summary>
+              <p className="max-w-[68ch] pb-6 leading-relaxed text-fog">{f.a}</p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -183,15 +170,15 @@ export function Faq() {
 
 export function FinalCta() {
   return (
-    <section className="mx-auto max-w-[1240px] px-5 pb-24 pt-10 sm:px-8">
-      <div className="panel cells flex flex-col items-start justify-between gap-8 overflow-hidden p-8 sm:p-12 lg:flex-row lg:items-center">
+    <section className="mx-auto max-w-[1240px] px-5 sm:px-8">
+      <div className="flex flex-col gap-8 border-y border-line-strong py-14 md:flex-row md:items-end md:justify-between">
+        <h2 className="display max-w-[14ch] text-[clamp(3rem,7vw,5.5rem)]">El sol sale todos los días.</h2>
         <div>
-          <h2 className="display max-w-[20ch] text-[clamp(2rem,3.6vw,3rem)] text-silver-50">El sol sale todos los días. Tus ganancias también.</h2>
-          <p className="mt-4 text-silver-300">Empieza con 0,1 kW y mira tu primer peso ganado hoy mismo.</p>
+          <p className="max-w-[36ch] leading-relaxed text-fog">Elige un plan, paga el primer mes y mira tu energía subir desde el primer amanecer.</p>
+          <Link href="/ingresar" className="btn btn-solid mt-6">
+            Empezar
+          </Link>
         </div>
-        <Link href="/ingresar" className="btn btn-sun shrink-0">
-          Empezar a invertir
-        </Link>
       </div>
     </section>
   );
@@ -199,25 +186,24 @@ export function FinalCta() {
 
 export function Footer() {
   return (
-    <footer className="border-t border-silicon-600/40">
-      <div className="mx-auto flex max-w-[1240px] flex-col gap-6 px-5 py-10 text-sm text-silver-400 sm:px-8 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-3">
+    <footer className="mx-auto max-w-[1240px] px-5 pb-12 pt-10 sm:px-8">
+      <div className="flex flex-col gap-8 text-sm text-mute md:flex-row md:items-start md:justify-between">
+        <div>
           <Logo />
-          <p className="max-w-[60ch]">
-            {isDemoMode()
-              ? `${BRAND.legalName}. Modo demo: la planta, la telemetría y los pagos son simulados, y ninguna firma mueve fondos. La rentabilidad que se muestra es estimada y no está garantizada.`
-              : `${BRAND.legalName}. La telemetría de la planta es una simulación hasta que sus medidores estén conectados, y las ganancias que se muestran son estimadas. La rentabilidad no está garantizada.`}
+          <p className="mt-5 max-w-[52ch] leading-relaxed">
+            {BRAND.legalName}. {isDemoMode() ? "Página en modo de pruebas: los pagos son de prueba y no se mueve dinero real. " : ""}
+            La energía de cada plan se calcula con la curva de generación de la planta.
           </p>
         </div>
-        <div className="flex flex-col gap-2 md:items-end">
-          <Link href="/terminos" className="hover:text-silver-50">
+        <nav className="flex flex-col gap-2 md:items-end" aria-label="Legal">
+          <Link href="/terminos" className="hover:text-ink">
             Términos y Condiciones
           </Link>
-          <Link href="/privacidad" className="hover:text-silver-50">
+          <Link href="/privacidad" className="hover:text-ink">
             Política de Tratamiento de Datos
           </Link>
-          <p className="text-silver-500">Hecho en Colombia</p>
-        </div>
+          <span className="text-dim">Hecho en {BRAND.country}</span>
+        </nav>
       </div>
     </footer>
   );

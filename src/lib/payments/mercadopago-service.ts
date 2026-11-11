@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq } from "drizzle-orm";
+import { BRAND } from "@/config/brand";
 import { db } from "@/lib/db";
 import { ledgerTx } from "@/lib/db/schema";
 import { baseUrl, isDemoMode } from "@/lib/env";
@@ -79,7 +80,7 @@ export async function createMercadoPagoOrder(input: { userId: string; email: str
   });
   const preference = buildPreference({
     orderId,
-    title: `${p.planName} · mes ${p.periodIndex} de ${p.months} · Solaxy`,
+    title: `${p.planName} · mes ${p.periodIndex} de ${p.months} · ${BRAND.name}`,
     amountCop: p.amountCop,
     baseUrl: baseUrl(),
     payer: { email: input.email, fullName: profile.fullName },

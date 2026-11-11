@@ -9,7 +9,7 @@ import type { MpPayment } from "@/lib/payments/mercadopago";
 import { buildPayerProofMessage } from "@/lib/signing";
 import { createUser } from "../../../tests/helpers";
 
-process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-admpay-")), "test.db")}`;
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-admpay-")), "test.db")}`;
 const TREASURY = "0x2222222222222222222222222222222222222222";
 vi.stubEnv("MERCADOPAGO_ACCESS_TOKEN", "APP_USR-token-de-prueba");
 vi.stubEnv("MERCADOPAGO_API_BASE", "https://mp.falso");
@@ -125,14 +125,19 @@ describe("sección Pagos del admin", () => {
     await expect(payments.markRefunded(actor, o.orderId, "otra vez")).rejects.toMatchObject({ status: 409 });
   });
 
-  it("el recaudo cuenta solo dinero real: los pagos de prueba no suman", async () => {
+  it("el recaudo: en modo de pruebas incluye los pagos de prueba; con dinero real, solo el dinero real", async () => {
     const before = await payments.paymentSummary();
     await test.payWithTestPayment({ userId: "p5", planId: "p180" });
-    expect((await payments.paymentSummary()).totalCop).toBe(before.totalCop);
+    // En pruebas, el número se mueve con lo que el administrador está probando.
+    expect((await payments.paymentSummary()).totalCop).toBe(before.totalCop + MONTH_180);
+
+    vi.stubEnv("DEMO_MODE", "false");
+    const real = await payments.paymentSummary();
+    expect(real.totalCop).toBeLessThanOrEqual(before.totalCop);
     await admin.registerManualPayment(actor, { userId: "p5", planId: "p360", reference: "TRANSF-9001" });
     const after = await payments.paymentSummary();
-    expect(after.totalCop).toBe(before.totalCop + 40_800_000);
-    expect(after.todayCop).toBeGreaterThanOrEqual(40_800_000);
+    expect(after.totalCop).toBe(real.totalCop + 40_800_000);
+    expect(after.todayCop).toBe(real.todayCop + 40_800_000);
   });
 
   it("un pago de prueba no se re-verifica con un proveedor", async () => {

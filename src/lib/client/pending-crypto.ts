@@ -4,7 +4,7 @@
  * Pagos cripto enviados desde la wallet cuyo hash todavía no confirmó el servidor.
  * Se guardan apenas la wallet devuelve el hash: si se cierra la pestaña, el panel lo reenvía al volver.
  */
-const KEY = "solaxy:pagos-cripto";
+const KEY = "iwe:pagos-cripto";
 
 type Pending = Record<string, { hash: string; at: number }>;
 

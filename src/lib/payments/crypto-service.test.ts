@@ -9,7 +9,7 @@ import { TRANSFER_TOPIC, type ChainReceipt, type ChainTx } from "@/lib/payments/
 import { buildPayerProofMessage } from "@/lib/signing";
 import { createUser } from "../../../tests/helpers";
 
-process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "solaxy-crypto-")), "test.db")}`;
+process.env.DATABASE_URL = `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-crypto-")), "test.db")}`;
 const TREASURY = "0x2222222222222222222222222222222222222222";
 const USDT = "0x55d398326f99059fF775485246999027B3197955";
 vi.stubEnv("CRYPTO_TREASURY_ADDRESS", TREASURY);

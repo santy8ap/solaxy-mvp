@@ -7,13 +7,13 @@ import { adminEmailAllowed, adminPin, authSecret } from "@/lib/env";
 import { jsonError, knownUser, unauthorized, type CurrentUser } from "@/lib/session";
 import { createPinLimiter, pinMatches, sessionBinding, signAdminToken, verifyAdminToken } from "./token";
 
-export const ADMIN_COOKIE = "solaxy-admin";
-export const INTENT_COOKIE = "solaxy-admin-intent";
+export const ADMIN_COOKIE = "iwe-admin";
+export const INTENT_COOKIE = "iwe-admin-intent";
 const ADMIN_TTL_MS = 12 * 60 * 60_000;
 const INTENT_TTL_MS = 10 * 60_000;
 
-const g = globalThis as unknown as { __solaxyPinLimiter?: ReturnType<typeof createPinLimiter> };
-const limiter = (g.__solaxyPinLimiter ??= createPinLimiter({ max: 5, windowMs: 10 * 60_000 }));
+const g = globalThis as unknown as { __iwePinLimiter?: ReturnType<typeof createPinLimiter> };
+const limiter = (g.__iwePinLimiter ??= createPinLimiter({ max: 5, windowMs: 10 * 60_000 }));
 
 const cookieOptions = (maxAgeMs: number) => ({
   httpOnly: true,

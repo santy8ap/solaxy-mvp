@@ -77,11 +77,11 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
     "statements": [
       "CREATE TABLE IF NOT EXISTS `legacy_ledger_tx` AS SELECT * FROM `ledger_tx`;",
       "DELETE FROM `ledger_tx` WHERE coalesce(`kw`, 0) = coalesce(`kw`, 0);",
-      "DELETE FROM `session` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
-      "DELETE FROM `account` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
-      "DELETE FROM `wallet_link` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
-      "DELETE FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local';",
-      "INSERT OR IGNORE INTO `company_profile` (`user_id`, `company_name`, `nit`, `full_name`, `doc_type`, `doc_number`, `phone`, `city`, `terms_version`, `terms_accepted_at`, `created_at`, `updated_at`)\nSELECT `user_id`,\n\tCASE WHEN `doc_type` = 'NIT' THEN `full_name` ELSE '' END,\n\tCASE WHEN `doc_type` = 'NIT' THEN `doc_number` ELSE '' END,\n\tCASE WHEN `doc_type` = 'NIT' THEN '' ELSE `full_name` END,\n\tCASE WHEN `doc_type` = 'NIT' THEN 'CC' ELSE `doc_type` END,\n\tCASE WHEN `doc_type` = 'NIT' THEN '' ELSE `doc_number` END,\n\t`phone`, `city`, `terms_version`, `terms_accepted_at`, `created_at`, `updated_at`\nFROM `investor_profile`\nWHERE `user_id` NOT IN (SELECT `id` FROM `user` WHERE `email` LIKE '%@comunidad.solaxy.local');",
+      "DELETE FROM `session` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');",
+      "DELETE FROM `account` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');",
+      "DELETE FROM `wallet_link` WHERE `user_id` IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');",
+      "DELETE FROM `user` WHERE `email` LIKE '%solaxy.local';",
+      "INSERT OR IGNORE INTO `company_profile` (`user_id`, `company_name`, `nit`, `full_name`, `doc_type`, `doc_number`, `phone`, `city`, `terms_version`, `terms_accepted_at`, `created_at`, `updated_at`)\nSELECT `user_id`,\n\tCASE WHEN `doc_type` = 'NIT' THEN `full_name` ELSE '' END,\n\tCASE WHEN `doc_type` = 'NIT' THEN `doc_number` ELSE '' END,\n\tCASE WHEN `doc_type` = 'NIT' THEN '' ELSE `full_name` END,\n\tCASE WHEN `doc_type` = 'NIT' THEN 'CC' ELSE `doc_type` END,\n\tCASE WHEN `doc_type` = 'NIT' THEN '' ELSE `doc_number` END,\n\t`phone`, `city`, `terms_version`, `terms_accepted_at`, `created_at`, `updated_at`\nFROM `investor_profile`\nWHERE `user_id` NOT IN (SELECT `id` FROM `user` WHERE `email` LIKE '%solaxy.local');",
       "DROP TABLE `investor_profile`;",
       "DROP TABLE `listing`;",
       "DROP TABLE `position_entry`;",
@@ -94,7 +94,8 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "ALTER TABLE `plant` DROP COLUMN `tariff_day_cop`;",
       "ALTER TABLE `plant` DROP COLUMN `tariff_peak_cop`;",
       "ALTER TABLE `plant` DROP COLUMN `commission_pct`;",
-      "ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;"
+      "ALTER TABLE `plant` DROP COLUMN `withdrawal_approval`;",
+      "UPDATE `plant` SET `name` = 'Planta Solar I' WHERE `name` = 'Solaxy Solar I';"
     ]
   }
 ];
