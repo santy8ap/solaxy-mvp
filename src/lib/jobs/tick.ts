@@ -23,6 +23,25 @@ async function frequentPass() {
  * corre después de responder y no demora a nadie. Así un pago no espera al cron diario cuando la
  * empresa cerró la página. Devuelve si le tocó correr. Nunca lanza errores.
  */
+/**
+ * Reclama un turno en la base: true si pasó `intervalMs` desde el último turno de `id` (en todo el sitio,
+ * entre instancias). Una sola sentencia, así que dos solicitudes simultáneas no obtienen el mismo turno.
+ */
+export async function claimInterval({ id, intervalMs, clock = Date.now }: { id: string; intervalMs: number; clock?: () => number }) {
+  await ensureReady();
+  const now = clock();
+  const [claimed] = await db
+    .insert(jobState)
+    .values({ id, lockToken: newId("turno-"), lockedUntil: now + intervalMs, updatedAt: now })
+    .onConflictDoUpdate({
+      target: jobState.id,
+      set: { lockToken: newId("turno-"), lockedUntil: now + intervalMs, updatedAt: now },
+      setWhere: lte(jobState.lockedUntil, now),
+    })
+    .returning();
+  return Boolean(claimed);
+}
+
 /** Cada instancia consulta la base como máximo cada 30 segundos (evita una escritura por visita). */
 const LOCAL_CHECK_MS = 30_000;
 const memo = globalThis as unknown as { __iweTickNextCheck?: number };
@@ -32,17 +51,7 @@ export async function maybeReconcile({ clock = Date.now, run = frequentPass }: {
   if (memo.__iweTickNextCheck && now < memo.__iweTickNextCheck) return false;
   memo.__iweTickNextCheck = now + LOCAL_CHECK_MS;
   try {
-    await ensureReady();
-    const [claimed] = await db
-      .insert(jobState)
-      .values({ id: TICK_ID, lockToken: newId("tick-"), lockedUntil: now + TICK_INTERVAL_MS, updatedAt: now })
-      .onConflictDoUpdate({
-        target: jobState.id,
-        set: { lockToken: newId("tick-"), lockedUntil: now + TICK_INTERVAL_MS, updatedAt: now },
-        setWhere: lte(jobState.lockedUntil, now),
-      })
-      .returning();
-    if (!claimed) return false;
+    if (!(await claimInterval({ id: TICK_ID, intervalMs: TICK_INTERVAL_MS, clock: () => now }))) return false;
     try {
       await run();
     } catch (error) {

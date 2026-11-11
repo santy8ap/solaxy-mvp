@@ -101,3 +101,12 @@ describe("ejecución con las visitas (sin depender del cron diario)", () => {
     await expect(tick.maybeReconcile({ clock: () => NOW + 10 * 60_000, run })).resolves.toBe(true);
   });
 });
+
+describe("la ruta del cron no se puede lanzar seguido, aunque alguien tenga la clave", () => {
+  it("se reclama como máximo una vez por intervalo", async () => {
+    const t = NOW + 3_600_000;
+    expect(await tick.claimInterval({ id: "cron-prueba", intervalMs: 10 * 60_000, clock: () => t })).toBe(true);
+    expect(await tick.claimInterval({ id: "cron-prueba", intervalMs: 10 * 60_000, clock: () => t + 5 * 60_000 })).toBe(false);
+    expect(await tick.claimInterval({ id: "cron-prueba", intervalMs: 10 * 60_000, clock: () => t + 11 * 60_000 })).toBe(true);
+  });
+});
