@@ -18,7 +18,7 @@ function GoogleG() {
 type Role = "user" | "admin";
 
 const ROLES: { id: Role; title: string; note: string; icon: typeof LineChart }[] = [
-  { id: "user", title: "Inversionista", note: "Tus kW, ganancias y telemetría", icon: LineChart },
+  { id: "user", title: "Mi cuenta", note: "Tu energía y movimientos", icon: LineChart },
   { id: "admin", title: "Administrador", note: "Usuarios, planta y retiros", icon: KeyRound },
 ];
 

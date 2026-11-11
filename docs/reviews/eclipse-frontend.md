@@ -40,3 +40,16 @@ Recorrido visual pendiente en un navegador compatible: inicio a 360, 390, 768 y 
 3. `fulfillOrder` confirma la orden antes del `db.batch` que asigna la posición. Si ese lote falla, un reintento puede encontrar la orden confirmada y omitir la asignación. Revisar transacción atómica y recuperación antes de producción.
 4. La comprobación de cupo y la asignación se ejecutan por separado. Añadir pruebas de compras concurrentes antes de habilitar contratos nuevos.
 5. Persisten configuración y funciones demo; los términos legales están marcados como pendientes de revisión. El rediseño no certifica preparación para producción.
+
+## Segunda entrega: panel y experiencia de planes
+
+- Primera entrega integrada en `main`; Vercel confirmó despliegue completado y el inicio Eclipse se verificó visualmente en la URL pública.
+- Nuevo panel con saldo del servidor, indicadores, gráficas, actividad y reloj solar. Navegación de escritorio y móvil centrada en resumen, planes, movimientos, billetera y cuenta.
+- Nueva página pública `/planes` y catálogo autenticado `/panel/planes`. Revisión en tres pasos: valores, datos de empresa temporales y resumen. Sin llamada a pagos ni aceptación de un contrato mientras la contratación mensual no esté disponible. Los datos de esta revisión se descartan al cerrar.
+- `/panel/mercado` redirige al catálogo de planes. Las API y los datos del modelo anterior permanecen sin cambios.
+- Historial con búsqueda, filtros por estado y fechas de Colombia, paginación, detalle de operación y CSV. Las exportaciones neutralizan fórmulas y conservan importes registrados. El resumen no se presenta como factura.
+- Ventanas nativas con aislamiento de fondo, Escape, captura de foco y restauración del foco. Carga, errores, reintento y estados vacíos explícitos.
+- Exploración del reloj solar por cursor, toque o control de rango con teclado. La hora del nuevo panel usa el reloj real, independiente del modo de presentación.
+- El saldo para solicitar retiros procede de la respuesta del servidor; no se incrementa mediante extrapolación del navegador. Se bloquea la acción si la carga falló o el saldo no cumple el mínimo.
+
+Validación local tras incorporar los cambios de seguridad de `main`: ESLint sin advertencias, compilación de producción (52 rutas) y 182 pruebas aprobadas. Las pruebas nuevas cubren límites de fecha en Colombia, combinación de filtros y neutralización de fórmulas en CSV. Recorrido HTTP de inicio, catálogo, selección por URL e ingreso aprobado; el portafolio sin sesión devuelve 401.

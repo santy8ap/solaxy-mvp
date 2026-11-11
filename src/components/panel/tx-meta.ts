@@ -40,8 +40,8 @@ export function txDetail(t: TxDTO) {
   if (t.kind === "asignacion_demo") return "Para explorar el panel";
   if (t.kind === "ajuste_admin") return t.note ?? "Ajuste del administrador";
   if (t.kind === "retiro" && t.status === "rechazada") return `Rechazado: ${t.note ?? "sin motivo"}`;
-  if (t.kind === "retiro" && t.status === "por_aprobar") return "En revisión: el equipo de Solaxy enviará el dinero";
-  if (t.kind === "venta_inmediata" || t.kind === "venta_p2p") return "Abonado a tu saldo en Solaxy";
+  if (t.kind === "retiro" && t.status === "por_aprobar") return "En revisión: el equipo de In World Energy enviará el dinero";
+  if (t.kind === "venta_inmediata" || t.kind === "venta_p2p") return "Abonado a tu saldo en In World Energy";
   const parts = [t.walletName, t.assetAmount != null && t.asset && t.asset !== "COP" ? formatAsset(t.assetAmount, t.asset) : null, t.walletAddress && t.walletAddress.startsWith("0x") ? shortAddress(t.walletAddress) : null].filter(Boolean);
   return parts.join(", ");
 }
