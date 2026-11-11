@@ -7,7 +7,7 @@ import { PLANS } from "@/config/plans";
 import { planCheckoutHref, safeReturnTo } from "@/lib/navigation";
 import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { googleEnabled, isDemoMode } from "@/lib/env";
+import { adminEmailAllowed, env, googleEnabled, isDemoMode } from "@/lib/env";
 import { LoginClock } from "@/components/landing/login-clock";
 import { Logo } from "@/components/ui/logo";
 import { LoginOptions } from "./login-options";
@@ -43,6 +43,7 @@ async function Options({ searchParams }: { searchParams: Promise<Params> }) {
       <LoginOptions
         googleEnabled={googleEnabled}
         demoMode={isDemoMode()}
+        testAdmin={isDemoMode() && adminEmailAllowed(env.demoEmail)}
         defaultRole={rol === "admin" ? "admin" : "user"}
         planId={chosen?.id}
         returnTo={returnTo}

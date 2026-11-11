@@ -92,25 +92,26 @@ describe("PIN de administrador", () => {
     expect(adminEmailAllowed("socio@inworldenergy.co")).toBe(false);
   });
 
-  it("en modo de pruebas, la cuenta de pruebas puede administrar (con el PIN) aunque no esté en ADMIN_EMAILS", async () => {
+  it("la cuenta de pruebas solo administra si su correo está en ADMIN_EMAILS", async () => {
     vi.stubEnv("DEMO_MODE", "");
-    vi.stubEnv("ADMIN_EMAILS", "");
-    const { adminEmailAllowed } = await import("@/lib/env");
-    expect(adminEmailAllowed("pruebas@inworldenergy.local")).toBe(true);
-    // La lista de producción puede no traerla: sigue pudiendo entrar mientras dure el modo de pruebas.
     vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co");
+    const { adminEmailAllowed } = await import("@/lib/env");
+    expect(adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
+    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co, pruebas@inworldenergy.local");
     expect(adminEmailAllowed("Pruebas@InWorldEnergy.local")).toBe(true);
   });
 
-  it("en modo de pruebas, sin ADMIN_EMAILS, las demás cuentas no pueden administrar", async () => {
+  it("sin ADMIN_EMAILS, nadie administra", async () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "");
-    expect((await import("@/lib/env")).adminEmailAllowed("cualquiera@gmail.com")).toBe(false);
+    const { adminEmailAllowed } = await import("@/lib/env");
+    expect(adminEmailAllowed("cualquiera@gmail.com")).toBe(false);
+    expect(adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
   });
 
-  it("con dinero real, la cuenta de pruebas no puede administrar", async () => {
+  it("con dinero real, la cuenta de pruebas no puede administrar aunque esté en la lista", async () => {
     vi.stubEnv("DEMO_MODE", "false");
-    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co");
+    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co, pruebas@inworldenergy.local");
     expect((await import("@/lib/env")).adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
   });
 });

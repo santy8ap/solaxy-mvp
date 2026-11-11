@@ -6,6 +6,7 @@ import { BRAND } from "@/config/brand";
 import { db } from "@/lib/db";
 import { account, session, user, verification } from "@/lib/db/schema";
 import { authSecret, baseUrl, env, googleEnabled, isDemoMode, trustedOrigins } from "@/lib/env";
+import { betterAuthRateLimitStorage } from "@/lib/security/db-rate-limit";
 
 export const auth = betterAuth({
   appName: BRAND.name,
@@ -15,8 +16,21 @@ export const auth = betterAuth({
     provider: "sqlite",
     schema: { user, session, account, verification },
   }),
-  // Correo y contraseña solo existe para la cuenta demo. Con dinero real se entra únicamente con Google.
-  emailAndPassword: { enabled: isDemoMode(), autoSignIn: true },
+  // Correo y contraseña solo existe para la cuenta de pruebas, que crea el servidor (lib/db/seed).
+  // Nadie puede registrarse por su cuenta. Con dinero real se entra únicamente con Google.
+  emailAndPassword: { enabled: isDemoMode(), disableSignUp: true },
+  // 5 intentos de contraseña por minuto por IP; el resto de rutas de ingreso, 100 por minuto.
+  // Se cuentan en la base para que el límite valga entre todas las instancias de Vercel.
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60, max: 5 },
+    },
+    customStorage: betterAuthRateLimitStorage(),
+  },
   socialProviders: googleEnabled
     ? {
         google: {

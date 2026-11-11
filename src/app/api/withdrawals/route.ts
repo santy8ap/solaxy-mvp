@@ -3,6 +3,7 @@ import { z } from "zod";
 import { handleError, readJson } from "@/lib/api";
 import { getSessionUser, unauthorized } from "@/lib/session";
 import { createBankWithdrawal, createWalletWithdrawal } from "@/lib/withdrawals";
+import { safeText } from "@/lib/security/text";
 
 const Body = z.discriminatedUnion("to", [
   z.object({
@@ -16,7 +17,7 @@ const Body = z.discriminatedUnion("to", [
     to: z.literal("wallet"),
     amountCop: z.number().positive(),
     walletAddress: z.string().refine((a) => isAddress(a), "Dirección de wallet inválida"),
-    walletName: z.string().min(1).max(40),
+    walletName: safeText(40, { min: 1, label: "El nombre de la wallet" }),
     chainId: z.number().int().nullable(),
   }),
 ]);

@@ -22,10 +22,23 @@ export async function seedPlant(db: Db) {
     .onConflictDoNothing();
 }
 
-/** Cuenta de pruebas (solo en modo de pruebas): se crea la primera vez que alguien entra con ella. */
+/**
+ * Cuenta de pruebas (solo en modo de pruebas): se crea la primera vez que alguien entra con ella.
+ * El registro con correo y contraseña está cerrado al público, así que la crea el servidor directamente.
+ */
 export async function ensureDemoAccount(db: Db) {
-  const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, env.demoEmail));
-  if (existing) return existing.id;
-  const res = await auth.api.signUpEmail({ body: { name: env.demoName, email: env.demoEmail, password: env.demoPassword } });
-  return res.user.id;
+  const find = async () => (await db.select({ id: user.id }).from(user).where(eq(user.email, env.demoEmail)))[0]?.id;
+  const existing = await find();
+  if (existing) return existing;
+  const ctx = await auth.$context;
+  try {
+    const created = await ctx.internalAdapter.createUser({ email: env.demoEmail, name: env.demoName, emailVerified: true }, { method: "email-password" });
+    await ctx.internalAdapter.linkAccount({ userId: created.id, providerId: "credential", accountId: created.id, password: await ctx.password.hash(env.demoPassword) });
+    return created.id;
+  } catch (err) {
+    // Otra solicitud la creó al mismo tiempo.
+    const again = await find();
+    if (again) return again;
+    throw err;
+  }
 }

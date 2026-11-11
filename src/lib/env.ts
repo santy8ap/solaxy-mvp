@@ -62,13 +62,13 @@ export function adminEmails() {
 }
 
 /**
- * Quién puede entrar al modo administrador, además de saber el PIN: los correos de ADMIN_EMAILS.
- * La cuenta de pruebas también puede, pero solo mientras el modo de pruebas esté activo.
- * Sin ADMIN_EMAILS, ninguna otra cuenta administra.
+ * Quién puede entrar al modo administrador, además de saber el PIN: solo los correos de ADMIN_EMAILS.
+ * La cuenta de pruebas no es la excepción: administra solo si su correo está en la lista, y solo
+ * mientras el modo de pruebas esté activo. Sin ADMIN_EMAILS, nadie administra.
  */
 export function adminEmailAllowed(email: string) {
   const normalized = email.trim().toLowerCase();
-  if (isDemoMode() && normalized === env.demoEmail) return true;
+  if (normalized === env.demoEmail && !isDemoMode()) return false;
   return adminEmails().includes(normalized);
 }
 

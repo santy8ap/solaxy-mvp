@@ -2,8 +2,9 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin/access";
 import { closeSubscription } from "@/lib/admin/service";
 import { handleError, readJson } from "@/lib/api";
+import { safeText } from "@/lib/security/text";
 
-const Body = z.object({ reason: z.string().min(1).max(240) });
+const Body = z.object({ reason: safeText(240, { min: 1, label: "El motivo" }) });
 
 /** Cierra un plan antes de tiempo: deja de generar energía y libera su cupo. */
 export async function POST(req: Request, ctx: RouteContext<"/api/admin/subscriptions/[id]/close">) {

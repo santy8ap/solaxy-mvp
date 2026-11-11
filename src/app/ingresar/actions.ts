@@ -43,7 +43,9 @@ export async function signInDemo(
     };
   const asAdmin = formData.get("role") === "admin";
   if (asAdmin) {
-    const pin = await checkAdminPin(String(formData.get("pin") ?? ""));
+    // La cuenta de pruebas solo administra si su correo está en ADMIN_EMAILS.
+    if (!adminEmailAllowed(env.demoEmail)) return { error: NOT_ALLOWED };
+    const pin = await checkAdminPin(String(formData.get("pin") ?? ""), "pruebas");
     if (!pin.ok) return { error: pin.error };
   }
   await ensureReady();
@@ -84,7 +86,7 @@ export async function becomeAdmin(
   const ctx = await getAuthContext();
   if (!ctx) redirect("/ingresar?rol=admin");
   if (!adminEmailAllowed(ctx.user.email)) return { error: NOT_ALLOWED };
-  const pin = await checkAdminPin(String(formData.get("pin") ?? ""));
+  const pin = await checkAdminPin(String(formData.get("pin") ?? ""), ctx.user.id);
   if (!pin.ok) return { error: pin.error };
   await grantAdmin(ctx.user.id, ctx.sessionToken);
   redirect("/admin");

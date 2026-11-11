@@ -2,8 +2,9 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin/access";
 import { decideWithdrawal } from "@/lib/admin/service";
 import { handleError, readJson } from "@/lib/api";
+import { safeText } from "@/lib/security/text";
 
-const Body = z.object({ decision: z.enum(["aprobar", "rechazar"]), reason: z.string().max(200).default(""), reference: z.string().max(120).default("") });
+const Body = z.object({ decision: z.enum(["aprobar", "rechazar"]), reason: safeText(200, { label: "El motivo" }).default(""), reference: safeText(120, { label: "La referencia" }).default("") });
 
 export async function POST(req: Request, ctx: RouteContext<"/api/admin/withdrawals/[id]">) {
   try {

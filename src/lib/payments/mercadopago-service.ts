@@ -24,6 +24,7 @@ import { payLog } from "./log";
 import { assertExpectedPayment, type ExpectedPayment } from "./plan-target";
 import {
   bestPayment,
+  isSafeCheckoutUrl,
   buildPreference,
   failureReason,
   mapMpStatus,
@@ -162,7 +163,7 @@ export async function createMercadoPagoOrder(
   const checkoutUrl = cfg.sandbox
     ? (res.json?.sandbox_init_point ?? res.json?.init_point)
     : res.json?.init_point;
-  if (!res.ok || !checkoutUrl) {
+  if (!res.ok || !checkoutUrl || !isSafeCheckoutUrl(checkoutUrl)) {
     payLog("preferencia_rechazada", {
       proveedor: "mercadopago",
       orderId,

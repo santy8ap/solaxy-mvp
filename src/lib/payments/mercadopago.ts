@@ -139,3 +139,13 @@ export function bestPayment(payments: MpPayment[]) {
     null
   );
 }
+
+/** La dirección del checkout se sigue en el navegador: solo https (o localhost, para las pruebas locales). */
+export function isSafeCheckoutUrl(value: string) {
+  try {
+    const u = new URL(value);
+    return u.protocol === "https:" || (u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1"));
+  } catch {
+    return false;
+  }
+}

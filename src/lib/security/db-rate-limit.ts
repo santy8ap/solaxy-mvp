@@ -35,3 +35,28 @@ export function createDbRateLimiter({ name, max, windowMs }: { name: string; max
     },
   };
 }
+
+/**
+ * Almacén del límite de intentos de Better Auth (contraseñas) sobre la misma tabla: así el límite
+ * también se cumple entre instancias de Vercel. Ventanas fijas de `window` segundos.
+ */
+export function betterAuthRateLimitStorage(dbClient?: Client) {
+  const clientOf = async () => dbClient ?? (await import("@/lib/db")).client;
+  return {
+    async consume(key: string, rule: { window: number; max: number }) {
+      const windowMs = rule.window * 1000;
+      const now = Date.now();
+      const windowStart = Math.floor(now / windowMs) * windowMs;
+      const c = await clientOf();
+      const res = await c.execute({
+        sql: `INSERT INTO rate_limit (rl_key, window_start, count) VALUES (?, ?, 1)
+              ON CONFLICT(rl_key, window_start) DO UPDATE SET count = count + 1
+              RETURNING count`,
+        args: [`auth:${key}`, windowStart],
+      });
+      const count = Number(res.rows[0]?.count ?? 1);
+      if (count <= rule.max) return { allowed: true, retryAfter: null };
+      return { allowed: false, retryAfter: Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000)) };
+    },
+  };
+}

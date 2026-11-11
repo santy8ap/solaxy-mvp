@@ -3,10 +3,11 @@ import { z } from "zod";
 import { handleError, readJson } from "@/lib/api";
 import { linkWallet } from "@/lib/withdrawals";
 import { getSessionUser, unauthorized } from "@/lib/session";
+import { safeText } from "@/lib/security/text";
 
 const Body = z.object({
   address: z.string().refine((a) => isAddress(a), "Dirección de wallet inválida"),
-  walletName: z.string().min(1).max(40),
+  walletName: safeText(40, { min: 1, label: "El nombre de la wallet" }),
   chainId: z.number().int().nullable(),
 });
 
