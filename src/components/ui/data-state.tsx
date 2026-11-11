@@ -1,5 +1,6 @@
 import { ArrowRight, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { signInHref } from "@/lib/navigation";
 
 export function DataError({
   message,
@@ -24,7 +25,7 @@ export function DataError({
         </p>
       </div>
       {message.includes("Sesión expirada") ? (
-        <Link href="/ingresar" className="btn btn-sun">
+        <Link href={signInHref("/panel")} className="btn btn-sun">
           Iniciar sesión
         </Link>
       ) : (

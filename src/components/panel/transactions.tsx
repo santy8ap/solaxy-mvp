@@ -15,6 +15,7 @@ import type { TxDTO } from "@/lib/portfolio";
 import { formatCop, formatDateTime, formatNumber } from "@/lib/format";
 import { PrivateAmount } from "@/components/ui/amount-privacy";
 import { useAmountPrivacy } from "@/lib/client/use-amount-privacy";
+import { downloadFile } from "@/lib/client/print-document";
 import { printTransaction } from "./transaction-print";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/data-state";
@@ -50,15 +51,6 @@ export function PaymentStatus({ status }: { status: string }) {
     </span>
   );
 }
-function download(content: string, type: string, filename: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export function Transactions({
   transactions,
   compact = false,
@@ -148,7 +140,7 @@ export function Transactions({
                 : "Exportar los movimientos filtrados"
             }
             onClick={() =>
-              download(
+              downloadFile(
                 transactionsCsv(rows),
                 "text/csv;charset=utf-8",
                 "in-world-energy-movimientos.csv",
@@ -325,7 +317,11 @@ export function Transactions({
                 type="button"
                 className="btn btn-ghost"
                 disabled={hidden}
-                onClick={() => printTransaction(selected)}
+                onClick={() =>
+                  void printTransaction(selected).catch((error) =>
+                    toast(error.message, "error"),
+                  )
+                }
               >
                 <Printer size={14} /> Imprimir / PDF
               </button>
@@ -334,7 +330,7 @@ export function Transactions({
                 className="btn btn-sun"
                 disabled={hidden}
                 onClick={() =>
-                  download(
+                  downloadFile(
                     transactionsCsv([selected]),
                     "text/csv;charset=utf-8",
                     `in-world-energy-operacion-${selected.id.replace(/[^a-zA-Z0-9-]/g, "")}.csv`,

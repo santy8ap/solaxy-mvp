@@ -2990,3 +2990,21 @@
     font-size: 19px;
   }
 }
+.proposal-quick-actions { display: flex; gap: 24px; flex-wrap: wrap; margin-block: 8px 24px; }
+.proposal-quick-actions .text-link { font-size: 11px; }
+.proposal-account-import { display: flex; align-items: start; flex-direction: column; gap: 12px; padding-bottom: 24px; border-bottom: 1px solid #444; }
+.proposal-account-import .btn { font-size: 9px; }
+.proposal-account-import .text-link { margin-top: 0; font-size: 10px; }
+.saved-plans { margin-top: 44px; padding-top: 32px; border-top: 1px solid #444; }
+.saved-plans > .eyebrow { color: #aaa; }
+.saved-plans h2 { font-size: 26px; font-weight: 400; font-stretch: 75%; margin-top: 20px; }
+.saved-plans > p { font-size: 11px; color: #aaa; line-height: 1.8; margin-top: 12px; }
+.saved-plans ul { list-style: none; margin-top: 24px; padding: 0; }
+.saved-plans li { display: flex; align-items: center; gap: 16px; border-top: 1px solid #333; padding-block: 20px; }
+.saved-plans li > div { flex: 1; min-width: 0; }
+.saved-plans strong { font-size: 15px; font-weight: 400; }
+.saved-plans li span { display: block; margin-top: 8px; font-size: 10px; line-height: 1.8; color: #aaa; }
+.saved-plans li .btn { font-size: 9px; padding-inline: 12px; }
+@media (max-width: 600px) { .saved-plans li { flex-wrap: wrap; } .saved-plans li > div { flex-basis: 100%; } }
+.toast-stack.in-dialog { position: sticky; inset: auto; bottom: 0; width: 100%; margin-top: 18px; z-index: 1; }
+.toast-stack.in-dialog .eclipse-toast { box-shadow: 0 -8px 32px #0008; }

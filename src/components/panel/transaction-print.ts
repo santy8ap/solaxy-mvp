@@ -1,3 +1,4 @@
+import { printDocument } from "@/lib/client/print-document";
 import type { TxDTO } from "@/lib/portfolio";
 import { formatCop, formatDateTime } from "@/lib/format";
 import { STATUS_LABEL, txTitle } from "./tx-meta";
@@ -40,28 +41,8 @@ export function transactionPrintHtml(tx: TxDTO) {
 
 /** Opens the browser's print dialog, where the user can choose Save as PDF. */
 export function printTransaction(tx: TxDTO) {
-  const frame = document.createElement("iframe");
-  frame.title = "Resumen imprimible de la operación";
-  frame.tabIndex = -1;
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.cssText =
-    "position:fixed;inset:auto 0 0 auto;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
-  const cleanup = () => frame.remove();
-  frame.onload = () => {
-    const target = frame.contentWindow;
-    if (!target) {
-      cleanup();
-      return;
-    }
-    target.addEventListener("afterprint", cleanup, { once: true });
-    target.focus();
-    try {
-      target.print();
-    } catch {
-      cleanup();
-    }
-    setTimeout(cleanup, 60000);
-  };
-  frame.srcdoc = transactionPrintHtml(tx);
-  document.body.append(frame);
+  return printDocument(
+    transactionPrintHtml(tx),
+    "Resumen imprimible de la operación",
+  );
 }

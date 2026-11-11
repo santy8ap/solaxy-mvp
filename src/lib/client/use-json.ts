@@ -36,10 +36,14 @@ export function refetch(url: string): Promise<void> {
       if (res.status === 401) {
         // Deja que el componente decida qué mostrar (p. ej. un botón "Iniciar sesión"
         // o un redireccionamiento controlado) en lugar de forzar un replace brusco.
+        e.data = undefined;
         e.error = "Sesión expirada. Inicia sesión de nuevo.";
         return;
       }
-      if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status}`);
+      if (!res.ok)
+        throw new Error(
+          (json as { error?: string }).error ?? `Error ${res.status}`,
+        );
       e.data = json;
       e.error = undefined;
     })
@@ -56,7 +60,10 @@ export function refetch(url: string): Promise<void> {
 
 const SERVER = { loading: true } as const;
 
-export function useJson<T>(url: string, { refreshMs }: { refreshMs?: number } = {}) {
+export function useJson<T>(
+  url: string,
+  { refreshMs }: { refreshMs?: number } = {},
+) {
   const subscribe = useCallback(
     (cb: () => void) => {
       const e = entry(url);
@@ -94,6 +101,9 @@ export async function postJson<T>(url: string, body: unknown = {}): Promise<T> {
     body: JSON.stringify(body),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((json as { error?: string }).error ?? `Error ${res.status}`);
+  if (!res.ok)
+    throw new Error(
+      (json as { error?: string }).error ?? `Error ${res.status}`,
+    );
   return json as T;
 }

@@ -1,6 +1,7 @@
 "use client";
 import { Check, CircleAlert, Info, X } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 type Tone = "ok" | "error" | "info";
 interface Toast {
@@ -24,6 +25,38 @@ export function toast(message: string, tone: Tone = "ok") {
 }
 const EMPTY: Toast[] = [];
 export function Toaster() {
+  const [target, setTarget] = useState<HTMLDialogElement | null>(null);
+  useEffect(() => {
+    const locate = () => {
+      const dialogs =
+        document.querySelectorAll<HTMLDialogElement>("dialog[open]");
+      setTarget(dialogs.length ? dialogs[dialogs.length - 1] : null);
+    };
+    locate();
+    const observer = new MutationObserver((records) => {
+      if (
+        records.some(
+          (record) =>
+            (record.type === "attributes" &&
+              record.target instanceof HTMLDialogElement) ||
+            (record.type === "childList" &&
+              [...record.addedNodes, ...record.removedNodes].some(
+                (node) =>
+                  node instanceof Element &&
+                  (node.matches("dialog") || node.querySelector("dialog")),
+              )),
+        )
+      )
+        locate();
+    });
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["open"],
+    });
+    return () => observer.disconnect();
+  }, []);
   const list = useSyncExternalStore(
     (callback) => {
       listeners.add(callback);
@@ -32,8 +65,11 @@ export function Toaster() {
     () => toasts,
     () => EMPTY,
   );
-  return (
-    <div className="toast-stack" aria-live="polite">
+  const content = (
+    <div
+      className={`toast-stack ${target ? "in-dialog" : ""}`}
+      aria-live="polite"
+    >
       {list.map((item) => {
         const Icon =
           item.tone === "ok"
@@ -61,4 +97,5 @@ export function Toaster() {
       })}
     </div>
   );
+  return target ? createPortal(content, target) : content;
 }

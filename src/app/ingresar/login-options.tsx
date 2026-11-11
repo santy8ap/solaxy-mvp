@@ -1,35 +1,65 @@
 "use client";
 import { KeyRound, LineChart } from "lucide-react";
 import { useActionState, useState } from "react";
+import { safeDestination } from "@/lib/navigation";
 import { authClient } from "@/lib/auth-client";
 import { prepareGoogleLogin, signInDemo } from "./actions";
 
 function GoogleG() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#656565" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#7f7f7f" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-      <path fill="#bcbcbc" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-      <path fill="#898989" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+      <path
+        fill="#656565"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#7f7f7f"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#bcbcbc"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#898989"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
     </svg>
   );
 }
 
 type Role = "user" | "admin";
 
-const ROLES: { id: Role; title: string; note: string; icon: typeof LineChart }[] = [
-  { id: "user", title: "Mi cuenta", note: "Tu energía y movimientos", icon: LineChart },
-  { id: "admin", title: "Administrador", note: "Usuarios, planta y retiros", icon: KeyRound },
+const ROLES: {
+  id: Role;
+  title: string;
+  note: string;
+  icon: typeof LineChart;
+}[] = [
+  {
+    id: "user",
+    title: "Mi cuenta",
+    note: "Tu energía y movimientos",
+    icon: LineChart,
+  },
+  {
+    id: "admin",
+    title: "Administrador",
+    note: "Usuarios, planta y retiros",
+    icon: KeyRound,
+  },
 ];
 
 export function LoginOptions({
   googleEnabled,
   demoMode,
   defaultRole = "user",
+  destination = "/panel",
 }: {
   googleEnabled: boolean;
   demoMode: boolean;
   defaultRole?: Role;
+  destination?: string;
 }) {
   const [role, setRole] = useState<Role>(defaultRole);
   const [pin, setPin] = useState("");
@@ -52,19 +82,30 @@ export function LoginOptions({
       return;
     }
     setGoogleLoading(true);
-    const prep = await prepareGoogleLogin(role, pin);
-    if (prep?.error) {
-      setNotice(prep.error);
+    try {
+      const prep = await prepareGoogleLogin(role, pin);
+      if (prep?.error) {
+        setNotice(prep.error);
+        return;
+      }
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL:
+          role === "admin"
+            ? "/api/admin/activar"
+            : safeDestination(destination),
+      });
+      if (error)
+        setNotice(
+          error.message ??
+            "No se pudo conectar con Google. Inténtalo de nuevo.",
+        );
+    } catch {
+      setNotice(
+        "No se pudo iniciar el ingreso. Revisa tu conexión e inténtalo de nuevo.",
+      );
+    } finally {
       setGoogleLoading(false);
-      return;
-    }
-    const { error } = await authClient.signIn.social({
-      provider: "google",
-      callbackURL: role === "admin" ? "/api/admin/activar" : "/panel",
-    });
-    if (error) {
-      setGoogleLoading(false);
-      setNotice(error.message ?? (demoMode ? "No se pudo conectar con Google. Intenta de nuevo o usa la cuenta demo." : "No se pudo conectar con Google. Intenta de nuevo."));
     }
   };
 
@@ -88,10 +129,28 @@ export function LoginOptions({
                     : "border-silicon-600/70 hover:border-silicon-500"
                 }`}
               >
-                <input type="radio" name="role-choice" value={id} checked={active} onChange={() => setRole(id)} className="sr-only" />
-                <Icon size={18} className={active ? (id === "admin" ? "text-dusk-300" : "text-sun-300") : "text-silver-400"} />
+                <input
+                  type="radio"
+                  name="role-choice"
+                  value={id}
+                  checked={active}
+                  onChange={() => setRole(id)}
+                  className="sr-only"
+                />
+                <Icon
+                  size={18}
+                  className={
+                    active
+                      ? id === "admin"
+                        ? "text-dusk-300"
+                        : "text-sun-300"
+                      : "text-silver-400"
+                  }
+                />
                 <span className="font-semibold text-silver-50">{title}</span>
-                <span className="text-xs leading-snug text-silver-400">{note}</span>
+                <span className="text-xs leading-snug text-silver-400">
+                  {note}
+                </span>
               </label>
             );
           })}
@@ -100,7 +159,10 @@ export function LoginOptions({
 
       <div
         className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
-        style={{ gridTemplateRows: role === "admin" ? "1fr" : "0fr", opacity: role === "admin" ? 1 : 0 }}
+        style={{
+          gridTemplateRows: role === "admin" ? "1fr" : "0fr",
+          opacity: role === "admin" ? 1 : 0,
+        }}
         aria-hidden={role !== "admin"}
       >
         <div className="overflow-hidden">
@@ -125,25 +187,46 @@ export function LoginOptions({
         <button
           type="button"
           onClick={onGoogle}
-          disabled={googleLoading || pending}
+          disabled={!googleEnabled || googleLoading || pending}
           className="btn w-full !justify-center bg-silver-50 !py-3.5 text-silicon-950 hover:bg-white"
         >
           <GoogleG />
           {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
         </button>
+        {!googleEnabled && (
+          <p className="section-note">
+            El ingreso con Google no está disponible por el momento.
+          </p>
+        )}
         {demoMode && (
           <form action={formAction}>
             <input type="hidden" name="role" value={role} />
+            <input
+              type="hidden"
+              name="next"
+              value={safeDestination(destination)}
+            />
             <input type="hidden" name="pin" value={pin} />
-            <button type="submit" disabled={pending || googleLoading} className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}>
-              {pending ? "Entrando…" : role === "admin" ? "Entrar como administrador (demo)" : "Entrar con la cuenta demo"}
+            <button
+              type="submit"
+              disabled={pending || googleLoading}
+              className={`btn w-full !py-3.5 ${role === "admin" ? "btn-dusk" : "btn-sun"}`}
+            >
+              {pending
+                ? "Entrando…"
+                : role === "admin"
+                  ? "Entrar como administrador (demo)"
+                  : "Entrar con la cuenta demo"}
             </button>
           </form>
         )}
       </div>
 
       {error && (
-        <p role="alert" className="rounded-none border border-sun-400/40 bg-sun-400/10 p-3 text-sm leading-relaxed text-sun-200">
+        <p
+          role="alert"
+          className="rounded-none border border-sun-400/40 bg-sun-400/10 p-3 text-sm leading-relaxed text-sun-200"
+        >
           {error}
         </p>
       )}

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Toaster } from "@/components/ui/toast";
+import { signInHref } from "@/lib/navigation";
 import { Logo } from "@/components/ui/logo";
 
 export function PublicFrame({
@@ -37,7 +39,10 @@ export function PublicFrame({
               </Link>
             ))}
           </div>
-          <Link href="/ingresar" className="btn btn-ghost">
+          <Link
+            href={signInHref(active === "planes" ? "/panel/planes" : "/panel")}
+            className="btn btn-ghost"
+          >
             Ingresar ↗
           </Link>
         </nav>
@@ -45,6 +50,7 @@ export function PublicFrame({
       <main id="contenido" className="eclipse-wrap public-content">
         {children}
       </main>
+      <Toaster />
       <footer className="eclipse-wrap public-footer">
         <Logo />
         <span className="eyebrow">ENERGÍA SOLAR. VISIÓN EMPRESARIAL.</span>

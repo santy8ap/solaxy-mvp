@@ -6,6 +6,10 @@ import {
   ArrowUpRight,
   Check,
   FileText,
+  Bookmark,
+  Download,
+  Trash2,
+  Printer,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -15,6 +19,11 @@ import {
 } from "@/config/energy-plans";
 import { formatCop, formatNumber } from "@/lib/format";
 import { nitCheckDigit } from "@/lib/profile-schema";
+import { useSavedPlans } from "@/lib/client/use-saved-plans";
+import { downloadFile, printDocument } from "@/lib/client/print-document";
+import { signInHref } from "@/lib/navigation";
+import { toast } from "@/components/ui/toast";
+import { planProposalHtml } from "./plan-proposal";
 import { Dialog } from "@/components/ui/dialog";
 import { PlanCards } from "./plan-cards";
 import { PlanComparator } from "./plan-comparator";
@@ -65,12 +74,59 @@ function PlanReview({ plan }: { plan: EnergyPlan }) {
 }
 
 function PlanCheckout({ plan, close }: { plan: EnergyPlan; close(): void }) {
+  const saved = useSavedPlans();
+  const isSaved = saved.plans.some((item) => item.planId === plan.id);
+  const [importing, setImporting] = useState(false);
+  const [signInNeeded, setSignInNeeded] = useState(false);
+  const saveSelection = () => {
+    if (isSaved) {
+      saved.remove(plan.id);
+      toast("Selección eliminada de este navegador.");
+      return;
+    }
+    const persisted = saved.save(plan.id);
+    toast(
+      persisted
+        ? "Plan guardado en este navegador."
+        : "Plan guardado en esta pestaña. El navegador no permite conservarlo.",
+      persisted ? "ok" : "info",
+    );
+  };
+  const proposal = (includeCompany: boolean) => {
+    try {
+      downloadFile(
+        planProposalHtml(plan, includeCompany ? company : undefined),
+        "text/html;charset=utf-8",
+        `in-world-energy-propuesta-${plan.id}.html`,
+      );
+      toast("Propuesta descargada. Ábrela para imprimir o guardar como PDF.");
+    } catch {
+      toast("No se pudo descargar la propuesta. Inténtalo de nuevo.", "error");
+    }
+  };
+  const printProposal = async (includeCompany: boolean) => {
+    try {
+      await printDocument(
+        planProposalHtml(plan, includeCompany ? company : undefined),
+        "Propuesta de energía",
+      );
+    } catch (error) {
+      toast(
+        error instanceof Error
+          ? error.message
+          : "No se pudo abrir la impresión.",
+        "error",
+      );
+    }
+  };
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [company, setCompany] = useState<CompanyDraft>(INITIAL_COMPANY);
   const [error, setError] = useState("");
+  const [nitInvalid, setNitInvalid] = useState(false);
   const field = (name: keyof CompanyDraft, value: string) => {
     setCompany((previous) => ({ ...previous, [name]: value }));
     setError("");
+    setNitInvalid(false);
   };
   return (
     <>
@@ -94,8 +150,29 @@ function PlanCheckout({ plan, close }: { plan: EnergyPlan; close(): void }) {
           <PlanReview plan={plan} />
           <p className="table-note">
             Los datos que escribas en el siguiente paso solo se usan para esta
-            revisión en pantalla. Se descartan al cerrar.
+            revisión en pantalla. Se descartan al cerrar; guardar el plan
+            conserva únicamente su selección.
           </p>
+          <div className="proposal-quick-actions">
+            <button
+              type="button"
+              className="text-link"
+              onClick={() => void printProposal(false)}
+            >
+              <Printer size={14} /> Imprimir / PDF
+            </button>
+            <button type="button" className="text-link" onClick={saveSelection}>
+              <Bookmark size={14} />
+              {isSaved ? "Quitar guardado" : "Guardar selección"}
+            </button>
+            <button
+              type="button"
+              className="text-link"
+              onClick={() => proposal(false)}
+            >
+              <Download size={14} /> Descargar propuesta
+            </button>
+          </div>
           <div className="dialog-actions">
             <button type="button" className="btn btn-ghost" onClick={close}>
               Cerrar
@@ -120,6 +197,7 @@ function PlanCheckout({ plan, close }: { plan: EnergyPlan; close(): void }) {
               (match[2] !== undefined &&
                 Number(match[2]) !== nitCheckDigit(match[1]))
             ) {
+              setNitInvalid(true);
               setError(
                 "Revisa el NIT y su dígito de verificación. Ejemplo: 900123456-8.",
               );
@@ -138,6 +216,74 @@ function PlanCheckout({ plan, close }: { plan: EnergyPlan; close(): void }) {
           }}
           className="company-draft"
         >
+          <div className="proposal-account-import">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={importing}
+              onClick={async () => {
+                setImporting(true);
+                setError("");
+                setNitInvalid(false);
+                setSignInNeeded(false);
+                try {
+                  const response = await fetch("/api/profile", {
+                    cache: "no-store",
+                  });
+                  if (response.status === 401) {
+                    setError("Inicia sesión para usar los datos de tu cuenta.");
+                    setSignInNeeded(true);
+                    return;
+                  }
+                  if (!response.ok)
+                    throw new Error(
+                      "No pudimos cargar tus datos. Puedes completarlos manualmente.",
+                    );
+                  const result = (await response.json()) as {
+                    profile: {
+                      fullName: string;
+                      docType: string;
+                      docNumber: string;
+                    } | null;
+                    email: string;
+                  };
+                  if (!result.profile || result.profile.docType !== "NIT") {
+                    setError(
+                      "Tu cuenta aún no tiene datos de empresa con NIT. Puedes completar este formulario manualmente.",
+                    );
+                    return;
+                  }
+                  setCompany((previous) => ({
+                    ...previous,
+                    company: result.profile!.fullName,
+                    nit: result.profile!.docNumber,
+                    email: result.email,
+                  }));
+                  toast(
+                    "Datos de empresa cargados. Completa el representante legal.",
+                  );
+                } catch (exception) {
+                  setError(
+                    exception instanceof Error
+                      ? exception.message
+                      : "No pudimos cargar los datos.",
+                  );
+                } finally {
+                  setImporting(false);
+                }
+              }}
+            >
+              {importing ? "Cargando datos…" : "Usar datos de mi cuenta"}
+            </button>
+            {signInNeeded && (
+              <Link
+                href={signInHref(`/panel/planes?plan=${plan.id}`)}
+                className="text-link"
+              >
+                Iniciar sesión y volver al plan <ArrowRight size={14} />
+              </Link>
+            )}
+          </div>
           <label>
             Razón social
             <input
@@ -158,8 +304,8 @@ function PlanCheckout({ plan, close }: { plan: EnergyPlan; close(): void }) {
               maxLength={16}
               value={company.nit}
               onChange={(event) => field("nit", event.target.value)}
-              aria-invalid={Boolean(error)}
-              aria-describedby={error ? "company-draft-error" : undefined}
+              aria-invalid={nitInvalid}
+              aria-describedby={nitInvalid ? "company-draft-error" : undefined}
             />
           </label>
           <label>
@@ -225,8 +371,27 @@ function PlanCheckout({ plan, close }: { plan: EnergyPlan; close(): void }) {
             >
               Editar datos
             </button>
-            <button type="button" className="btn btn-sun" disabled>
-              Pago aún no habilitado
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={saveSelection}
+            >
+              <Bookmark size={14} />
+              {isSaved ? "Quitar guardado" : "Guardar selección"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => void printProposal(true)}
+            >
+              <Printer size={14} /> Imprimir / PDF
+            </button>
+            <button
+              type="button"
+              className="btn btn-sun"
+              onClick={() => proposal(true)}
+            >
+              <Download size={14} /> Descargar propuesta
             </button>
           </div>
         </>
@@ -245,6 +410,7 @@ export function PlanCatalog({
       ENERGY_PLANS.find((plan) => plan.id === initialPlanId) ?? ENERGY_PLANS[3],
   );
   const [review, setReview] = useState(false);
+  const saved = useSavedPlans();
   const summary = planSummary(selected);
   return (
     <div className="plan-catalog">
@@ -318,6 +484,56 @@ export function PlanCatalog({
           Consultar términos <ArrowUpRight size={14} />
         </Link>
       </div>
+      {saved.plans.length > 0 && (
+        <section className="saved-plans" aria-labelledby="saved-plans-title">
+          <span className="eyebrow">GUARDADAS EN ESTE NAVEGADOR</span>
+          <h2 id="saved-plans-title">Tus selecciones, a mano.</h2>
+          <p>
+            Guardar una selección no activa un contrato. No se conservan datos
+            de empresa.
+          </p>
+          <ul>
+            {saved.plans.map((item) => {
+              const plan = ENERGY_PLANS.find(
+                (option) => option.id === item.planId,
+              );
+              if (!plan) return null;
+              return (
+                <li key={item.planId}>
+                  <div>
+                    <strong>Plan {plan.name}</strong>
+                    <span>
+                      {formatNumber(plan.daily)} kWh/día ·{" "}
+                      {formatCop(planSummary(plan).monthlyCop)} COP/mes
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      setSelected(plan);
+                      setReview(true);
+                    }}
+                  >
+                    Reabrir <ArrowUpRight size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Eliminar selección del plan ${plan.name}`}
+                    onClick={() => {
+                      saved.remove(item.planId);
+                      toast("Selección eliminada.");
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       <PlanComparator
         onSelect={(plan) => {
           setSelected(plan);
