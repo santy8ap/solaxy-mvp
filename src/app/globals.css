@@ -3008,3 +3008,131 @@
 @media (max-width: 600px) { .saved-plans li { flex-wrap: wrap; } .saved-plans li > div { flex-basis: 100%; } }
 .toast-stack.in-dialog { position: sticky; inset: auto; bottom: 0; width: 100%; margin-top: 18px; z-index: 1; }
 .toast-stack.in-dialog .eclipse-toast { box-shadow: 0 -8px 32px #0008; }
+
+/* Dedicated energy purchase flow. */
+.purchase-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  color: #a4a4a4;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.purchase-breadcrumb a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; }
+.purchase-breadcrumb a:hover { color: #fff; }
+.purchase-breadcrumb [aria-current] { color: #e6e6e6; }
+.purchase-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 48px;
+  padding-block: 40px 56px;
+}
+.purchase-heading .eyebrow { color: #aaa; font-size: 10px; }
+.purchase-heading h1 {
+  margin-top: 24px;
+  font-stretch: 62%;
+  font-weight: 400;
+  font-size: clamp(3.8rem, 7.2vw, 7rem);
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+.purchase-heading h1 span { color: #929292; }
+.purchase-heading > p { max-width: 280px; color: #aaa; font-size: 13px; line-height: 1.9; }
+.purchase-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+.purchase-form-panel {
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid #444;
+  background: #0b0b0b;
+  animation: purchase-enter 0.5s ease-out both;
+}
+.purchase-form-panel .checkout-steps { padding-bottom: 28px; border-bottom: 1px solid #444; }
+.purchase-form-panel .checkout-steps li { font-size: 11px; }
+.purchase-step-heading { padding-block: 10px 24px; }
+.purchase-step-heading > .eyebrow { font-size: 9px; color: #aaa; }
+.purchase-step-heading h2 { font-size: clamp(1.6rem, 2.5vw, 2.2rem); font-stretch: 75%; font-weight: 400; line-height: 1.2; margin-top: 18px; }
+.purchase-step-heading h2:focus { outline: none; }
+.purchase-step-heading > p { color: #aaa; font-size: 12px; line-height: 1.8; margin-top: 14px; max-width: 44ch; }
+.purchase-form-panel .detail-list { margin-top: 0; }
+.purchase-form-panel .detail-list > div { gap: 20px; }
+.purchase-form-panel .detail-list dd { max-width: 58%; overflow-wrap: anywhere; }
+.purchase-form-panel .dialog-actions { margin-top: 32px; padding-top: 24px; border-top: 1px solid #444; }
+.purchase-form-panel .dialog-actions .btn { font-size: 10px; padding-inline: 16px; }
+.purchase-form-panel .company-draft { margin-top: 0; }
+.purchase-form-panel .company-draft input { padding-block: 10px; }
+.purchase-form-panel .proposal-quick-actions { margin-top: 24px; gap: 12px 20px; }
+.purchase-form-panel .table-note { font-size: 11px; }
+.purchase-form-panel .company-review { margin-top: 0; padding-top: 0; margin-bottom: 20px; }
+.purchase-form-panel .purchase-billing-notice { margin-top: 24px; }
+.purchase-billing-notice strong { color: #eee; font-weight: 500; }
+.purchase-summary { min-width: 0; position: sticky; top: 24px; animation: purchase-enter 0.65s ease-out both; }
+.purchase-receipt { background: #ededeb; color: #101010; padding: 30px; }
+.purchase-receipt-top { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.purchase-receipt-top .eyebrow { font-size: 9px; }
+.purchase-receipt-top > .mono { color: #555; font-size: 10px; }
+.purchase-receipt h2 { font-stretch: 65%; font-weight: 400; font-size: clamp(2.8rem, 5vw, 4.4rem); line-height: 1; margin-top: 32px; }
+.purchase-energy { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding-bottom: 28px; border-bottom: 1px solid #aaa; }
+.purchase-energy > span { font-size: 23px; }
+.purchase-energy small { font-size: 11px; color: #555; }
+.purchase-receipt-details { display: grid; gap: 20px; padding-block: 26px; }
+.purchase-receipt-details > div { display: flex; justify-content: space-between; gap: 20px; font-size: 11px; }
+.purchase-receipt-details dt { color: #555; }
+.purchase-receipt-details dd { text-align: right; font-family: ui-monospace, monospace; }
+.purchase-monthly { padding-block: 24px; border-block: 1px solid #aaa; }
+.purchase-monthly > .eyebrow { font-size: 9px; }
+.purchase-monthly p { font-size: clamp(1.8rem, 3vw, 2.7rem); line-height: 1.25; letter-spacing: -0.05em; margin-top: 14px; white-space: nowrap; }
+.purchase-monthly > span:last-child { font-size: 10px; color: #555; display: block; margin-top: 10px; }
+.purchase-total { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 22px; font-size: 10px; }
+.purchase-total strong { font-weight: 400; }
+.purchase-change { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 24px; margin-top: 24px; border-top: 1px solid #aaa; font-size: 11px; min-height: 44px; }
+.purchase-change:hover { text-decoration: underline; text-underline-offset: 4px; }
+.purchase-receipt :focus-visible { outline-color: #111; }
+.purchase-schedule { margin-top: 28px; }
+.purchase-schedule h3 { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 400; }
+.purchase-schedule ol { list-style: none; padding: 0; margin-top: 20px; }
+.purchase-schedule li { display: flex; align-items: center; gap: 16px; border-top: 1px solid #333; padding-block: 18px; }
+.purchase-schedule li > .mono:first-child { color: #999; font-size: 11px; }
+.purchase-schedule li > div { flex: 1; }
+.purchase-schedule li strong { display: block; font-size: 11px; font-weight: 400; }
+.purchase-schedule li div > span { display: block; font-size: 10px; color: #999; margin-top: 5px; }
+.purchase-schedule li > .mono:last-child { font-size: 11px; }
+.purchase-availability { display: flex; gap: 12px; color: #aaa; font-size: 11px; line-height: 1.9; padding: 18px; border: 1px solid #444; margin-top: 12px; }
+.purchase-availability svg { flex-shrink: 0; margin-top: 3px; }
+.purchase-support { display: flex; flex-wrap: wrap; align-items: center; gap: 32px; border-top: 1px solid #444; padding-top: 32px; margin-top: 64px; }
+.purchase-support > div { flex: 1; }
+.purchase-support .eyebrow { color: #999; font-size: 9px; }
+.purchase-support p { font-size: 20px; margin-top: 12px; }
+.purchase-support .text-link { margin-top: 0; font-size: 11px; }
+@keyframes purchase-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1000px) {
+  .purchase-layout { gap: 24px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  .purchase-form-panel, .purchase-receipt { padding: 24px; }
+  .purchase-monthly p { font-size: 26px; }
+}
+@media (max-width: 760px) {
+  .purchase-heading { align-items: start; flex-direction: column; gap: 24px; padding-block: 28px 36px; }
+  .purchase-heading > p { max-width: 40ch; font-size: 12px; }
+  .purchase-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .purchase-summary { position: static; }
+  .purchase-receipt h2 { font-size: 56px; }
+  .purchase-monthly p { font-size: clamp(26px, 7vw, 40px); }
+  .purchase-form-panel .dialog-actions .btn { flex: 1; }
+  .purchase-support { gap: 24px; margin-top: 40px; }
+  .purchase-support > div { flex-basis: 100%; }
+}
+@media (max-width: 380px) {
+  .purchase-form-panel, .purchase-receipt { padding: 18px; }
+  .purchase-form-panel .checkout-steps { gap: 8px; }
+  .purchase-form-panel .checkout-steps li { gap: 5px; font-size: 9px; }
+  .purchase-form-panel .dialog-actions { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .purchase-form-panel, .purchase-summary { animation: none; }
+}

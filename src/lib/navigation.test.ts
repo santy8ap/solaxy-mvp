@@ -13,6 +13,19 @@ describe("authentication return navigation", () => {
       "/ingresar?next=%2Fpanel%2Fplanes%3Fplan%3D01",
     );
   });
+  it("returns to the exact checkout after sign-in without retaining unrelated parameters", () => {
+    for (const id of ["01", "02", "03", "04"]) {
+      expect(safeDestination(`/comprar/${id}?next=https://example.com`)).toBe(
+        `/comprar/${id}`,
+      );
+      expect(signInHref(`/comprar/${id}`)).toBe(
+        `/ingresar?next=%2Fcomprar%2F${id}`,
+      );
+    }
+    expect(safeDestination("/comprar/99")).toBe("/panel");
+    expect(safeDestination("/comprar/04/extra")).toBe("/panel");
+    expect(safeDestination("/comprar/04%0a")).toBe("/panel");
+  });
   it("rejects external URLs, backslashes, unrecognized pages and invalid plan values", () => {
     for (const value of [
       "https://evil.example",

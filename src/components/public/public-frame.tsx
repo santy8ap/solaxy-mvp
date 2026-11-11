@@ -7,9 +7,11 @@ import { Logo } from "@/components/ui/logo";
 export function PublicFrame({
   children,
   active,
+  signInDestination,
 }: {
   children: ReactNode;
   active?: "planes" | "planta" | "ayuda";
+  signInDestination?: string;
 }) {
   return (
     <>
@@ -40,7 +42,7 @@ export function PublicFrame({
             ))}
           </div>
           <Link
-            href={signInHref(active === "planes" ? "/panel/planes" : "/panel")}
+            href={signInHref(signInDestination ?? (active === "planes" ? "/panel/planes" : "/panel"))}
             className="btn btn-ghost"
           >
             Ingresar ↗

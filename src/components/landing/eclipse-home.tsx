@@ -280,15 +280,15 @@ export function EclipseHome() {
               <p className="muted">{number.format(monthly)} kWh cada 30 días</p>
             </div>
             <div className="plan-detail-note">
-              <p>Compara antes de decidir.</p>
+              <p>Tu siguiente paso, con todo claro.</p>
               <p className="muted">
-                El catálogo de planes está definido. Su contratación mensual aún
-                no está habilitada en esta versión.
+                Consulta el resumen de tu plan y completa los datos de tu empresa
+                en la vista de compra.
               </p>
-              <Link className="text-link" href={`/planes?plan=${plan.id}`}>
-                  Revisar plan {plan.name} <ArrowUpRight size={16} />
-                </Link>
-                <a className="text-link" href="#comparar">
+              <Link className="btn btn-sun" href={`/comprar/${plan.id}`}>
+                Comprar plan {plan.name} <ArrowUpRight size={16} />
+              </Link>
+              <a className="text-link" href="#comparar">
                 Ver comparación completa <ArrowDown size={16} />
               </a>
             </div>

@@ -1,3 +1,5 @@
+import { ENERGY_PLANS } from "@/config/energy-plans";
+
 /** Only known, same-origin customer destinations can survive authentication. */
 const DESTINATIONS = new Set([
   "/panel",
@@ -7,6 +9,7 @@ const DESTINATIONS = new Set([
   "/panel/perfil",
   "/panel/telemetria",
   "/planes",
+  ...ENERGY_PLANS.map((plan) => `/comprar/${plan.id}`),
 ]);
 export function safeDestination(value: unknown, fallback = "/panel") {
   if (
