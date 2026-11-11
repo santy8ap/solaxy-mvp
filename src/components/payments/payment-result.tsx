@@ -1,10 +1,10 @@
 "use client";
-import { AlertTriangle, Check, Clock, RotateCcw, X } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { AlertTriangle, Check, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TxDTO } from "@/lib/portfolio";
-import { formatCop, formatKw } from "@/lib/format";
+import { refetch } from "@/lib/client/use-json";
+import { formatCop, formatNumber } from "@/lib/format";
 
 type Outcome = "aprobada" | "fallida" | "pendiente" | "devuelta" | "sin_pago";
 
@@ -57,6 +57,10 @@ export function PaymentResult({ orderRef, paymentId }: { orderRef: string; payme
         return;
       }
       setView(next);
+      if (next.kind === "orden" && next.order.status === "confirmada") {
+        void refetch("/api/portfolio");
+        void refetch("/api/plans");
+      }
       if (inProgress(next)) timer = setTimeout(run, pollDelay(attempt++));
     };
     timer = setTimeout(run, 0);
@@ -67,7 +71,7 @@ export function PaymentResult({ orderRef, paymentId }: { orderRef: string; payme
   }, [orderRef, paymentId, round]);
 
   return (
-    <section className="panel cells w-full p-8 text-center sm:p-10" aria-live="polite">
+    <section className="w-full" aria-live="polite">
       <Body
         view={view}
         onRetry={() => {
@@ -79,23 +83,15 @@ export function PaymentResult({ orderRef, paymentId }: { orderRef: string; payme
   );
 }
 
-function Badge({ tone, children }: { tone: "ok" | "wait" | "bad" | "warn"; children: React.ReactNode }) {
-  const reduce = useReducedMotion();
-  const colors = {
-    ok: "bg-leaf-400/15 text-leaf-300 shadow-[0_0_60px_rgb(52_245_166/0.25)]",
-    wait: "bg-sun-400/15 text-sun-300",
-    bad: "bg-alert-400/15 text-alert-400",
-    warn: "bg-sun-400/15 text-sun-300",
-  }[tone];
+/** El símbolo del resultado: un anillo (el eclipse de la marca) con lo que pasó adentro. */
+function Mark({ tone, children }: { tone: "ok" | "wait" | "bad"; children?: React.ReactNode }) {
   return (
-    <motion.span
-      initial={reduce ? false : { scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 260, damping: 18 }}
-      className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${colors}`}
+    <span
+      className={`flex h-16 w-16 items-center justify-center rounded-full ${tone === "ok" ? "bg-ink text-void" : tone === "wait" ? "border border-dashed border-fog motion-safe:animate-[spin_9s_linear_infinite]" : "border border-ink"}`}
+      aria-hidden="true"
     >
       {children}
-    </motion.span>
+    </span>
   );
 }
 
@@ -105,26 +101,24 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
   if (view.kind === "cargando" || waitingForPayment) {
     return (
       <>
-        <Badge tone="wait">
-          <Clock size={28} className="animate-pulse" />
-        </Badge>
-        <h1 className="mt-6 text-2xl font-semibold text-silver-50">Confirmando tu pago…</h1>
-        <p className="mt-2 text-silver-400">Estamos consultando el resultado con Mercado Pago.</p>
+        <Mark tone="wait" />
+        <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">Confirmando tu pago</h1>
+        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">Estamos consultando el resultado con Mercado Pago.</p>
       </>
     );
   }
   if (view.kind === "no_encontrado" || view.kind === "error") {
     return (
       <>
-        <Badge tone="warn">
-          <AlertTriangle size={28} />
-        </Badge>
-        <h1 className="mt-6 text-2xl font-semibold text-silver-50">{view.kind === "error" ? "No pudimos consultar el pago" : "Pago no encontrado"}</h1>
-        <p className="mt-2 text-silver-400">{view.message}</p>
-        <div className="mt-8 flex flex-wrap justify-center gap-2">
+        <Mark tone="bad">
+          <AlertTriangle size={26} strokeWidth={1.5} />
+        </Mark>
+        <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">{view.kind === "error" ? "No pudimos consultar el pago" : "Pago no encontrado"}</h1>
+        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">{view.message}</p>
+        <div className="mt-9 flex flex-wrap gap-3">
           {view.kind === "error" && (
-            <button type="button" onClick={onRetry} className="btn btn-sun">
-              <RotateCcw size={16} /> Volver a consultar
+            <button type="button" onClick={onRetry} className="btn btn-solid">
+              <RotateCcw size={15} /> Volver a consultar
             </button>
           )}
           <Link href="/panel/billetera" className="btn btn-ghost">
@@ -136,23 +130,25 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
   }
 
   const o = view.order;
-  const kw = formatKw(o.kw ?? 0, 1);
   const ref = (
-    <p className="num mt-6 text-xs text-silver-500">
-      Referencia {o.id} · {formatCop(o.amountCop)}
+    <p className="num mt-10 border-t border-line pt-4 text-xs text-mute">
+      Referencia {o.id}, {formatCop(o.amountCop)}
     </p>
   );
 
   if (o.status === "confirmada") {
     return (
       <>
-        <Badge tone="ok">
-          <Check size={30} strokeWidth={2.6} />
-        </Badge>
-        <h1 className="display mt-6 text-[2rem] text-silver-50">¡Listo! {kw} son tuyos</h1>
-        <p className="mt-2 text-silver-300">Tu pago fue aprobado y tus kW ya están generando desde este momento.</p>
-        <Link href="/panel" className="btn btn-sun mt-8">
-          Ver mi energía en vivo
+        <Mark tone="ok">
+          <Check size={30} strokeWidth={2} />
+        </Mark>
+        <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">Pago confirmado</h1>
+        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
+          {o.periodIndex ? `El mes ${o.periodIndex} de tu plan ya está activo` : "Tu plan ya está activo"}
+          {o.kwh ? `: ${formatNumber(o.kwh)} kWh en los próximos 30 días.` : "."} Tu energía cuenta desde este momento.
+        </p>
+        <Link href="/panel" className="btn btn-solid mt-9">
+          Ver mi energía
         </Link>
         {ref}
       </>
@@ -161,17 +157,17 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
   if (o.status === "pendiente" && view.outcome === "sin_pago" && view.gaveUp) {
     return (
       <>
-        <Badge tone="warn">
-          <AlertTriangle size={28} />
-        </Badge>
-        <h1 className="mt-6 text-2xl font-semibold text-silver-50">No completaste el pago</h1>
-        <p className="mt-2 text-silver-400">Mercado Pago no tiene un pago para esta orden. No se hizo ningún cobro; puedes intentarlo de nuevo cuando quieras.</p>
-        <div className="mt-8 flex flex-wrap justify-center gap-2">
-          <Link href="/panel/mercado" className="btn btn-sun">
-            Volver a comprar
+        <Mark tone="bad">
+          <X size={28} strokeWidth={1.5} />
+        </Mark>
+        <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">No completaste el pago</h1>
+        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">Mercado Pago no tiene un pago para esta orden. No se hizo ningún cobro; puedes intentarlo de nuevo cuando quieras.</p>
+        <div className="mt-9 flex flex-wrap gap-3">
+          <Link href="/panel/planes" className="btn btn-solid">
+            Volver a los planes
           </Link>
           <button type="button" onClick={onRetry} className="btn btn-ghost">
-            <RotateCcw size={16} /> Ya pagué, volver a consultar
+            <RotateCcw size={15} /> Ya pagué, volver a consultar
           </button>
         </div>
         {ref}
@@ -181,13 +177,10 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
   if (o.status === "pendiente" || o.status === "verificando") {
     return (
       <>
-        <Badge tone="wait">
-          <Clock size={28} className="animate-pulse" />
-        </Badge>
-        <h1 className="mt-6 text-2xl font-semibold text-silver-50">Tu pago está en proceso</h1>
-        <p className="mt-2 text-silver-400">
-          Algunos pagos, como PSE, tardan unos minutos. Esta página se actualiza sola; también puedes cerrarla: tus kW aparecerán en tu panel
-          apenas se confirme.
+        <Mark tone="wait" />
+        <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">Tu pago está en proceso</h1>
+        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
+          Algunos pagos, como PSE, tardan unos minutos. Esta página se actualiza sola; también puedes cerrarla: tu plan aparecerá en el panel apenas se confirme.
         </p>
         {ref}
       </>
@@ -196,12 +189,12 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
   if (o.status === "por_reembolsar" || o.status === "reembolsada") {
     return (
       <>
-        <Badge tone="warn">
-          <AlertTriangle size={28} />
-        </Badge>
-        <h1 className="mt-6 text-2xl font-semibold text-silver-50">Recibimos tu pago, pero no pudimos asignar los kW</h1>
-        <p className="mt-2 text-silver-400">{o.note ?? "Te contactaremos para devolverte el dinero."}</p>
-        <p className="mt-2 text-sm text-silver-500">
+        <Mark tone="bad">
+          <AlertTriangle size={26} strokeWidth={1.5} />
+        </Mark>
+        <h1 className="display mt-8 text-[clamp(2.5rem,7vw,4rem)]">Recibimos tu pago, pero no pudimos activar el mes</h1>
+        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">{o.note ?? "Te contactaremos para devolverte el dinero."}</p>
+        <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-mute">
           {o.status === "reembolsada" ? "El reembolso ya fue registrado." : "Nuestro equipo ya lo ve en su panel y te devolverá el dinero por el mismo medio."}
         </p>
         {ref}
@@ -210,12 +203,12 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
   }
   return (
     <>
-      <Badge tone="bad">
-        <X size={30} />
-      </Badge>
-      <h1 className="mt-6 text-2xl font-semibold text-silver-50">El pago no se aprobó</h1>
-      <p className="mt-2 text-silver-400">{o.note ?? "Mercado Pago no aprobó el pago. No se hizo ningún cobro."}</p>
-      <Link href="/panel/mercado" className="btn btn-sun mt-8">
+      <Mark tone="bad">
+        <X size={28} strokeWidth={1.5} />
+      </Mark>
+      <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">El pago no se aprobó</h1>
+      <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">{o.note ?? "Mercado Pago no aprobó el pago. No se hizo ningún cobro."}</p>
+      <Link href="/panel/planes" className="btn btn-solid mt-9">
         Intentar de nuevo
       </Link>
       {ref}

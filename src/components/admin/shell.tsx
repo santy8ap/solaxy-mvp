@@ -1,20 +1,22 @@
 "use client";
-import { ArrowLeftCircle, Banknote, CreditCard, Factory, History, LayoutGrid, LogOut, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeftCircle, Banknote, Building2, CreditCard, History, LayoutGrid, LogOut, ShieldCheck, SunMedium } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useActionState, useTransition } from "react";
 import { becomeAdmin, leaveAdmin, signOut } from "@/app/ingresar/actions";
+import { BRAND } from "@/config/brand";
 import { useJson } from "@/lib/client/use-json";
+import { useNow } from "@/lib/client/use-now";
 import { formatClock } from "@/lib/format";
-import { useNow } from "@/lib/live/hooks";
+import { ErrorNote } from "@/components/ui/field";
 import { Logo } from "@/components/ui/logo";
 
 export const ADMIN_NAV = [
   { href: "/admin", label: "Resumen", icon: LayoutGrid },
-  { href: "/admin/usuarios", label: "Usuarios", icon: Users },
-  { href: "/admin/retiros", label: "Retiros", icon: Banknote },
+  { href: "/admin/clientes", label: "Clientes", icon: Building2 },
   { href: "/admin/pagos", label: "Pagos", icon: CreditCard },
-  { href: "/admin/planta", label: "Planta", icon: Factory },
+  { href: "/admin/retiros", label: "Retiros", icon: Banknote },
+  { href: "/admin/planta", label: "Planta", icon: SunMedium },
   { href: "/admin/actividad", label: "Actividad", icon: History },
 ] as const;
 
@@ -22,9 +24,18 @@ function isActive(path: string, href: string) {
   return href === "/admin" ? path === "/admin" : path.startsWith(href);
 }
 
+/** Cuántas cosas esperan al administrador: retiros por revisar y pagos por reembolsar. */
 function usePending() {
-  const { data } = useJson<{ pendingWithdrawals: number }>("/api/admin/overview", { refreshMs: 10_000 });
-  return data?.pendingWithdrawals ?? 0;
+  const { data } = useJson<{ pendingWithdrawals: number; paymentsToRefund: number }>("/api/admin/overview", { refreshMs: 15_000 });
+  return { retiros: data?.pendingWithdrawals ?? 0, pagos: data?.paymentsToRefund ?? 0 };
+}
+
+const itemClass = (active: boolean) =>
+  `flex items-center gap-3.5 border-l-2 py-3 pl-6 pr-4 text-[0.95rem] transition-colors ${active ? "border-ink text-ink" : "border-transparent text-mute hover:text-ink"}`;
+
+function Count({ n }: { n: number }) {
+  if (!n) return null;
+  return <span className="num ml-auto bg-ink px-1.5 py-0.5 text-xs font-medium text-void">{n}</span>;
 }
 
 export function AdminSidebar() {
@@ -33,55 +44,37 @@ export function AdminSidebar() {
   const [leaving, startLeave] = useTransition();
   const [out, startOut] = useTransition();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-dusk-500/25 bg-silicon-950/50 px-4 py-6 lg:flex">
-      <Link href="/" className="px-2" aria-label="Solaxy, inicio">
+    <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-r border-line py-7 lg:flex">
+      <Link href="/" className="px-6" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
-      <span className="mx-2 mt-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-dusk-400/40 bg-dusk-400/10 px-2.5 py-1 text-xs font-medium text-dusk-300">
-        <ShieldCheck size={13} /> Modo administrador
-      </span>
-      <nav className="mt-8 flex flex-col gap-1" aria-label="Administración">
+      <p className="cap mt-6 flex items-center gap-2 px-6 !text-ink">
+        <ShieldCheck size={14} strokeWidth={1.5} /> Administración
+      </p>
+      <nav className="mt-7 flex flex-col" aria-label="Administración">
         {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(path, href);
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] transition-colors ${
-                active ? "bg-dusk-500/20 font-semibold text-silver-50" : "text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
-              }`}
-            >
-              <Icon size={18} className={active ? "text-dusk-300" : ""} />
+            <Link key={href} href={href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
+              <Icon size={17} strokeWidth={1.5} />
               {label}
-              {href === "/admin/retiros" && pending > 0 && (
-                <span className="num ml-auto rounded-full bg-dusk-400 px-2 py-0.5 text-xs font-bold text-silicon-950">{pending}</span>
-              )}
+              {href === "/admin/retiros" && <Count n={pending.retiros} />}
+              {href === "/admin/pagos" && <Count n={pending.pagos} />}
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto flex flex-col gap-1">
-        <Link href="/panel" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50">
-          <ArrowLeftCircle size={18} />
-          Ver como inversionista
+      <div className="mt-auto flex flex-col border-t border-line pt-4">
+        <Link href="/panel" className={itemClass(false)}>
+          <ArrowLeftCircle size={17} strokeWidth={1.5} />
+          Ver como empresa
         </Link>
-        <button
-          type="button"
-          disabled={leaving}
-          onClick={() => startLeave(() => leaveAdmin())}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
-        >
-          <ShieldCheck size={18} />
+        <button type="button" disabled={leaving} onClick={() => startLeave(() => leaveAdmin())} className={`${itemClass(false)} text-left`}>
+          <ShieldCheck size={17} strokeWidth={1.5} />
           {leaving ? "Saliendo…" : "Salir del modo admin"}
         </button>
-        <button
-          type="button"
-          disabled={out}
-          onClick={() => startOut(() => signOut())}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[0.95rem] text-silver-300 hover:bg-silicon-800 hover:text-silver-50"
-        >
-          <LogOut size={18} />
+        <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className={`${itemClass(false)} text-left`}>
+          <LogOut size={17} strokeWidth={1.5} />
           {out ? "Cerrando sesión…" : "Cerrar sesión"}
         </button>
       </div>
@@ -93,16 +86,17 @@ export function AdminBottomNav() {
   const path = usePathname();
   const pending = usePending();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-dusk-500/30 bg-silicon-950/90 backdrop-blur-md lg:hidden" aria-label="Administración">
-      <ul className="mx-auto grid max-w-[620px] grid-cols-6">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line-strong bg-void/95 backdrop-blur-md lg:hidden" aria-label="Administración">
+      <ul className="mx-auto grid max-w-[640px] grid-cols-6">
         {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(path, href);
+          const dot = (href === "/admin/retiros" && pending.retiros > 0) || (href === "/admin/pagos" && pending.pagos > 0);
           return (
             <li key={href}>
-              <Link href={href} aria-current={active ? "page" : undefined} className={`relative flex flex-col items-center gap-1 py-2.5 text-[0.7rem] ${active ? "text-dusk-300" : "text-silver-400"}`}>
-                <Icon size={20} />
+              <Link href={href} aria-current={active ? "page" : undefined} className={`relative flex flex-col items-center gap-1.5 border-t-2 pb-2.5 pt-2.5 text-[0.62rem] ${active ? "border-ink text-ink" : "border-transparent text-mute"}`}>
+                <Icon size={19} strokeWidth={1.5} />
                 {label}
-                {href === "/admin/retiros" && pending > 0 && <span className="absolute right-[22%] top-1.5 h-2 w-2 rounded-full bg-dusk-400" />}
+                {dot && <span className="absolute right-[24%] top-2 h-1.5 w-1.5 bg-ink" aria-label="Hay pendientes" />}
               </Link>
             </li>
           );
@@ -112,21 +106,39 @@ export function AdminBottomNav() {
   );
 }
 
-export function AdminTopbar({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
+/** En celular: la marca, el aviso de que es el admin y las salidas. */
+export function AdminMobileBar() {
+  const [out, startOut] = useTransition();
+  return (
+    <div className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
+      <Link href="/" aria-label={`${BRAND.name}, inicio`}>
+        <Logo />
+      </Link>
+      <div className="flex items-center gap-5 text-sm text-mute">
+        <Link href="/panel" className="hover:text-ink">
+          Empresa
+        </Link>
+        <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className="hover:text-ink">
+          {out ? "Saliendo…" : "Salir"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function AdminTopbar({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   const now = useNow(1000);
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
+    <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 pb-8">
       <div>
-        <span className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-dusk-400/40 bg-dusk-400/10 px-2.5 py-1 text-xs font-medium text-dusk-300 lg:hidden">
-          <ShieldCheck size={13} /> Modo administrador
-        </span>
-        <h1 className="text-2xl font-semibold text-silver-50 sm:text-[1.7rem]" style={{ fontStretch: "112%" }}>
-          {title}
-        </h1>
-        <p className="mt-1 text-silver-400">{subtitle}</p>
+        <p className="cap mb-3 flex items-center gap-2 lg:hidden">
+          <ShieldCheck size={13} strokeWidth={1.5} /> Administración
+        </p>
+        <h1 className="display text-[clamp(2.75rem,6vw,4.25rem)]">{title}</h1>
+        {subtitle && <p className="mt-3 max-w-[64ch] text-fog">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-3">
-        <span className="num hidden text-sm text-silver-400 md:inline">{now ? formatClock(now) : ""}</span>
+      <div className="flex items-center gap-5">
+        <span className="num hidden text-sm text-mute md:inline">{now ? formatClock(now) : ""}</span>
         {action}
       </div>
     </header>
@@ -136,47 +148,31 @@ export function AdminTopbar({ title, subtitle, action }: { title: string; subtit
 /** Se muestra si alguien con sesión abre /admin sin haber ingresado el PIN. */
 export function AdminPinWall({ name, email, allowed }: { name: string; email: string; allowed: boolean }) {
   const [state, action, pending] = useActionState(becomeAdmin, undefined);
-  if (!allowed) {
-    return (
-      <div className="mx-auto mt-16 max-w-[440px]">
-        <div className="panel p-8">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-alert-400/15 text-alert-400">
-            <ShieldCheck size={24} />
-          </span>
-          <h1 className="mt-5 text-2xl font-semibold text-silver-50">Cuenta no autorizada</h1>
-          <p className="mt-2 text-silver-400">
-            {email} no está en la lista de administradores. Si debes tener acceso, pide que agreguen tu correo a la variable ADMIN_EMAILS.
-          </p>
-          <Link href="/panel" className="btn btn-ghost mt-6">
-            Volver a mi panel de inversionista
-          </Link>
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className="mx-auto mt-16 max-w-[420px]">
-      <div className="panel p-8">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-dusk-400/15 text-dusk-300">
-          <ShieldCheck size={24} />
-        </span>
-        <h1 className="mt-5 text-2xl font-semibold text-silver-50">Entrar como administrador</h1>
-        <p className="mt-2 text-silver-400">Hola, {name.split(" ")[0]}. Escribe el PIN de administrador para continuar.</p>
-        <form action={action} className="mt-6 space-y-4">
-          <input name="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus placeholder="••••" aria-label="PIN de administrador" className="field tracking-[0.4em]" />
-          <button type="submit" disabled={pending} className="btn btn-dusk w-full">
-            {pending ? "Verificando…" : "Entrar al panel de administración"}
-          </button>
-          {state?.error && (
-            <p role="alert" className="text-sm text-alert-400">
-              {state.error}
-            </p>
-          )}
-        </form>
-        <Link href="/panel" className="mt-6 inline-block text-sm text-silver-400 hover:text-silver-50">
-          Volver a mi panel de inversionista
-        </Link>
-      </div>
+    <div className="mx-auto mt-10 max-w-[460px] sm:mt-20">
+      <h1 className="display text-[clamp(2.75rem,8vw,4rem)]">{allowed ? "Entrar como administrador" : "Cuenta no autorizada"}</h1>
+      {allowed ? (
+        <>
+          <p className="mt-5 leading-relaxed text-fog">Hola, {name.split(" ")[0]}. Escribe el PIN de administrador para continuar.</p>
+          <form action={action} className="mt-8 space-y-6">
+            <div>
+              <label htmlFor="pin" className="cap">
+                PIN de administrador
+              </label>
+              <input id="pin" name="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus placeholder="••••••" className="field num mt-1 tracking-[0.4em]" />
+            </div>
+            <button type="submit" disabled={pending} className="btn btn-solid w-full">
+              {pending ? "Verificando…" : "Entrar a la administración"}
+            </button>
+            {state?.error && <ErrorNote>{state.error}</ErrorNote>}
+          </form>
+        </>
+      ) : (
+        <p className="mt-5 leading-relaxed text-fog">{email} no está en la lista de administradores. Si debes tener acceso, pide que agreguen tu correo a la variable ADMIN_EMAILS.</p>
+      )}
+      <Link href="/panel" className="link mt-8 inline-block text-sm text-fog">
+        Volver al panel de mi empresa
+      </Link>
     </div>
   );
 }

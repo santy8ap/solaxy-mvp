@@ -22,17 +22,17 @@ async function Gate({ searchParams }: { searchParams: Promise<ResultParams> }) {
 
 export default function ResultadoPage({ searchParams }: PageProps<"/pagos/resultado">) {
   return (
-    <main className="relative flex min-h-dvh flex-col">
-      <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-5 py-5 sm:px-8">
+    <main className="flex min-h-dvh flex-col">
+      <div className="mx-auto flex h-[72px] w-full max-w-[1240px] items-center justify-between px-5 sm:px-8">
         <Link href="/" aria-label={`${BRAND.name}, inicio`}>
           <Logo />
         </Link>
-        <Link href="/panel" className="text-sm text-silver-400 hover:text-silver-50">
+        <Link href="/panel" className="link text-sm text-fog">
           Ir a mi panel
         </Link>
       </div>
-      <div className="mx-auto flex w-full max-w-[520px] flex-1 items-center px-5 pb-20">
-        <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-[var(--radius-panel)] bg-silicon-800/60" />}>
+      <div className="mx-auto flex w-full max-w-[720px] flex-1 items-center px-5 pb-24 pt-8 sm:px-8">
+        <Suspense fallback={<div className="skeleton h-[320px] w-full" />}>
           <Gate searchParams={searchParams as Promise<ResultParams>} />
         </Suspense>
       </div>
