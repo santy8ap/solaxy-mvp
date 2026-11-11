@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createClient, type Client } from "@libsql/client";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { alreadyApplied, migrate } from "@/lib/db/migrate";
 import { MIGRATIONS } from "@/lib/db/migrations.generated";
 
@@ -102,5 +102,46 @@ describe("migración del modelo de kW al de planes de energía", () => {
     expect(alreadyApplied("INSERT OR IGNORE INTO `a` SELECT * FROM `b`;", "no such table: b")).toBe(true);
     expect(alreadyApplied("INSERT INTO `a` SELECT * FROM `b`;", "no such table: b")).toBe(false);
     expect(alreadyApplied("CREATE INDEX `i` ON `t` (`nope`);", "no such column: nope")).toBe(false);
+  });
+});
+
+describe("vistas previas de Vercel: comparten la base de datos con producción", () => {
+  const fresh = () => createClient({ url: `file:${path.join(mkdtempSync(path.join(tmpdir(), "iwe-migrate-")), "preview.db")}` });
+  const hasTable = async (c: Client, name: string) => (await c.execute({ sql: "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", args: [name] })).rows.length > 0;
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("una vista previa con migraciones pendientes no toca la base", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const c = fresh();
+    await expect(migrate(c, { localFile: false })).rejects.toThrow(/vista previa/i);
+    expect(await hasTable(c, "user")).toBe(false);
+    expect(await hasTable(c, "plan_subscription")).toBe(false);
+  });
+
+  it("con una base propia para las vistas previas (ALLOW_PREVIEW_MIGRATIONS=true) sí migra", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("ALLOW_PREVIEW_MIGRATIONS", "true");
+    const c = fresh();
+    await migrate(c, { localFile: false });
+    expect(await hasTable(c, "plan_subscription")).toBe(true);
+  });
+
+  it("si no hay nada pendiente, la vista previa funciona normal", async () => {
+    const c = fresh();
+    await migrate(c, { localFile: false });
+    vi.stubEnv("VERCEL_ENV", "preview");
+    await expect(migrate(c, { localFile: false })).resolves.toBeUndefined();
+  });
+
+  it("producción migra, y un archivo local (que no se comparte) también", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    const prod = fresh();
+    await migrate(prod, { localFile: false });
+    expect(await hasTable(prod, "plan_subscription")).toBe(true);
+
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const local = fresh();
+    await migrate(local, { localFile: true });
+    expect(await hasTable(local, "plan_subscription")).toBe(true);
   });
 });

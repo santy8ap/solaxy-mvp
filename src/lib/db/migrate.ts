@@ -43,6 +43,16 @@ async function withLock<T>(client: Client, fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * En Vercel, las vistas previas de una rama suelen usar la misma base de datos que producción.
+ * Si una rama trae migraciones nuevas, aplicarlas desde su vista previa le cambiaría el esquema
+ * a la versión que está publicada. Con una base propia para Preview, ALLOW_PREVIEW_MIGRATIONS=true lo permite.
+ */
+function previewSharesDatabase() {
+  const allowed = ["true", "1", "si", "sí", "yes"].includes((process.env.ALLOW_PREVIEW_MIGRATIONS ?? "").trim().toLowerCase());
+  return process.env.VERCEL_ENV === "preview" && !allowed;
+}
+
 async function appliedIds(client: Client) {
   const { rows } = await client.execute(`SELECT id FROM ${TABLE}`);
   return new Set(rows.map((r) => String(r.id)).filter((id) => id !== LOCK_ID));
@@ -58,6 +68,12 @@ export async function migrate(client: Client, { localFile = true } = {}) {
   await client.execute(`CREATE TABLE IF NOT EXISTS ${TABLE} (id TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)`);
   const applied = await appliedIds(client);
   if (MIGRATIONS.every((m) => applied.has(m.id))) return;
+  if (!localFile && previewSharesDatabase()) {
+    throw new Error(
+      "Esta vista previa de Vercel trae migraciones pendientes y usa una base de datos remota, que suele ser la de producción: no se aplican desde una vista previa. " +
+        "Publica la rama en producción, o dale a Preview su propia base (TURSO_DATABASE_URL) y agrega ALLOW_PREVIEW_MIGRATIONS=true.",
+    );
+  }
 
   await withLock(client, async () => {
     const done = await appliedIds(client);
