@@ -8,6 +8,8 @@ import { PLAN_STATE, Status } from "@/components/ui/status";
 function nextStep(s: SubscriptionDTO) {
   const next = s.paidMonths + 1;
   switch (s.state) {
+    case "en_revision":
+      return "El proveedor reportó una devolución. El período afectado dejó de generar; contacta a soporte para revisar tu cuenta antes de retirar o pagar otra mensualidad.";
     case "activa":
       return s.paidMonths < s.months
         ? `Paga el mes ${next} antes del ${formatDate(s.paidUntil)} para que tu energía no se pause.`
@@ -57,10 +59,12 @@ export function PlanRow({
             const done =
               !p || now == null
                 ? 0
-                : Math.min(
-                    1,
-                    Math.max(0, (now - p.startsAt) / (p.endsAt - p.startsAt)),
-                  );
+                : p.endsAt <= p.startsAt
+                  ? 1
+                  : Math.min(
+                      1,
+                      Math.max(0, (now - p.startsAt) / (p.endsAt - p.startsAt)),
+                    );
             return (
               <span
                 key={i}
@@ -100,6 +104,11 @@ export function PlanRow({
           className={`btn ${sub.state === "en_pausa" ? "btn-solid" : "btn-ghost"} lg:justify-self-end`}
         >
           Pagar el mes {sub.paidMonths + 1}
+        </Link>
+      )}
+      {sub.state === "en_revision" && (
+        <Link href="/ayuda" className="btn btn-ghost lg:justify-self-end">
+          Revisar con soporte
         </Link>
       )}
     </li>

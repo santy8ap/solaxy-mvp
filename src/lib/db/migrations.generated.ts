@@ -111,5 +111,13 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
     "statements": [
       "CREATE TABLE IF NOT EXISTS `service_setting` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`value` text NOT NULL,\n\t`updated_at` integer NOT NULL\n);"
     ]
+  },
+  {
+    "id": "0006_payment_reconciliation",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `job_state` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`lock_token` text NOT NULL,\n\t`locked_until` integer NOT NULL,\n\t`cursor` text,\n\t`updated_at` integer NOT NULL\n);",
+      "CREATE TABLE IF NOT EXISTS `payment_review` (\n\t`payment_id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`subscription_id` text NOT NULL,\n\t`occurred_at` integer NOT NULL,\n\t`reason` text NOT NULL,\n\t`resolved_at` integer,\n\t`resolution_reference` text,\n\tFOREIGN KEY (`payment_id`) REFERENCES `ledger_tx`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`subscription_id`) REFERENCES `plan_subscription`(`id`) ON UPDATE no action ON DELETE cascade\n);",
+      "CREATE INDEX IF NOT EXISTS `payment_review_user_idx` ON `payment_review` (`user_id`,`resolved_at`);"
+    ]
   }
 ];

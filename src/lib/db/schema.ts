@@ -250,7 +250,37 @@ export const ledgerTx = sqliteTable(
   ],
 );
 
-/** Documento del representante legal. */
+/** Devoluciones verificadas: conservan el corte de generación y la conciliación posterior. */
+export const paymentReview = sqliteTable(
+  "payment_review",
+  {
+    paymentId: text("payment_id")
+      .primaryKey()
+      .references(() => ledgerTx.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    subscriptionId: text("subscription_id")
+      .notNull()
+      .references(() => planSubscription.id, { onDelete: "cascade" }),
+    occurredAt: integer("occurred_at").notNull(),
+    reason: text("reason").notNull(),
+    resolvedAt: integer("resolved_at"),
+    resolutionReference: text("resolution_reference"),
+  },
+  (t) => [index("payment_review_user_idx").on(t.userId, t.resolvedAt)],
+);
+
+/** Arrendamiento de trabajos: impide que dos invocaciones procesen el mismo lote a la vez. */
+export const jobState = sqliteTable("job_state", {
+  id: text("id").primaryKey(),
+  lockToken: text("lock_token").notNull(),
+  lockedUntil: integer("locked_until").notNull(),
+  cursor: text("cursor"),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+/** Documento personal del titular. */
 export const DOC_TYPES = ["CC", "CE", "PP"] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
@@ -301,6 +331,8 @@ export const ADMIN_ACTIONS = [
   "registrar_hash",
   "marcar_reembolso",
   "borrar_datos_prueba",
+  "conciliar_devolucion",
+  "devolucion_proveedor",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

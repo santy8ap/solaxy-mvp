@@ -16,6 +16,7 @@ import {
 } from "@/lib/orders";
 import { resolvePlanPayment } from "@/lib/plans/service";
 import { requireCompleteProfile } from "@/lib/profile";
+import { recordPaymentReversal } from "./reversals";
 import { mercadoPagoConfig } from "./config";
 import { isMercadoPagoTest } from "./mercadopago-account";
 import { payLog } from "./log";
@@ -226,8 +227,10 @@ async function recordDuplicatePayment(order: OrderRow, payment: MpPayment) {
       orderId: order.id,
       providerId: String(payment.id),
     });
-  } catch {
-    /* otra solicitud ya lo registró (índice único) */
+  } catch (error) {
+    // Solo una colisión del índice prueba que otra solicitud ya lo registró.
+    const message = `${String(error)} ${String((error as { cause?: unknown })?.cause ?? "")}`;
+    if (!/UNIQUE constraint failed/i.test(message)) throw error;
   }
 }
 
@@ -279,20 +282,7 @@ async function applyPayment(order: OrderRow, payment: MpPayment) {
       note: failureReason(payment),
     });
   } else if (outcome === "devuelta") {
-    // Un pago aprobado que luego se devolvió o se desconoció: la orden queda marcada para revisión.
-    await db
-      .update(ledgerTx)
-      .set({ providerStatus: payment.status })
-      .where(
-        and(
-          eq(ledgerTx.id, order.id),
-          eq(ledgerTx.providerId, String(payment.id)),
-        ),
-      );
-    await closeOrder(order.id, "fallida", {
-      ...proof,
-      note: "El pago fue devuelto.",
-    });
+    await recordPaymentReversal(order.id, String(payment.id), payment.status);
     payLog("pago_devuelto", {
       proveedor: "mercadopago",
       orderId: order.id,
@@ -344,10 +334,32 @@ export async function syncMercadoPagoOrder(
     status: best.status,
     metodo: best.payment_type_id,
   });
-  await applyPayment(order, best);
+  for (const payment of payments.filter(
+    (p) => mapMpStatus(p.status) === "devuelta",
+  )) {
+    const [registered] = await db
+      .select()
+      .from(ledgerTx)
+      .where(
+        and(
+          eq(ledgerTx.method, "mercadopago"),
+          eq(ledgerTx.providerId, String(payment.id)),
+        ),
+      );
+    if (registered)
+      await recordPaymentReversal(
+        registered.id,
+        String(payment.id),
+        payment.status,
+      );
+  }
+  await applyPayment((await getOrder(order.id)) ?? order, best);
 
   const current = (await getOrder(order.id)) ?? order;
-  if (current.status === "confirmada") {
+  if (
+    current.providerId &&
+    ["confirmada", "reembolsada"].includes(current.status)
+  ) {
     for (const p of payments)
       if (p.status === "approved" && String(p.id) !== current.providerId)
         await recordDuplicatePayment(current, p);

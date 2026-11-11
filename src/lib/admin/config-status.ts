@@ -6,12 +6,22 @@ import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
 import { isMercadoPagoTest } from "@/lib/payments/mercadopago-account";
 import { liveCopPrices } from "@/lib/payments/prices";
 import { demoDataStats, hasDemoData } from "./demo-reset";
+import { cronConfigured } from "@/lib/jobs/auth";
+import { getSupport } from "@/lib/support";
 
 export type CheckState = "ok" | "falta" | "aviso" | "info";
 
 export interface ConfigCheck {
   id: string;
-  group: "Modo" | "Base" | "Acceso" | "Mercado Pago" | "Cripto" | "Legal" | "Datos";
+  group:
+    | "Modo"
+    | "Base"
+    | "Acceso"
+    | "Mercado Pago"
+    | "Cripto"
+    | "Legal"
+    | "Datos"
+    | "Soporte";
   title: string;
   state: CheckState;
   detail: string;
@@ -25,14 +35,21 @@ export interface ConfigCheck {
 const has = (name: string) => Boolean(process.env[name]?.trim());
 
 async function probe<T>(fn: () => Promise<T>, ms = 6000): Promise<T> {
-  return Promise.race([fn(), new Promise<never>((_, reject) => setTimeout(() => reject(new Error("tiempo agotado")), ms))]);
+  return Promise.race([
+    fn(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("tiempo agotado")), ms),
+    ),
+  ]);
 }
 
 /**
  * Qué está configurado y qué falta para cobrar de verdad. Con `probes`, además prueba en vivo
  * la cuenta de Mercado Pago, el nodo de BNB Chain y el precio de CoinGecko (cada uno con tiempo límite).
  */
-export async function configStatus({ probes = false }: { probes?: boolean } = {}) {
+export async function configStatus({
+  probes = false,
+}: { probes?: boolean } = {}) {
   const demo = isDemoMode();
   const mp = mercadoPagoConfig();
   // Las credenciales de prueba nuevas empiezan por APP_USR- como las reales: se le pregunta a Mercado Pago.
@@ -46,12 +63,12 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     id: "modo",
     group: "Modo",
     title: demo ? "Modo de pruebas activo" : "Cobros reales activos",
-    state: demo ? "info" : "ok",
+    state: demo ? "falta" : "ok",
     detail: demo
       ? "Hay cuenta de pruebas y pago de prueba, y los pagos de prueba de Mercado Pago o de testnet activan planes. Cuando todo lo de abajo esté listo, pon DEMO_MODE=false y vuelve a desplegar."
       : "Solo activan planes los pagos con dinero real: Mercado Pago, cripto en la red principal y los que registra el administrador.",
     vars: ["DEMO_MODE"],
-    required: false,
+    required: true,
   });
 
   const turso = has("TURSO_DATABASE_URL");
@@ -60,7 +77,11 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Base",
     title: "Base de datos persistente",
     state: turso ? "ok" : process.env.VERCEL ? "falta" : "info",
-    detail: turso ? "Conectada a Turso." : process.env.VERCEL ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel › Storage." : "Archivo local (data/iwe.db).",
+    detail: turso
+      ? "Conectada a Turso."
+      : process.env.VERCEL
+        ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel › Storage."
+        : "Archivo local (data/iwe.db).",
     vars: ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"],
     required: Boolean(process.env.VERCEL),
   });
@@ -69,7 +90,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Acceso",
     title: "Clave de sesiones",
     state: has("BETTER_AUTH_SECRET") ? "ok" : "falta",
-    detail: has("BETTER_AUTH_SECRET") ? "Configurada." : "Sin ella la app no arranca en producción.",
+    detail: has("BETTER_AUTH_SECRET")
+      ? "Configurada."
+      : "Sin ella la app no arranca en producción.",
     vars: ["BETTER_AUTH_SECRET"],
     required: true,
   });
@@ -78,7 +101,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Acceso",
     title: "URL pública",
     state: has("BETTER_AUTH_URL") ? "ok" : "aviso",
-    detail: has("BETTER_AUTH_URL") ? baseUrl() : `Se usa ${baseUrl()}. Configúrala si usas un dominio propio.`,
+    detail: has("BETTER_AUTH_URL")
+      ? baseUrl()
+      : `Se usa ${baseUrl()}. Configúrala si usas un dominio propio.`,
     vars: ["BETTER_AUTH_URL"],
     required: false,
   });
@@ -87,7 +112,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Acceso",
     title: "Ingreso con Google",
     state: googleEnabled ? "ok" : "falta",
-    detail: googleEnabled ? "Configurado." : "Con cobros reales es la única forma de entrar.",
+    detail: googleEnabled
+      ? "Configurado."
+      : "Con cobros reales es la única forma de entrar.",
     vars: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
     required: true,
   });
@@ -96,7 +123,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Acceso",
     title: "PIN de administrador",
     state: has("ADMIN_PIN") ? "ok" : "falta",
-    detail: has("ADMIN_PIN") ? "Configurado." : "Sin ADMIN_PIN, en producción nadie puede entrar al admin.",
+    detail: has("ADMIN_PIN")
+      ? "Configurado."
+      : "Sin ADMIN_PIN, en producción nadie puede entrar al admin.",
     vars: ["ADMIN_PIN"],
     required: true,
   });
@@ -106,7 +135,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Acceso",
     title: "Correos de administradores",
     state: admins.length ? "ok" : "falta",
-    detail: admins.length ? admins.join(", ") : "Con dinero real, solo estos correos (además del PIN) pueden entrar al admin.",
+    detail: admins.length
+      ? admins.join(", ")
+      : "Con dinero real, solo estos correos (además del PIN) pueden entrar al admin.",
     vars: ["ADMIN_EMAILS"],
     required: true,
   });
@@ -143,7 +174,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Cripto",
     title: "Billetera de la empresa",
     state: c.treasury ? "ok" : "falta",
-    detail: c.treasury ? `${c.treasury} · ${c.explorer}/address/${c.treasury}` : "Solo la dirección pública (0x…). Nunca la frase semilla.",
+    detail: c.treasury
+      ? `${c.treasury} · ${c.explorer}/address/${c.treasury}`
+      : "Solo la dirección pública (0x…). Nunca la frase semilla.",
     vars: ["CRYPTO_TREASURY_ADDRESS"],
     required: true,
   });
@@ -152,7 +185,10 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     group: "Cripto",
     title: "Red",
     state: c.network === "bsc" ? "ok" : demo ? "aviso" : "falta",
-    detail: c.network === "bsc" ? `BNB Smart Chain (56), ${c.confirmations} confirmaciones.` : `Red de pruebas (97): no se reciben pagos reales. ${c.confirmations} confirmaciones.`,
+    detail:
+      c.network === "bsc"
+        ? `BNB Smart Chain (56), ${c.confirmations} confirmaciones.`
+        : `Red de pruebas (97): no se reciben pagos reales. ${c.confirmations} confirmaciones.`,
     vars: ["CRYPTO_NETWORK", "CRYPTO_CONFIRMATIONS"],
     required: true,
   });
@@ -161,9 +197,35 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     id: "legal",
     group: "Legal",
     title: "Términos y Política de Datos",
-    state: LEGAL.reviewed ? "ok" : "aviso",
-    detail: LEGAL.reviewed ? `Versión ${LEGAL.version}.` : "Están en borrador: un abogado debe revisarlos y completar los datos de la empresa (src/config/legal.ts).",
-    required: false,
+    state: LEGAL.reviewed ? "ok" : "falta",
+    detail: LEGAL.reviewed
+      ? `Versión ${LEGAL.version}.`
+      : "Están en borrador: un abogado debe revisarlos y completar los datos de la empresa (src/config/legal.ts).",
+    required: true,
+  });
+
+  const support = await getSupport();
+  add({
+    id: "soporte",
+    group: "Soporte",
+    title: "Contacto oficial de soporte",
+    state: support.email || support.whatsapp ? "ok" : "falta",
+    detail:
+      support.email || support.whatsapp
+        ? "Hay un contacto publicado en el centro de ayuda."
+        : "Guarda un correo o WhatsApp real desde Admin → Planta.",
+    required: true,
+  });
+  add({
+    id: "cripto-reconciliacion",
+    group: "Cripto",
+    title: "Verificación en segundo plano",
+    state: cronConfigured() ? "aviso" : "falta",
+    detail: cronConfigured()
+      ? "Clave configurada. El cron incluido es diario; confirma sus ejecuciones en Vercel y ajusta la frecuencia para la operación comercial."
+      : "Configura CRON_SECRET (32 caracteres o más) y vuelve a desplegar para verificar pagos sin visitas al panel.",
+    vars: ["CRON_SECRET"],
+    required: c.enabled,
   });
 
   const stats = await demoDataStats();
@@ -176,7 +238,9 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
     detail: !leftovers
       ? "No quedan datos de prueba."
       : `Quedan ${[stats.demoAccount ? "la cuenta de pruebas" : "", stats.testPayments ? `${stats.testPayments} pagos de prueba` : ""].filter(Boolean).join(" y ")}.${
-          demo ? " Se borran después de desactivar el modo de pruebas." : " Bórralos antes de recibir pagos reales."
+          demo
+            ? " Se borran después de desactivar el modo de pruebas."
+            : " Bórralos antes de recibir pagos reales."
         }`,
     required: !demo,
     ...(leftovers && !demo ? { action: "borrar_datos_prueba" as const } : {}),
@@ -185,15 +249,31 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
   if (probes) {
     if (mp.enabled) {
       try {
-        const res = await probe(() => fetch(`${mp.apiBase}/users/me`, { headers: { authorization: `Bearer ${mp.accessToken}` }, cache: "no-store" }));
-        const me = (await res.json().catch(() => ({}))) as { nickname?: string; site_id?: string; tags?: string[] };
+        const res = await probe(() =>
+          fetch(`${mp.apiBase}/users/me`, {
+            headers: { authorization: `Bearer ${mp.accessToken}` },
+            cache: "no-store",
+          }),
+        );
+        const me = (await res.json().catch(() => ({}))) as {
+          nickname?: string;
+          site_id?: string;
+          tags?: string[];
+        };
         const colombia = me.site_id === "MCO";
         const testUser = me.tags?.includes("test_user") ?? false;
         add({
           id: "mp-prueba",
           group: "Mercado Pago",
           title: "Conexión con Mercado Pago",
-          state: !res.ok || !colombia ? "falta" : testUser && !demo ? "falta" : testUser ? "aviso" : "ok",
+          state:
+            !res.ok || !colombia
+              ? "falta"
+              : testUser && !demo
+                ? "falta"
+                : testUser
+                  ? "aviso"
+                  : "ok",
           detail: !res.ok
             ? `Mercado Pago respondió ${res.status}: revisa el Access Token.`
             : !colombia
@@ -202,25 +282,73 @@ export async function configStatus({ probes = false }: { probes?: boolean } = {}
           required: true,
         });
       } catch (err) {
-        add({ id: "mp-prueba", group: "Mercado Pago", title: "Conexión con Mercado Pago", state: "falta", detail: `No se pudo conectar: ${(err as Error).message}.`, required: true });
+        add({
+          id: "mp-prueba",
+          group: "Mercado Pago",
+          title: "Conexión con Mercado Pago",
+          state: "falta",
+          detail: `No se pudo conectar: ${(err as Error).message}.`,
+          required: true,
+        });
       }
     }
     try {
       const chainId = await probe(() => rpcChainReader(c.rpcUrl).getChainId());
-      add({ id: "cripto-nodo", group: "Cripto", title: "Nodo de BNB Chain", state: chainId === c.chainId ? "ok" : "falta", detail: chainId === c.chainId ? `Responde en la red ${chainId}.` : `El nodo está en la red ${chainId}, se esperaba ${c.chainId}.`, vars: ["BSC_RPC_URL"], required: true });
+      add({
+        id: "cripto-nodo",
+        group: "Cripto",
+        title: "Nodo de BNB Chain",
+        state: chainId === c.chainId ? "ok" : "falta",
+        detail:
+          chainId === c.chainId
+            ? `Responde en la red ${chainId}.`
+            : `El nodo está en la red ${chainId}, se esperaba ${c.chainId}.`,
+        vars: ["BSC_RPC_URL"],
+        required: true,
+      });
     } catch (err) {
-      add({ id: "cripto-nodo", group: "Cripto", title: "Nodo de BNB Chain", state: "falta", detail: `No responde: ${(err as Error).message}.`, vars: ["BSC_RPC_URL"], required: true });
+      add({
+        id: "cripto-nodo",
+        group: "Cripto",
+        title: "Nodo de BNB Chain",
+        state: "falta",
+        detail: `No responde: ${(err as Error).message}.`,
+        vars: ["BSC_RPC_URL"],
+        required: true,
+      });
     }
     try {
       const p = await probe(() => liveCopPrices());
-      add({ id: "cripto-precio", group: "Cripto", title: "Precio en vivo", state: "ok", detail: `1 USDT = $${Math.round(p.USDT).toLocaleString("es-CO")} · 1 BNB = $${Math.round(p.BNB).toLocaleString("es-CO")} (CoinGecko).`, vars: ["COINGECKO_API_KEY"], required: true });
+      add({
+        id: "cripto-precio",
+        group: "Cripto",
+        title: "Precio en vivo",
+        state: "ok",
+        detail: `1 USDT = $${Math.round(p.USDT).toLocaleString("es-CO")} · 1 BNB = $${Math.round(p.BNB).toLocaleString("es-CO")} (CoinGecko).`,
+        vars: ["COINGECKO_API_KEY"],
+        required: true,
+      });
     } catch (err) {
-      add({ id: "cripto-precio", group: "Cripto", title: "Precio en vivo", state: "falta", detail: (err as Error).message, vars: ["COINGECKO_API_KEY"], required: true });
+      add({
+        id: "cripto-precio",
+        group: "Cripto",
+        title: "Precio en vivo",
+        state: "falta",
+        detail: (err as Error).message,
+        vars: ["COINGECKO_API_KEY"],
+        required: true,
+      });
     }
   }
 
   const blocking = checks.filter((k) => k.required && k.state === "falta");
-  return { demoMode: demo, readyForLive: blocking.length === 0, missing: blocking.length, checks, webhookUrl };
+  return {
+    demoMode: demo,
+    readyForLive: blocking.length === 0,
+    missing: blocking.length,
+    checks,
+    webhookUrl,
+  };
 }
 
 export type ConfigStatus = Awaited<ReturnType<typeof configStatus>>;

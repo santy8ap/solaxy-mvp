@@ -6,13 +6,28 @@ export type StatusTone = "ok" | "wait" | "off" | "act";
  * Estado sin color: ✓ confirmado, anillo punteado en proceso, tachado si no ocurrió,
  * y relleno invertido cuando alguien tiene que hacer algo.
  */
-export function Status({ tone, children }: { tone: StatusTone; children: React.ReactNode }) {
+export function Status({
+  tone,
+  children,
+}: {
+  tone: StatusTone;
+  children: React.ReactNode;
+}) {
   return (
     <span className="status" data-tone={tone}>
-      {tone === "ok" && <Check size={12} strokeWidth={2.4} aria-hidden="true" />}
-      {tone === "wait" && <span className="h-2.5 w-2.5 rounded-full border border-dashed border-current" aria-hidden="true" />}
+      {tone === "ok" && (
+        <Check size={12} strokeWidth={2.4} aria-hidden="true" />
+      )}
+      {tone === "wait" && (
+        <span
+          className="h-2.5 w-2.5 rounded-full border border-dashed border-current"
+          aria-hidden="true"
+        />
+      )}
       {tone === "off" && <X size={12} strokeWidth={2.2} aria-hidden="true" />}
-      {tone === "act" && <AlertTriangle size={12} strokeWidth={2.2} aria-hidden="true" />}
+      {tone === "act" && (
+        <AlertTriangle size={12} strokeWidth={2.2} aria-hidden="true" />
+      )}
       {children}
     </span>
   );
@@ -39,4 +54,5 @@ export const PLAN_STATE: Record<string, { label: string; tone: StatusTone }> = {
   vencida: { label: "Cerrado", tone: "off" },
   cancelada: { label: "Cerrado", tone: "off" },
   borrador: { label: "Sin pagar", tone: "wait" },
+  en_revision: { label: "En conciliación", tone: "act" },
 };
