@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { BRAND } from "@/config/brand";
 import { AccountLink } from "@/components/auth/account-link";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { SupportContacts } from "@/components/support/support-contacts";
 
 export const metadata: Metadata = {
@@ -32,7 +33,10 @@ export default function HelpPage({ searchParams }: PageProps<"/ayuda">) {
           <Link href="/" aria-label={`${BRAND.name}, inicio`}>
             <Logo />
           </Link>
-          <AccountLink />
+          <div className="flex items-center gap-2">
+            <AccountLink />
+            <ThemeSelector />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-[1100px] px-5 pb-24 pt-12 sm:pt-20">

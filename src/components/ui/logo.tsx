@@ -1,11 +1,11 @@
 import { BRAND } from "@/config/brand";
 
-/** La marca: un eclipse. El disco negro con su anillo de luz es también el sol del reloj solar. */
+/** El disco del eclipse también aparece en el reloj solar. */
 export function LogoMark({ size = 26, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" className={className} aria-hidden="true">
       <circle cx="16" cy="16" r="14.5" fill="none" stroke="currentColor" strokeOpacity="0.22" />
-      <circle cx="16" cy="16" r="9.5" fill="#000" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16" cy="16" r="9.5" fill="var(--color-disc)" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );
 }

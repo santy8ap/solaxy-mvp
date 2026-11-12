@@ -11,6 +11,7 @@ import { formatClock } from "@/lib/format";
 import { ErrorNote } from "@/components/ui/field";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { useUser } from "@/components/panel/user-context";
 
 export const ADMIN_NAV = [
@@ -190,13 +191,14 @@ export function AdminMobileBar() {
       <Link href="/" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
-      <div className="flex items-center gap-5 text-sm text-mute">
+      <div className="flex items-center gap-2 text-sm text-mute sm:gap-4">
         <Link href="/panel" className="hover:text-ink">
           Comercializador
         </Link>
         <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className="hover:text-ink">
           {out ? "Saliendo…" : "Salir"}
         </button>
+        <ThemeSelector />
       </div>
     </div>
   );
@@ -216,6 +218,9 @@ export function AdminTopbar({ title, subtitle, action }: { title: string; subtit
       <div className="flex items-center gap-5">
         <span className="num hidden text-sm text-mute md:inline">{now ? formatClock(now) : ""}</span>
         {action}
+        <div className="hidden lg:block">
+          <ThemeSelector />
+        </div>
       </div>
     </header>
   );

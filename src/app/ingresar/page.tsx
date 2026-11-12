@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { adminEmailAllowed, env, googleEnabled, isDemoMode } from "@/lib/env";
 import { LoginClock } from "@/components/landing/login-clock";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { LoginOptions } from "./login-options";
 
 export const metadata: Metadata = { title: "Ingresar" };
@@ -65,9 +66,12 @@ export default function LoginPage({ searchParams }: PageProps<"/ingresar">) {
         <Link href="/" aria-label={`${BRAND.name}, inicio`}>
           <Logo />
         </Link>
-        <Link href="/" className="link text-sm text-fog">
-          Volver al inicio
-        </Link>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link href="/" className="link text-right text-sm text-fog">
+            Volver al inicio
+          </Link>
+          <ThemeSelector />
+        </div>
       </div>
       <div className="mx-auto grid grid-cols-[minmax(0,1fr)] w-full max-w-[1240px] flex-1 items-center gap-16 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div className="hidden lg:block">

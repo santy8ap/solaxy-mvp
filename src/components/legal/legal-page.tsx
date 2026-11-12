@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BRAND } from "@/config/brand";
 import { LEGAL } from "@/config/legal";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 
 /** Dato que la empresa debe completar con su abogado: se ve subrayado con una línea punteada. */
 export function Ph({ children }: { children: React.ReactNode }) {
@@ -22,9 +23,12 @@ export function LegalPage({ title, intro, sections }: { title: string; intro: Re
           <Link href="/" aria-label={`${BRAND.name}, inicio`}>
             <Logo />
           </Link>
-          <Link href="/" className="link text-sm text-fog">
-            Volver al inicio
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/" className="link text-right text-sm text-fog">
+              Volver al inicio
+            </Link>
+            <ThemeSelector />
+          </div>
         </div>
       </header>
       <main className="mx-auto grid grid-cols-[minmax(0,1fr)] w-full max-w-[1240px] gap-x-16 px-5 pb-28 pt-12 sm:px-8 sm:pt-16 lg:grid-cols-[240px_minmax(0,1fr)]">

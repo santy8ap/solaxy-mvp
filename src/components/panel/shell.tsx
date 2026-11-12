@@ -18,6 +18,7 @@ import { usePlantNow } from "@/lib/client/use-catalog";
 import { formatClock } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
 import { Avatar } from "@/components/ui/avatar";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { useUser } from "./user-context";
 import { NotificationsLink } from "./notifications-link";
 
@@ -130,7 +131,7 @@ export function MobileBar() {
       <Link href="/" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
-      <div className="flex items-center gap-4 text-sm text-mute">
+      <div className="flex items-center gap-2 text-sm text-mute sm:gap-4">
         <Link href="/panel/perfil" aria-label={`Mis datos, ${user.name}`} className="hover:opacity-80">
           <Avatar name={user.name} image={user.image} size={26} />
         </Link>
@@ -148,6 +149,7 @@ export function MobileBar() {
         >
           {pending ? "Saliendo…" : "Salir"}
         </button>
+        <ThemeSelector />
       </div>
     </div>
   );
@@ -192,6 +194,9 @@ export function Topbar({
           <span className="live-dot" />
           <span className="num">{now ? formatClock(now) : " "}</span>
         </p>
+        <div className="hidden lg:block">
+          <ThemeSelector />
+        </div>
       </div>
     </header>
   );

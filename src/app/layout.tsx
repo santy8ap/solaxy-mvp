@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { BRAND } from "@/config/brand";
 import { VercelAnalytics } from "@/components/analytics/vercel";
+import { ThemeProvider } from "@/context/theme-context";
+import { DEFAULT_THEME, THEMES, themeBootScript } from "@/lib/theme";
 import "./globals.css";
 
 /** Archivo con el eje de ancho: la versión condensada (62 %) es la voz de los titulares y las cifras. */
@@ -26,15 +28,23 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050505",
-  colorScheme: "dark",
+  colorScheme: "dark light",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-CO" className={`${archivo.variable} ${plexMono.variable} h-full`}>
+    <html
+      lang="es-CO"
+      data-theme={DEFAULT_THEME}
+      suppressHydrationWarning
+      className={`${archivo.variable} ${plexMono.variable} h-full`}
+    >
+      <head>
+        <meta name="theme-color" content={THEMES[DEFAULT_THEME].background} suppressHydrationWarning />
+        <script id="xge-theme" dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="min-h-full">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
         {/* Los scripts de la analítica solo existen en Vercel; fuera de allí darían 404 en cada página. */}
         {process.env.VERCEL ? <VercelAnalytics /> : null}
       </body>

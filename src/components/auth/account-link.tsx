@@ -22,7 +22,7 @@ export function AccountLink({
 }) {
   const { data, isPending } = authClient.useSession();
   const user = data?.user;
-  const size = variant === "nav" ? "!min-h-10 !px-4 !py-2.5" : "";
+  const size = variant === "nav" ? "min-h-11 px-2.5 py-2.5 sm:px-4" : "";
   if (isPending)
     return (
       <span aria-hidden="true" className={`btn btn-ghost invisible ${size} ${className}`}>

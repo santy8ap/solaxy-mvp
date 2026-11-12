@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { BRAND } from "@/config/brand";
 import { getSessionUser } from "@/lib/session";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { PaymentResult } from "@/components/payments/payment-result";
 
 export const metadata: Metadata = { title: "Resultado del pago" };
@@ -43,9 +44,12 @@ export default function ResultadoPage({
           <Link href="/" aria-label={`${BRAND.name}, inicio`}>
             <Logo />
           </Link>
-          <Link href="/panel" className="link text-sm text-fog">
-            Ir a mi panel
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/panel" className="link text-right text-sm text-fog">
+              Ir a mi panel
+            </Link>
+            <ThemeSelector />
+          </div>
         </div>
         <div className="mx-auto flex w-full max-w-[720px] flex-1 items-center px-5 pb-24 pt-8 sm:px-8">
           <Suspense fallback={<div className="skeleton h-[320px] w-full" />}>

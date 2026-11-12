@@ -129,8 +129,8 @@ export function SolarClock({ solar, now, size = "hero", className = "" }: SolarC
             marginLeft: -sun / 2,
             marginTop: -sun / 2,
             boxShadow: generating
-              ? `0 0 0 1.5px rgb(255 255 255 / 0.96), 0 0 ${10 + 10 * s}px ${1 + 2 * s}px rgb(255 255 255 / ${0.3 + 0.35 * s}), 0 0 ${40 + 40 * s}px ${8 + 14 * s}px rgb(255 255 255 / ${0.06 + 0.14 * s}), 0 0 ${120 + 80 * s}px ${30 + 40 * s}px rgb(255 255 255 / ${0.02 + 0.05 * s})`
-              : "0 0 0 1.5px rgb(255 255 255 / 0.4)",
+              ? `0 0 0 1.5px rgb(var(--solar-halo) / 0.96), 0 0 ${10 + 10 * s}px ${1 + 2 * s}px rgb(var(--solar-halo) / ${0.3 + 0.35 * s}), 0 0 ${40 + 40 * s}px ${8 + 14 * s}px rgb(var(--solar-halo) / ${0.06 + 0.14 * s}), 0 0 ${120 + 80 * s}px ${30 + 40 * s}px rgb(var(--solar-halo) / ${0.02 + 0.05 * s})`
+              : "0 0 0 1.5px rgb(var(--solar-halo) / 0.4)",
           }}
         />
       )}

@@ -46,7 +46,7 @@ export function Modal({ open, onClose, title, children, wide = false }: { open: 
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-disc/80 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-scrim/80 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={`sheet max-h-[92dvh] w-full overflow-y-auto p-6 sm:p-8 ${wide ? "sm:max-w-[600px]" : "sm:max-w-[460px]"}`}>
         <div className="mb-6 flex items-start justify-between gap-4">
           <h2 className="display text-[2rem]">{title}</h2>

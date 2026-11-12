@@ -12,6 +12,7 @@ import { UserProvider, type PanelUser } from "@/components/panel/user-context";
 import { ProfileForm, useProfile } from "@/components/profile/profile-form";
 import { ErrorNote } from "@/components/ui/field";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { ReceiptButton } from "@/components/payments/receipt-button";
 import { SupportContacts } from "@/components/support/support-contacts";
 import { Toaster } from "@/components/ui/toast";
@@ -90,14 +91,17 @@ function Purchase({
           <Link href="/" aria-label={`${BRAND.name}, inicio`}>
             <Logo />
           </Link>
-          <Link
-            href={step === 4 ? "/panel" : "/panel/planes"}
-            aria-disabled={busy || undefined}
-            onClick={(event) => busy && event.preventDefault()}
-            className="link text-sm text-fog"
-          >
-            {step === 4 ? "Ir a mi panel" : "Volver a los planes"}
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link
+              href={step === 4 ? "/panel" : "/panel/planes"}
+              aria-disabled={busy || undefined}
+              onClick={(event) => busy && event.preventDefault()}
+              className="link text-right text-sm text-fog"
+            >
+              {step === 4 ? "Ir a mi panel" : "Volver a los planes"}
+            </Link>
+            <ThemeSelector />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-[1240px] px-5 pb-20 pt-8 sm:px-8 sm:pt-12">

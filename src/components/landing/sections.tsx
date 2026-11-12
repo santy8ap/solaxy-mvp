@@ -9,17 +9,18 @@ import { DEFAULT_MP_LIMITS } from "@/lib/payments/mercadopago-limits";
 import { MIN_WITHDRAWAL_COP } from "@/lib/withdrawal-schema";
 import { AccountLink } from "@/components/auth/account-link";
 import { Logo } from "@/components/ui/logo";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 import { CatalogValue } from "./catalog-value";
 
 export function LandingNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-void/90 backdrop-blur-md">
-      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between gap-6 px-5 sm:px-8">
-        <Link href="/" aria-label={`${BRAND.name}, inicio`}>
+      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between gap-3 px-4 sm:gap-6 sm:px-8">
+        <Link href="/" className="shrink-0" aria-label={`${BRAND.name}, inicio`}>
           <Logo />
         </Link>
         <nav
-          className="hidden items-center gap-9 text-sm text-fog md:flex"
+          className="hidden items-center gap-5 text-sm text-fog md:flex lg:gap-8"
           aria-label="Secciones"
         >
           <a href="#reloj" className="hover:text-ink">
@@ -38,7 +39,10 @@ export function LandingNav() {
             Ayuda
           </Link>
         </nav>
-        <AccountLink />
+        <div className="flex shrink-0 items-center gap-2">
+          <AccountLink />
+          <ThemeSelector />
+        </div>
       </div>
     </header>
   );
