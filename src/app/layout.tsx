@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { BRAND } from "@/config/brand";
+import { VercelAnalytics } from "@/components/analytics/vercel";
 import "./globals.css";
 
 /** Archivo con el eje de ancho: la versión condensada (62 %) es la voz de los titulares y las cifras. */
@@ -32,7 +33,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es-CO" className={`${archivo.variable} ${plexMono.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        {/* Los scripts de la analítica solo existen en Vercel; fuera de allí darían 404 en cada página. */}
+        {process.env.VERCEL ? <VercelAnalytics /> : null}
+      </body>
     </html>
   );
 }
