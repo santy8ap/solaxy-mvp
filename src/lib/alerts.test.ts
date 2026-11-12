@@ -161,4 +161,23 @@ describe("cuándo se envían", () => {
     await alerts.flushAlerts();
     expect(sent.map((s) => s.body.subject)).toEqual(["[Pruebas] Algo falló: la prueba", "[Pruebas] Algo falló: otra prueba"]);
   });
+
+  it("una falla de la base no manda por correo los datos de la consulta", async () => {
+    configure();
+    const { sent } = fakeResend();
+    const error =
+      'DrizzleQueryError: Failed query: insert into "company_profile" ("user_id", "full_name", "doc_number", "phone") values (?, ?, ?, ?)\n' +
+      "params: u1,Laura Gómez,1036123456,3001234567 LibsqlError: SQLITE_BUSY: database is locked";
+    alerts.alertFailure("falla-con-datos", "error inesperado en la API", `${error} (avisar a laura.gomez@empresa.co)`);
+    await alerts.flushAlerts();
+    expect(sent).toHaveLength(1);
+    const { text, html } = sent[0].body;
+    for (const body of [text, html]) {
+      // Qué falló sí llega (en el HTML, las comillas van escapadas).
+      expect(body).toContain("Failed query: insert into");
+      expect(body).toContain("company_profile");
+      expect(body).toContain("params: [omitidos]");
+      for (const personal of ["Laura Gómez", "1036123456", "3001234567", "laura.gomez@empresa.co"]) expect(body).not.toContain(personal);
+    }
+  });
 });

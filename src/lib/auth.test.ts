@@ -85,4 +85,52 @@ describe("seguridad del ingreso (contra la API real de Better Auth)", () => {
     const other = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: env.demoPassword }, "198.51.100.99"));
     expect(other.status).toBe(200);
   });
+
+  it("con sesión, nadie puede cambiar su nombre, su foto ni su cuenta por fuera de la página; la sesión sigue funcionando", async () => {
+    const auth = await setup();
+    const { db } = await import("@/lib/db");
+    const { ensureDemoAccount } = await import("@/lib/db/seed");
+    const { env } = await import("@/lib/env");
+    const { user } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const id = await ensureDemoAccount(db);
+    const login = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: env.demoPassword }, "198.51.100.120"));
+    expect(login.status).toBe(200);
+    const cookie = login.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+    const withSession = (path: string, body: unknown) => {
+      const req = post(path, body, "198.51.100.121");
+      req.headers.set("cookie", cookie);
+      return auth.handler(req);
+    };
+    const [before] = await db.select().from(user).where(eq(user.id, id));
+
+    // Rutas de la librería de ingreso que la página no usa: no existen.
+    const unused = [
+      ["/update-user", { name: "<b>Soporte X green Energy</b>", image: "https://sitio-malicioso.com/rastreo.png" }],
+      ["/change-email", { newEmail: "otro@correo.co" }],
+      ["/change-password", { currentPassword: env.demoPassword, newPassword: "otra-clave-larga-123" }],
+      ["/delete-user", {}],
+      ["/link-social", { provider: "google" }],
+      ["/unlink-account", { providerId: "credential" }],
+      ["/get-access-token", { providerId: "google" }],
+      ["/refresh-token", { providerId: "google" }],
+      ["/request-password-reset", { email: env.demoEmail }],
+      ["/update-session", {}],
+    ] as const;
+    for (const [path, body] of unused) expect({ path, status: (await withSession(path, body)).status }).toEqual({ path, status: 404 });
+    for (const path of ["/list-accounts", "/account-info", "/list-sessions"]) {
+      const req = new Request(`${BASE}/api/auth${path}`, { headers: { cookie, origin: BASE, "x-forwarded-for": "198.51.100.122" } });
+      expect({ path, status: (await auth.handler(req)).status }).toEqual({ path, status: 404 });
+    }
+    const [after] = await db.select().from(user).where(eq(user.id, id));
+    expect({ name: after.name, image: after.image, email: after.email }).toEqual({ name: before.name, image: before.image, email: before.email });
+
+    // Lo que la página sí usa sigue funcionando.
+    const session = await auth.handler(new Request(`${BASE}/api/auth/get-session`, { headers: { cookie, "x-forwarded-for": "198.51.100.122" } }));
+    expect(session.status).toBe(200);
+    expect((await session.json())?.user?.id).toBe(id);
+  });
 });

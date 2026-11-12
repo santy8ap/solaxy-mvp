@@ -43,6 +43,32 @@ export const auth = betterAuth({
       }
     : {},
   trustedOrigins: trustedOrigins(),
+  // Rutas de la librería que la página no usa. Cerradas, nadie puede cambiar por fuera su nombre, su foto
+  // (vienen de Google), su correo o su contraseña, ni vincular cuentas o leer los tokens de Google.
+  // La página solo usa: entrar con Google, la cuenta de pruebas, la sesión y salir.
+  disabledPaths: [
+    "/update-user",
+    "/change-email",
+    "/change-password",
+    "/verify-password",
+    "/delete-user",
+    "/delete-user/callback",
+    "/request-password-reset",
+    "/reset-password",
+    "/send-verification-email",
+    "/verify-email",
+    "/link-social",
+    "/unlink-account",
+    "/list-accounts",
+    "/account-info",
+    "/get-access-token",
+    "/refresh-token",
+    "/update-session",
+    "/list-sessions",
+    "/revoke-session",
+    "/revoke-sessions",
+    "/revoke-other-sessions",
+  ],
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     cookieCache: { enabled: true, maxAge: 5 * 60 },

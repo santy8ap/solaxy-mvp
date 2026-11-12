@@ -1,5 +1,5 @@
 // Recorrido de seguridad contra un servidor local (modo de pruebas, ADMIN_EMAILS con la cuenta de pruebas).
-// Uso: BASE_URL=http://localhost:3100 ADMIN_PIN=246810 node e2e/security.cjs
+// Uso: BASE_URL=http://localhost:3100 ADMIN_PIN=246810 [CHROMIUM_PATH=/ruta/a/chromium] node e2e/security.cjs
 const { chromium } = require("playwright");
 const base = process.env.BASE_URL ?? "http://localhost:3100";
 const PIN = process.env.ADMIN_PIN ?? "246810";
@@ -42,13 +42,41 @@ const check = (cond, msg) => {
   check(statuses[5] === 429, `al sexto intento de contraseña en un minuto, espera (${statuses.join(", ")})`);
 
   // 4. Sin sesión, nada personal ni de administración
-  for (const [method, path] of [["GET", "/api/portfolio"], ["GET", "/api/transactions"], ["GET", "/api/receipts/IWE-0000000000"], ["GET", "/api/profile"], ["POST", "/api/withdrawals"], ["GET", "/api/admin/overview"], ["GET", "/api/admin/clients"], ["POST", "/api/admin/manual-payments"]]) {
+  const PRIVATE_ROUTES = [
+    ["GET", "/api/portfolio"],
+    ["GET", "/api/transactions"],
+    ["GET", "/api/transactions/export"],
+    ["GET", "/api/receipts/IWE-0000000000"],
+    ["GET", "/api/profile"],
+    ["GET", "/api/profile/data"],
+    ["GET", "/api/profile/deletion"],
+    ["POST", "/api/profile/deletion"],
+    ["POST", "/api/withdrawals"],
+    ["POST", "/api/payments/transfer"],
+    ["POST", "/api/payments/transfer/report"],
+  ];
+  const ADMIN_ROUTES = [
+    ["GET", "/api/admin/overview"],
+    ["GET", "/api/admin/clients"],
+    ["POST", "/api/admin/manual-payments"],
+    ["GET", "/api/admin/analytics"],
+    ["GET", "/api/admin/audit"],
+    ["GET", "/api/admin/payments/export"],
+    ["GET", "/api/admin/alerts"],
+    ["POST", "/api/admin/alerts"],
+    ["GET", "/api/admin/transfer-settings"],
+    ["PUT", "/api/admin/transfer-settings"],
+    ["POST", "/api/admin/payments/XGE-0000000000"],
+    ["POST", "/api/admin/data-requests/dat-0000"],
+  ];
+  for (const [method, path] of [...PRIVATE_ROUTES, ...ADMIN_ROUTES]) {
     const r = await fetch(`${base}${path}`, { method, headers: { "content-type": "application/json", origin: base }, body: method === "POST" ? "{}" : undefined });
     check(r.status === 401, `sin sesión ${method} ${path} → ${r.status}`);
   }
 
   // 5. Con sesión de empresa (cuenta de pruebas)
-  const browser = await chromium.launch();
+  // CHROMIUM_PATH: un Chromium ya instalado (por ejemplo, si la versión de Playwright no trae el suyo).
+  const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   const errors = [];
@@ -61,6 +89,22 @@ const check = (cond, msg) => {
   const asUser = (path, init = {}) => fetch(`${base}${path}`, { ...init, headers: { cookie: cookies, "content-type": "application/json", origin: base, ...(init.headers ?? {}) } });
   check((await asUser("/api/portfolio")).status === 200, "con sesión, la empresa ve su resumen");
   check((await asUser("/api/admin/overview")).status === 403, "una empresa no entra a la API de administración (403)");
+  for (const [method, path] of ADMIN_ROUTES) {
+    const r = await asUser(path, { method, body: method === "GET" ? undefined : "{}" });
+    check(r.status === 403, `con sesión de empresa ${method} ${path} → ${r.status}`);
+  }
+  const report = await asUser("/api/payments/transfer/report", { method: "POST", headers: { origin: "https://sitio-malicioso.com" }, body: JSON.stringify({ planId: "p180", receipt: "COMP-1234" }) });
+  check(report.status === 403, `un aviso de transferencia desde otro sitio se rechaza (CSRF → ${report.status})`);
+  const deletion = await asUser("/api/profile/deletion", { method: "POST", headers: { origin: "https://sitio-malicioso.com" }, body: "{}" });
+  check(deletion.status === 403, `pedir la eliminación de la cuenta desde otro sitio se rechaza (CSRF → ${deletion.status})`);
+  const renamed = await asUser("/api/auth/update-user", { method: "POST", body: JSON.stringify({ name: "Soporte", image: "https://sitio-malicioso.com/x.png" }) });
+  check(renamed.status === 404, `nadie cambia su nombre ni su foto por fuera de la página (${renamed.status})`);
+  const tokens = await asUser("/api/auth/get-access-token", { method: "POST", body: JSON.stringify({ providerId: "google" }) });
+  check(tokens.status === 404, `nadie lee los tokens de Google de su cuenta (${tokens.status})`);
+  const mine = await asUser("/api/profile/data");
+  check(mine.status === 200 && (mine.headers.get("cache-control") ?? "").includes("no-store"), "la descarga de mis datos funciona y no se guarda en cachés");
+  const mineText = await mine.text();
+  check(!/"token"|accessToken|refreshToken|idToken|password/i.test(mineText), "la descarga de mis datos no trae tokens ni contraseñas");
   check((await asUser("/api/admin/manual-payments", { method: "POST", body: JSON.stringify({ userId: "x", planId: "p180", reference: "TRANSF-1" }) })).status === 403, "una empresa no puede registrar pagos de administrador");
   const csrf = await asUser("/api/wallets", { method: "POST", headers: { origin: "https://sitio-malicioso.com" }, body: JSON.stringify({ address: "0x8ba1f109551bD432803012645Ac136ddd64DBA72", walletName: "x", chainId: 56 }) });
   check(csrf.status === 403, `una petición desde otro sitio con la sesión de la empresa se rechaza (CSRF → ${csrf.status})`);
@@ -97,7 +141,7 @@ const check = (cond, msg) => {
   await submit.click();
   await page.waitForURL(/\/admin/, { timeout: 60000 }).catch(() => {});
   check(page.url().includes("/admin"), "pasado el minuto, el PIN correcto entra a la administración");
-  for (const p of ["/admin", "/admin/clientes", "/admin/pagos", "/admin/retiros", "/admin/planta"]) {
+  for (const p of ["/admin", "/admin/clientes", "/admin/pagos", "/admin/retiros", "/admin/planta", "/admin/analisis", "/admin/actividad", "/admin/configuracion"]) {
     await page.goto(`${base}${p}`, { waitUntil: "load" });
     await page.waitForTimeout(600);
   }

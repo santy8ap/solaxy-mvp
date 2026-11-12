@@ -191,6 +191,17 @@ function deployment() {
   return `${process.env.VERCEL_ENV ?? "local"}${sha ? ` (${sha})` : ""}`;
 }
 
+/**
+ * El detalle técnico de una falla, sin datos personales: un error de la base trae los valores de la consulta
+ * ("params: …"), que pueden ser nombres, correos, documentos o cuentas bancarias. Esos no viajan por correo;
+ * el error completo queda en los registros de Vercel.
+ */
+export function redactFailureDetail(detail: string) {
+  return detail
+    .replace(/\bparams:[\s\S]*/i, "params: [omitidos]")
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[correo]");
+}
+
 export const alertMessages = {
   paymentConfirmed: (p: PaymentLike, who: string): Alert => ({
     kind: "pago",
@@ -239,7 +250,7 @@ export const alertMessages = {
   failure: (title: string, detail: string, at = Date.now()): Alert => ({
     kind: "falla",
     subject: `Algo falló: ${title}`,
-    lines: [detail.slice(0, 400), `Cuándo: ${formatDateTime(at)}. Despliegue: ${deployment()}.`, "Los detalles están en Vercel › Logs."],
+    lines: [redactFailureDetail(detail).slice(0, 400), `Cuándo: ${formatDateTime(at)}. Despliegue: ${deployment()}.`, "Los detalles están en Vercel › Logs."],
   }),
   test: (): Alert => ({
     kind: "prueba",

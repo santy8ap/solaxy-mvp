@@ -70,6 +70,13 @@ describe("pedir la eliminación", () => {
     expect(await privacy.pendingDataRequests()).toBe(1);
   });
 
+  it("un doble clic (dos solicitudes a la vez) deja una sola solicitud", async () => {
+    const results = await Promise.all([privacy.requestDeletion("d2"), privacy.requestDeletion("d2"), privacy.requestDeletion("d2")]);
+    expect(new Set(results.map((r) => r.request.id)).size).toBe(1);
+    expect(results.filter((r) => r.created)).toHaveLength(1);
+    expect(await privacy.pendingDataRequests()).toBe(2);
+  });
+
   it("no acepta HTML en el motivo", async () => {
     await expect(privacy.requestDeletion("d3", "<script>alert(1)</script>")).rejects.toThrow();
   });

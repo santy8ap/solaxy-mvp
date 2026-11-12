@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { LEGAL } from "@/config/legal";
 import { audit, type Actor } from "@/lib/admin/service";
 import { alertAdmin } from "@/lib/alerts";
-import { db } from "@/lib/db";
+import { db, type DbSession } from "@/lib/db";
 import { deletedEmail } from "@/lib/deleted-account";
 import { writeTransaction } from "@/lib/db/transaction";
 import { account, companyProfile, dataRequest, ledgerTx, paymentReview, session, user, verification, walletLink } from "@/lib/db/schema";
@@ -128,8 +128,8 @@ export async function exportPersonalData(userId: string, now = Date.now()) {
 export type DataRequestRow = typeof dataRequest.$inferSelect;
 
 /** La solicitud de eliminación que sigue abierta, si la hay. */
-export async function openDeletionRequest(userId: string): Promise<DataRequestRow | null> {
-  const [row] = await db
+export async function openDeletionRequest(userId: string, tx: DbSession = db): Promise<DataRequestRow | null> {
+  const [row] = await tx
     .select()
     .from(dataRequest)
     .where(and(eq(dataRequest.userId, userId), eq(dataRequest.kind, "eliminacion"), eq(dataRequest.status, "pendiente")));
@@ -152,18 +152,25 @@ export async function requestDeletion(userId: string, reason?: string, now = Dat
   const why = reasonField.parse(reason?.trim() ? reason : undefined);
   const open = await openDeletionRequest(userId);
   if (open) return { request: open, created: false };
-  const [row] = await db
-    .insert(dataRequest)
-    .values({
-      id: newId("dat-"),
-      userId,
-      kind: "eliminacion",
-      status: "pendiente",
-      reason: why ?? null,
-      createdAt: now,
-      dueAt: addBusinessDays(now, RESPONSE_BUSINESS_DAYS),
-    })
-    .returning();
+  // Dentro de una transacción de escritura: un doble clic o dos pestañas dejan una sola solicitud.
+  const { row, created } = await writeTransaction(async (tx) => {
+    const again = await openDeletionRequest(userId, tx);
+    if (again) return { row: again, created: false };
+    const [inserted] = await tx
+      .insert(dataRequest)
+      .values({
+        id: newId("dat-"),
+        userId,
+        kind: "eliminacion",
+        status: "pendiente",
+        reason: why ?? null,
+        createdAt: now,
+        dueAt: addBusinessDays(now, RESPONSE_BUSINESS_DAYS),
+      })
+      .returning();
+    return { row: inserted, created: true };
+  });
+  if (!created) return { request: row, created: false };
   alertAdmin(async () => {
     const [u] = await db.select({ name: user.name }).from(user).where(eq(user.id, userId));
     const [p] = await db.select({ company: companyProfile.companyName, fullName: companyProfile.fullName }).from(companyProfile).where(eq(companyProfile.userId, userId));
