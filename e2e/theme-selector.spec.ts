@@ -9,6 +9,7 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   const trigger = page.getByRole("button", { name: /^Cambiar tema/ });
   const choices = page.getByRole("group", { name: "Apariencia" });
   const login = page.getByRole("banner").getByRole("link", { name: "Ingresar" });
+  const themeColor = page.locator('meta[name="theme-color"]');
   await expect(login).toBeVisible();
   await expect(root).toHaveAttribute("data-theme", "dark");
   await expect(root).toHaveCSS("background-color", "rgb(5, 5, 5)");
@@ -27,7 +28,8 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
 
   await page.reload();
   await expect(root).toHaveAttribute("data-theme", "green");
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#0d281d");
+  await expect(themeColor).toHaveCount(1);
+  await expect(themeColor).toHaveAttribute("content", "#0d281d");
   await login.click();
   await expect(page).toHaveURL(/\/ingresar$/);
   await expect(trigger).toHaveAccessibleName(/Verde seleccionado/);
@@ -37,6 +39,7 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   await expect(root).toHaveAttribute("data-theme", "light");
   await expect(root).toHaveCSS("background-color", "rgb(246, 245, 238)");
   await expect(root).toHaveCSS("color-scheme", "light");
+  await expect(themeColor).toHaveAttribute("content", "#f6f5ee");
 
   await page.getByRole("button", { name: /Entrar con la cuenta de pruebas/i }).click();
   await expect(page).toHaveURL(/\/panel$/);

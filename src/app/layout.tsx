@@ -3,7 +3,7 @@ import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { BRAND } from "@/config/brand";
 import { VercelAnalytics } from "@/components/analytics/vercel";
 import { ThemeProvider } from "@/context/theme-context";
-import { DEFAULT_THEME, THEMES, themeBootScript } from "@/lib/theme";
+import { DEFAULT_THEME, themeBootScript } from "@/lib/theme";
 import "./globals.css";
 
 /** Archivo con el eje de ancho: la versión condensada (62 %) es la voz de los titulares y las cifras. */
@@ -40,7 +40,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${archivo.variable} ${plexMono.variable} h-full`}
     >
       <head>
-        <meta name="theme-color" content={THEMES[DEFAULT_THEME].background} suppressHydrationWarning />
         <script id="xge-theme" dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body className="min-h-full">

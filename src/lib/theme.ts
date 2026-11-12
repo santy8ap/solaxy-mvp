@@ -17,9 +17,7 @@ export function readTheme(value: string | null | undefined): ThemeMode {
 // La preferencia se aplica antes de que el navegador pinte el contenido.
 export const themeBootScript = `try {
   const mode = localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-  const themes = ${JSON.stringify(THEMES)};
-  if (Object.hasOwn(themes, mode)) {
+  if (${JSON.stringify(THEME_MODES)}.includes(mode)) {
     document.documentElement.dataset.theme = mode;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themes[mode].background);
   }
 } catch {}`;

@@ -13,18 +13,13 @@ function getServerSnapshot() {
   return DEFAULT_THEME;
 }
 
-function applyTheme(mode: ThemeMode) {
-  document.documentElement.dataset.theme = mode;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEMES[mode].background);
-}
-
 function subscribe(notify: () => void) {
   const observer = new MutationObserver(notify);
   observer.observe(document.documentElement, { attributeFilter: ["data-theme"] });
 
   function syncStorage(event: StorageEvent) {
     if (event.key === THEME_STORAGE_KEY || event.key === null) {
-      applyTheme(readTheme(event.newValue));
+      document.documentElement.dataset.theme = readTheme(event.newValue);
     }
   }
 
@@ -36,7 +31,7 @@ function subscribe(notify: () => void) {
 }
 
 function setMode(mode: ThemeMode) {
-  applyTheme(mode);
+  document.documentElement.dataset.theme = mode;
   try {
     localStorage.setItem(THEME_STORAGE_KEY, mode);
   } catch {
@@ -46,7 +41,12 @@ function setMode(mode: ThemeMode) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const mode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  return <ThemeContext.Provider value={{ mode, setMode }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ mode, setMode }}>
+      <meta name="theme-color" content={THEMES[mode].background} />
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
