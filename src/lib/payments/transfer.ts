@@ -3,7 +3,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { audit, type Actor } from "@/lib/admin/service";
 import { alertTransferReported } from "@/lib/alerts";
-import { db } from "@/lib/db";
+import { db, type DbSession } from "@/lib/db";
+import { writeTransaction } from "@/lib/db/transaction";
 import { ensureReady } from "@/lib/db/init";
 import { ledgerTx, serviceSetting } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
@@ -95,8 +96,8 @@ async function resolveTarget(input: TransferTarget) {
 }
 
 /** La transferencia de ese mes que ya se reportó y sigue sin revisar. */
-async function openTransfer(userId: string, subscriptionId: string, periodIndex: number) {
-  const [row] = await db
+async function openTransfer(userId: string, subscriptionId: string, periodIndex: number, session: DbSession = db) {
+  const [row] = await session
     .select()
     .from(ledgerTx)
     .where(
@@ -148,28 +149,35 @@ export async function reportTransfer(input: TransferTarget & { receipt: string }
   const p = await resolveTarget(input);
   const open = await openTransfer(input.userId, p.subscriptionId, p.periodIndex);
   if (open) return { order: toTxDTO(open), created: false };
-  const orderId = orderCode();
-  const [row] = await db
-    .insert(ledgerTx)
-    .values({
-      id: orderId,
-      userId: input.userId,
-      kind: "plan_mes",
-      status: "verificando",
-      amountCop: p.amountCop,
-      asset: "COP",
-      createdAt: Date.now(),
-      method: "transferencia",
-      // El comprobante del banco del comercializador (como en los retiros a cuentas bancarias).
-      txHash: receipt,
-      providerStatus: REPORTED_STATUS,
-      expectedAmount: String(p.amountCop),
-      subscriptionId: p.subscriptionId,
-      periodIndex: p.periodIndex,
-      kwh: p.kwh,
-    })
-    .returning();
-  payLog("transferencia_reportada", { orderId, userId: input.userId, plan: p.subscriptionId, mes: p.periodIndex, amountCop: p.amountCop });
+  // Se vuelve a buscar dentro de una transacción de escritura: dos avisos a la vez (doble clic, dos pestañas,
+  // un reintento de la red) dejan una sola orden.
+  const { row, created } = await writeTransaction(async (session) => {
+    const again = await openTransfer(input.userId, p.subscriptionId, p.periodIndex, session);
+    if (again) return { row: again, created: false };
+    const [inserted] = await session
+      .insert(ledgerTx)
+      .values({
+        id: orderCode(),
+        userId: input.userId,
+        kind: "plan_mes",
+        status: "verificando",
+        amountCop: p.amountCop,
+        asset: "COP",
+        createdAt: Date.now(),
+        method: "transferencia",
+        // El comprobante del banco del comercializador (como en los retiros a cuentas bancarias).
+        txHash: receipt,
+        providerStatus: REPORTED_STATUS,
+        expectedAmount: String(p.amountCop),
+        subscriptionId: p.subscriptionId,
+        periodIndex: p.periodIndex,
+        kwh: p.kwh,
+      })
+      .returning();
+    return { row: inserted, created: true };
+  });
+  if (!created) return { order: toTxDTO(row), created: false };
+  payLog("transferencia_reportada", { orderId: row.id, userId: input.userId, plan: p.subscriptionId, mes: p.periodIndex, amountCop: p.amountCop });
   alertTransferReported(row);
   return { order: toTxDTO(row), created: true };
 }

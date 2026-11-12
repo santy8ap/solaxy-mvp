@@ -111,7 +111,12 @@ export function AdminOverview() {
         <Stat label="Mensualidades cobradas" value={formatCop(data.collectedCop)} note="Desde el inicio" href="/admin/pagos" />
         <Stat label="Planes generando" value={String(data.activePlans)} note={data.pausedPlans ? `${data.pausedPlans} en pausa por falta de pago` : "Ninguno en pausa"} href="/admin/clientes" />
         <Stat label="Clientes con plan" value={String(data.clients)} note={`${data.registeredClients} ${data.registeredClients === 1 ? "cuenta registrada" : "cuentas registradas"}`} href="/admin/clientes" />
-        <Stat label="Se les debe a los clientes" value={formatCop(data.owedCop)} note="Venta de su energía menos lo ya pagado" />
+        <Stat
+          label="Se les debe a los clientes"
+          value={formatCop(data.owedCop)}
+          note={data.pendingWithdrawalsCop ? `Sus saldos, más ${formatCop(data.pendingWithdrawalsCop)} en retiros por pagar` : "La suma de sus saldos"}
+          href="/admin/clientes"
+        />
         <Stat label="Pagado en retiros" value={formatCop(data.paidOutCop)} href="/admin/retiros" />
         <Stat label="Energía generada" value={`${formatNumber(data.generatedKwh)} kWh`} note="Por todos los planes" />
         <Stat label="Precio de venta" value={`${formatCop(data.settings.saleCopPerKwh)} / kWh`} href="/admin/planta" />

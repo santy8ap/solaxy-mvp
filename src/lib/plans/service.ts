@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db, type DbSession } from "@/lib/db";
+import { writeTransaction } from "@/lib/db/transaction";
 import { paymentReview, planPeriod, planSubscription } from "@/lib/db/schema";
 import {
   GRACE_MS,
@@ -217,9 +218,9 @@ const monthOf = (
   };
 };
 
-/** Un borrador del mismo plan y con los mismos precios se reutiliza: abandonar un pago no deja basura. */
-async function draftFor(userId: string, plan: CatalogPlan, now: number) {
-  const drafts = await db
+/** El borrador sin pagar de ese plan, con los mismos precios de hoy, si ya existe. */
+async function findDraft(session: DbSession, userId: string, plan: CatalogPlan) {
+  const drafts = await session
     .select()
     .from(planSubscription)
     .where(
@@ -229,31 +230,45 @@ async function draftFor(userId: string, plan: CatalogPlan, now: number) {
         sql`${planSubscription.startedAt} IS NULL`,
         sql`${planSubscription.cancelledAt} IS NULL`,
       ),
-    );
-  const same = drafts.find(
+    )
+    .orderBy(asc(planSubscription.createdAt));
+  return drafts.find(
     (d) =>
       d.priceCopPerKwh === plan.priceCopPerKwh &&
       d.saleCopPerKwh === plan.saleCopPerKwh &&
       d.totalKwh === plan.totalKwh &&
       d.months === plan.months,
   );
-  if (same) return same;
-  const [row] = await db
-    .insert(planSubscription)
-    .values({
-      id: planCode(),
-      userId,
-      planId: plan.id,
-      planName: plan.name,
-      totalKwh: plan.totalKwh,
-      months: plan.months,
-      dailyKwh: plan.dailyKwh,
-      priceCopPerKwh: plan.priceCopPerKwh,
-      saleCopPerKwh: plan.saleCopPerKwh,
-      createdAt: now,
-    })
-    .returning();
-  return row;
+}
+
+/**
+ * El plan en borrador que paga el primer mes. Abandonar un pago y volver a intentarlo reutiliza el mismo borrador
+ * (no deja basura), y dos solicitudes a la vez (doble clic, dos pestañas) también: la creación va en una
+ * transacción de escritura.
+ */
+async function draftFor(userId: string, plan: CatalogPlan, now: number) {
+  const existing = await findDraft(db, userId, plan);
+  if (existing) return existing;
+  return writeTransaction(async (session) => {
+    const same = await findDraft(session, userId, plan);
+    if (same) return same;
+    const [row] = await session
+      .insert(planSubscription)
+      .values({
+        id: planCode(),
+        userId,
+        planId: plan.id,
+        planName: plan.name,
+        totalKwh: plan.totalKwh,
+        months: plan.months,
+        dailyKwh: plan.dailyKwh,
+        priceCopPerKwh: plan.priceCopPerKwh,
+        saleCopPerKwh: plan.saleCopPerKwh,
+        createdAt: now,
+      })
+      .returning();
+    return row;
+  });
 }
 
 /**

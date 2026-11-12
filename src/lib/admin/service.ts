@@ -2,7 +2,9 @@ import "server-only";
 import { hasPersonalDetails } from "@/lib/profile-schema";
 import { and, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { PLANT } from "@/config/plant";
+import type { SolarDay } from "@/config/solar";
 import { db } from "@/lib/db";
+import { writeTransaction } from "@/lib/db/transaction";
 import {
   adminAudit,
   companyProfile,
@@ -34,7 +36,7 @@ import {
   stateOf,
 } from "@/lib/plans/service";
 import { validateSettings, type PlantSettings } from "@/lib/plant-settings";
-import { summarize, toSubscriptionDTO, toTxDTO } from "@/lib/portfolio";
+import { summarize, toSubscriptionDTO, toTxDTO, type SubscriptionDTO } from "@/lib/portfolio";
 import { TERMS_VERSION, requireCompleteProfile } from "@/lib/profile";
 import { invalidateSettings, readConfig, readSettings } from "@/lib/settings";
 
@@ -43,6 +45,11 @@ export interface Actor {
   name: string;
 }
 
+/**
+ * Deja constancia en la bitácora. Va en una transacción de escritura para esperar su turno: si otra escritura
+ * (por ejemplo, un doble clic que confirma el mismo pago) tiene la base ocupada, la constancia no se pierde.
+ * No se llama dentro de otra transacción de escritura.
+ */
 export async function audit(
   actor: Actor,
   action: AdminAction,
@@ -50,16 +57,18 @@ export async function audit(
   detail?: unknown,
   targetUserId?: string,
 ) {
-  await db.insert(adminAudit).values({
-    id: newId("aud-"),
-    actorUserId: actor.id,
-    actorName: actor.name,
-    action,
-    targetUserId: targetUserId ?? null,
-    summary,
-    detail: detail === undefined ? null : JSON.stringify(detail),
-    createdAt: Date.now(),
-  });
+  await writeTransaction((session) =>
+    session.insert(adminAudit).values({
+      id: newId("aud-"),
+      actorUserId: actor.id,
+      actorName: actor.name,
+      action,
+      targetUserId: targetUserId ?? null,
+      summary,
+      detail: detail === undefined ? null : JSON.stringify(detail),
+      createdAt: Date.now(),
+    }),
+  );
 }
 
 /** La bitácora, de lo más reciente a lo más antiguo; `action` deja un tipo y `query` busca en el texto y en quién lo hizo. */
@@ -117,6 +126,16 @@ async function withdrawalsByUser() {
       { withdrawn: Number(r.withdrawn), reserved: Number(r.reserved) },
     ]),
   );
+}
+
+/**
+ * La venta de la energía de cada cliente, redondeada hacia abajo como en su saldo. Se suma cliente por cliente
+ * (no el total de una vez) para que «Se les debe» sea exactamente la suma de los saldos más los retiros por pagar.
+ */
+function soldByUser(subs: readonly { userId: string }[], plans: readonly SubscriptionDTO[], solar: SolarDay, now: number) {
+  const byUser = new Map<string, SubscriptionDTO[]>();
+  subs.forEach((s, i) => byUser.set(s.userId, [...(byUser.get(s.userId) ?? []), plans[i]]));
+  return new Map([...byUser].map(([userId, list]) => [userId, Math.floor(summarize(list, solar, now).soldCop)]));
 }
 
 /** Los comercializadores registrados, con sus planes, su energía y su saldo. */
@@ -584,6 +603,15 @@ export async function adminOverview() {
     .from(dataRequest)
     .where(eq(dataRequest.status, "pendiente"));
   const paidOut = Number(w?.paidCop ?? 0);
+  // Por cliente, igual que su saldo: lo vendido de su energía menos lo que ya se le pagó.
+  const money = await withdrawalsByUser();
+  const sold = soldByUser(subs, plans, solar, now);
+  let soldCop = 0;
+  let owedCop = 0;
+  for (const [userId, cop] of sold) {
+    soldCop += cop;
+    owedCop += Math.max(0, cop - (money.get(userId)?.withdrawn ?? 0));
+  }
   return {
     settings,
     plantDailyKwh,
@@ -596,9 +624,9 @@ export async function adminOverview() {
     /** Mensualidades cobradas. Incluye los pagos de prueba solo mientras el modo de pruebas está activo. */
     collectedCop: Number(p?.collectedCop ?? 0),
     generatedKwh: totals.generatedKwh,
-    soldCop: Math.floor(totals.soldCop),
-    /** Lo que la empresa les debe a sus clientes: venta acumulada menos lo ya pagado */
-    owedCop: Math.max(0, Math.floor(totals.soldCop) - paidOut),
+    soldCop,
+    /** Lo que la empresa les debe a sus clientes: sus saldos más los retiros que esperan el envío */
+    owedCop,
     paidOutCop: paidOut,
     pendingWithdrawals: Number(w?.pending ?? 0),
     pendingWithdrawalsCop: Number(w?.pendingCop ?? 0),
