@@ -50,6 +50,13 @@
       "when": 1794432361393,
       "tag": "0006_payment_reconciliation",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794451916745,
+      "tag": "0007_datos_personales",
+      "breakpoints": true
     }
   ]
 }

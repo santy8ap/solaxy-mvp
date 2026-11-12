@@ -46,7 +46,7 @@ export function alertConfig(): AlertConfig {
   };
 }
 
-export type AlertKind = "pago" | "pago_por_devolver" | "transferencia" | "retiro" | "devolucion" | "falla" | "prueba";
+export type AlertKind = "pago" | "pago_por_devolver" | "transferencia" | "retiro" | "devolucion" | "datos" | "falla" | "prueba";
 
 export interface Alert {
   kind: AlertKind;

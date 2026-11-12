@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import {
   adminAudit,
   companyProfile,
+  dataRequest,
   ledgerTx,
   paymentReview,
   plant,
@@ -181,6 +182,16 @@ export async function listClients({ query = "" }: { query?: string } = {}) {
     ).map((a) => [a.userId, a]),
   );
 
+  // Solicitudes de eliminación de datos personales que esperan respuesta.
+  const requests = new Map(
+    (
+      await db
+        .select()
+        .from(dataRequest)
+        .where(and(inArray(dataRequest.userId, ids), eq(dataRequest.status, "pendiente")))
+    ).map((d) => [d.userId, d]),
+  );
+
   return rows
     .map((r) => {
       const plans = subs
@@ -202,6 +213,10 @@ export async function listClients({ query = "" }: { query?: string } = {}) {
         reservedCop: w.reserved,
         openTransfers: Number(activity.get(r.id)?.openTransfers ?? 0),
         lastPaymentAt: activity.get(r.id)?.lastPaymentAt ?? null,
+        deletionRequest: (() => {
+          const d = requests.get(r.id);
+          return d ? { id: d.id, createdAt: d.createdAt, dueAt: d.dueAt, reason: d.reason, blockers: [] as string[] } : null;
+        })(),
         balanceCop: Math.max(
           0,
           Math.floor(totals.soldCop) - w.withdrawn - w.reserved,
@@ -564,6 +579,10 @@ export async function adminOverview() {
     .select({ n: sql<number>`count(*)` })
     .from(user)
     .where(sql`lower(${user.email}) <> ${env.demoEmail}`);
+  const [dr] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(dataRequest)
+    .where(eq(dataRequest.status, "pendiente"));
   const paidOut = Number(w?.paidCop ?? 0);
   return {
     settings,
@@ -593,6 +612,8 @@ export async function adminOverview() {
     previousMonthCollectedCop: Number(m?.previous ?? 0),
     /** Cuentas registradas, sin la de pruebas */
     registeredClients: Number(u?.n ?? 0),
+    /** Solicitudes de eliminación de datos personales sin responder (plazo legal de 15 días hábiles) */
+    dataRequests: Number(dr?.n ?? 0),
     recent: await listAudit(8),
   };
 }

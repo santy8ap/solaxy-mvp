@@ -83,7 +83,7 @@ const SECTIONS: LegalSection[] = [
     title: "Cómo ejercerlos",
     body: (
       <p>
-        Escribe a <Ph>{LEGAL.email}</Ph> con tu nombre, tu documento y lo que necesitas. Respondemos las consultas en un máximo de 10 días hábiles y los reclamos en un máximo de 15 días hábiles.
+        Desde tu perfil puedes descargar tus datos y pedir que eliminemos tu cuenta. También puedes escribir a <Ph>{LEGAL.email}</Ph> con tu nombre, tu documento y lo que necesitas. Respondemos las consultas en un máximo de 10 días hábiles y los reclamos en un máximo de 15 días hábiles.
         Si necesitamos más tiempo, te avisaremos antes de que venza el plazo, como lo permite la ley.
       </p>
     ),

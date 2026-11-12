@@ -1,6 +1,7 @@
 "use client";
 import { Topbar } from "@/components/panel/shell";
 import { toast } from "@/components/ui/toast";
+import { DataRights } from "./data-rights";
 import { ProfileForm } from "./profile-form";
 
 const WHY = [
@@ -29,6 +30,7 @@ export function ProfilePage() {
           </ul>
         </aside>
       </div>
+      <DataRights />
     </>
   );
 }

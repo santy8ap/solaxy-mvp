@@ -32,6 +32,8 @@ npm start
 - Los movimientos confirmados tienen comprobante PDF privado con titular, documento, paquete, precios, fecha y referencia. Es informativo, no una factura fiscal. Las operaciones de prueba quedan identificadas y las devueltas no emiten comprobante de pago vigente.
 - La billetera tiene filtros, paginación y exportación CSV de todo el historial coincidente. Los rendimientos pueden consultarse y exportarse por períodos de 7, 30 o 90 días.
 - `/panel/avisos` muestra confirmaciones, mensualidades próximas, retiros y casos que requieren atención. Son avisos dentro de la aplicación; no se envían correos ni mensajes automáticamente.
+- Un plan terminado o cerrado ofrece «Renovar» (la compra del mismo plan con los precios vigentes), y los avisos lo recuerdan cuando termina.
+- En `/panel/perfil`, cada comercializador puede descargar sus datos (JSON) y pedir que se elimine su cuenta (Ley 1581). El admin la atiende en **Clientes** dentro de 15 días hábiles: eliminar quita el acceso, el correo, el celular, la ciudad y la wallet; si hubo pagos, se conservan el nombre, el documento y los movimientos que la ley contable obliga a guardar. Una cuenta eliminada deja de entrar de inmediato.
 
 ## Administración
 
@@ -39,7 +41,7 @@ npm start
 
 - **Resumen**: lo que hay que atender (transferencias por confirmar, retiros por pagar, pagos por devolver, devoluciones por conciliar, planes en pausa y mensualidades que vencen esta semana), el cupo de la planta y los totales.
 - **Análisis**: recaudo por mes y por medio de pago, embudo de clientes, mensualidades que vienen y cupo, con tabla de datos. Las visitas y la velocidad de la página se ven en Vercel (Web Analytics y Speed Insights), que no miden el admin ni envían los parámetros de las direcciones.
-- **Clientes**: búsqueda, grupos (generando, en pausa, transferencia por confirmar, sin pagar, sin datos), registro de pagos a mano, cierre de planes y exportación CSV.
+- **Clientes**: búsqueda, grupos (generando, en pausa, transferencia por confirmar, solicitudes de eliminación de datos, sin pagar, sin datos), registro de pagos a mano, cierre de planes, atención de solicitudes sobre datos personales y exportación CSV.
 - **Pagos**: filtros por estado y medio, búsqueda por cliente, NIT, orden o referencia, acciones de verificación, transferencias y reembolsos, y exportación CSV para la contabilidad.
 - **Retiros**, **Planta** (potencia y precios), **Configuración** (lista para cobrar dinero real, cuenta para transferencias, soporte y alertas por correo) y **Actividad** (bitácora con filtros).
 - `/ayuda` es pública. El contacto oficial se guarda desde **Admin → Configuración** o con `SUPPORT_EMAIL` / `SUPPORT_WHATSAPP`. No se publica un contacto ficticio si faltan esos datos.

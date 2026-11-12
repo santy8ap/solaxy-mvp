@@ -119,5 +119,13 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "CREATE TABLE IF NOT EXISTS `payment_review` (\n\t`payment_id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`subscription_id` text NOT NULL,\n\t`occurred_at` integer NOT NULL,\n\t`reason` text NOT NULL,\n\t`resolved_at` integer,\n\t`resolution_reference` text,\n\tFOREIGN KEY (`payment_id`) REFERENCES `ledger_tx`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`subscription_id`) REFERENCES `plan_subscription`(`id`) ON UPDATE no action ON DELETE cascade\n);",
       "CREATE INDEX IF NOT EXISTS `payment_review_user_idx` ON `payment_review` (`user_id`,`resolved_at`);"
     ]
+  },
+  {
+    "id": "0007_datos_personales",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `data_request` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`kind` text NOT NULL,\n\t`status` text NOT NULL,\n\t`reason` text,\n\t`created_at` integer NOT NULL,\n\t`due_at` integer NOT NULL,\n\t`resolved_at` integer,\n\t`resolution` text,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade\n);",
+      "CREATE INDEX IF NOT EXISTS `data_request_user_idx` ON `data_request` (`user_id`);",
+      "CREATE INDEX IF NOT EXISTS `data_request_status_idx` ON `data_request` (`status`);"
+    ]
   }
 ];

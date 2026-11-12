@@ -138,12 +138,68 @@ function ClosePlanDialog({ plan, onClose, listUrl }: { plan: SubscriptionDTO | n
   );
 }
 
+/** Atender una solicitud de eliminación de datos: eliminar la cuenta o responder por qué todavía no. */
+function DataRequestDialog({ target, onClose, listUrl }: { target: { client: AdminClient; action: "eliminar" | "responder" } | null; onClose(): void; listUrl: string }) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!target?.client.deletionRequest) return null;
+  const { client, action } = target;
+  const request = client.deletionRequest!;
+  const remove = action === "eliminar";
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await postJson(`/api/admin/data-requests/${request.id}`, { action, note: note.trim() || undefined });
+      toast(remove ? "Cuenta eliminada." : "Solicitud respondida.");
+      reloadAdmin(listUrl);
+      setNote("");
+      onClose();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal open onClose={busy ? () => {} : onClose} title={remove ? `Eliminar la cuenta de ${nameOf(client)}` : "Responder sin eliminar"} wide>
+      {remove ? (
+        <div className="space-y-3 leading-relaxed text-fog">
+          <p>Se eliminan el acceso (sesiones e ingreso con Google), el correo, el celular, la ciudad y la wallet. Si pagó algún mes, se conservan su nombre, su documento y sus movimientos, que la ley contable obliga a guardar. No se puede deshacer.</p>
+          <p>
+            Antes, escríbele a <strong className="font-medium text-ink">{client.email}</strong> para confirmarle que su cuenta se eliminará: después ese correo ya no queda guardado.
+          </p>
+        </div>
+      ) : (
+        <p className="leading-relaxed text-fog">Cuéntale por qué todavía no se puede eliminar, por ejemplo, porque tiene un plan vigente o saldo por retirar. La respuesta queda guardada y el titular la ve en su perfil.</p>
+      )}
+      <form onSubmit={submit} className="mt-7 space-y-6">
+        <Field label={remove ? "Nota (opcional)" : "Respuesta al titular"} hint={remove ? "Queda en la bitácora junto a lo que se eliminó." : "Mínimo 8 caracteres."}>
+          {(id, aria) => <textarea id={id} {...aria} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} className="field" />}
+        </Field>
+        {error && <ErrorNote>{error}</ErrorNote>}
+        <div className="flex justify-end gap-3">
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn btn-solid" disabled={busy || (!remove && note.trim().length < 8)}>
+            {busy ? "Guardando…" : remove ? "Eliminar la cuenta" : "Enviar la respuesta"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 /** Grupos de clientes según en qué va cada uno. */
 const SEGMENTS = [
   { id: "todos", label: "Todos", test: () => true },
   { id: "generando", label: "Generando", test: (c: AdminClient) => c.plans.some((p) => p.state === "activa" || p.state === "en_revision") },
   { id: "en_pausa", label: "En pausa", test: (c: AdminClient) => c.plans.some((p) => p.state === "en_pausa") },
   { id: "por_confirmar", label: "Transferencia por confirmar", test: (c: AdminClient) => c.openTransfers > 0 },
+  { id: "solicitudes", label: "Pidió eliminar su cuenta", test: (c: AdminClient) => !!c.deletionRequest },
   { id: "sin_pagar", label: "Sin pagar", test: (c: AdminClient) => !!c.profile?.termsCurrent && c.plans.length === 0 && c.openTransfers === 0 },
   { id: "sin_datos", label: "Sin datos", test: (c: AdminClient) => !c.profile?.termsCurrent },
 ] as const;
@@ -189,6 +245,7 @@ export function AdminClients() {
   const { data, loading, error } = useJson<{ clients: AdminClient[] }>(url, { refreshMs: 30_000 });
   const [paying, setPaying] = useState<AdminClient | null>(null);
   const [closing, setClosing] = useState<SubscriptionDTO | null>(null);
+  const [deciding, setDeciding] = useState<{ client: AdminClient; action: "eliminar" | "responder" } | null>(null);
   const all = data?.clients ?? [];
   const active = SEGMENTS.find((g) => g.id === segment) ?? SEGMENTS[0];
   const clients = all.filter((c) => active.test(c));
@@ -282,6 +339,31 @@ export function AdminClients() {
                     </Link>
                   )}
                 </p>
+                {c.deletionRequest && (
+                  <div className="mt-4 border-l-2 border-ink pl-4 text-sm leading-relaxed">
+                    <p className="font-medium">
+                      Pidió eliminar su cuenta el {formatDate(c.deletionRequest.createdAt)}. Responde antes del {formatDate(c.deletionRequest.dueAt)}.
+                    </p>
+                    {c.deletionRequest.reason && <p className="mt-1 text-fog">Motivo: {c.deletionRequest.reason}</p>}
+                    {c.deletionRequest.blockers.length ? (
+                      <ul className="mt-2 list-disc space-y-1 pl-5 text-mute">
+                        {c.deletionRequest.blockers.map((b) => (
+                          <li key={b}>{b}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-mute">Se puede eliminar: no tiene planes vigentes, saldo ni operaciones en curso.</p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+                      <button type="button" className="link" disabled={c.deletionRequest.blockers.length > 0} onClick={() => setDeciding({ client: c, action: "eliminar" })}>
+                        Eliminar la cuenta
+                      </button>
+                      <button type="button" className="link" onClick={() => setDeciding({ client: c, action: "responder" })}>
+                        Responder sin eliminar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <dl className="grid grid-cols-3 gap-4 text-sm">
                 <div>
@@ -343,6 +425,7 @@ export function AdminClients() {
 
       <ManualPaymentDialog client={paying} onClose={() => setPaying(null)} listUrl={url} />
       <ClosePlanDialog plan={closing} onClose={() => setClosing(null)} listUrl={url} />
+      <DataRequestDialog target={deciding} onClose={() => setDeciding(null)} listUrl={url} />
     </>
   );
 }

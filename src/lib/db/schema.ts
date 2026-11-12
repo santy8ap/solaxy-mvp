@@ -308,6 +308,34 @@ export const companyProfile = sqliteTable("company_profile", {
   updatedAt: integer("updated_at").notNull(),
 });
 
+export const DATA_REQUEST_KINDS = ["eliminacion"] as const;
+export const DATA_REQUEST_STATUSES = ["pendiente", "atendida", "respondida"] as const;
+
+/**
+ * Solicitudes de los titulares sobre sus datos personales (Ley 1581 de 2012). «atendida»: se eliminó la
+ * cuenta; «respondida»: se contestó sin eliminarla (por ejemplo, porque tiene un plan vigente o saldo).
+ */
+export const dataRequest = sqliteTable(
+  "data_request",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: DATA_REQUEST_KINDS }).notNull(),
+    status: text("status", { enum: DATA_REQUEST_STATUSES }).notNull(),
+    /** Lo que escribió el titular */
+    reason: text("reason"),
+    createdAt: integer("created_at").notNull(),
+    /** Plazo para responder: 15 días hábiles */
+    dueAt: integer("due_at").notNull(),
+    resolvedAt: integer("resolved_at"),
+    /** Qué se hizo, en palabras del administrador */
+    resolution: text("resolution"),
+  },
+  (t) => [index("data_request_user_idx").on(t.userId), index("data_request_status_idx").on(t.status)],
+);
+
 export const walletLink = sqliteTable("wallet_link", {
   userId: text("user_id")
     .primaryKey()
@@ -338,6 +366,8 @@ export const ADMIN_ACTIONS = [
   "config_transferencia",
   "confirmar_transferencia",
   "rechazar_transferencia",
+  "eliminar_cuenta",
+  "responder_solicitud_datos",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

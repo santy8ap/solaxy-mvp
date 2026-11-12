@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isDeletedEmail } from "@/lib/deleted-account";
 import { ensureReady } from "@/lib/db/init";
 import { user } from "@/lib/db/schema";
 
@@ -15,12 +16,13 @@ export interface CurrentUser {
 }
 
 /**
- * ¿Existe el usuario en esta base? Sin Turso, en Vercel cada instancia tiene su propia base temporal y la
- * cookie de sesión (en caché 5 min) puede nombrar a un usuario que aquí no existe: se trata como sesión cerrada.
+ * ¿La cuenta existe en esta base y sigue activa? La cookie de sesión queda en caché 5 minutos: puede nombrar a
+ * un usuario que aquí no existe (sin Turso, cada instancia de Vercel tiene su propia base temporal) o a una
+ * cuenta eliminada a pedido del titular. En ambos casos se trata como sesión cerrada.
  */
 export async function knownUser(id: string) {
-  const [row] = await db.select({ id: user.id }).from(user).where(eq(user.id, id)).limit(1);
-  return Boolean(row);
+  const [row] = await db.select({ id: user.id, email: user.email }).from(user).where(eq(user.id, id)).limit(1);
+  return Boolean(row) && !isDeletedEmail(row.email);
 }
 
 /** Usuario de la sesión actual o null. Prepara la base de datos si hace falta. */

@@ -38,6 +38,8 @@ export interface OverviewDTO {
   monthCollectedCop: number;
   previousMonthCollectedCop: number;
   registeredClients: number;
+  /** Solicitudes de eliminación de datos personales sin responder */
+  dataRequests: number;
   recent: AuditEntry[];
 }
 
@@ -69,6 +71,8 @@ export interface AdminClient {
   openTransfers: number;
   /** Último pago confirmado (ms) */
   lastPaymentAt: number | null;
+  /** Pidió eliminar su cuenta y espera respuesta (Ley 1581) */
+  deletionRequest: { id: string; createdAt: number; dueAt: number; reason: string | null; blockers: string[] } | null;
 }
 
 export interface AdminWithdrawal extends TxDTO {
@@ -98,6 +102,8 @@ const ACTION_LABEL: Record<AdminAction, string> = {
   borrar_datos_prueba: "Datos de prueba",
   conciliar_devolucion: "Conciliación",
   devolucion_proveedor: "Devolución de Mercado Pago",
+  eliminar_cuenta: "Cuenta eliminada",
+  responder_solicitud_datos: "Solicitud de datos respondida",
 };
 
 /** Acciones del modelo anterior que siguen en la bitácora. */
