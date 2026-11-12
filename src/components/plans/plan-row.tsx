@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { renewalCheckoutHref } from "@/lib/navigation";
+import { planCheckoutHref, renewalCheckoutHref } from "@/lib/navigation";
+import { DAY_MS } from "@/lib/time";
 import { formatCop, formatDate, formatNumber } from "@/lib/format";
 import type { SubscriptionDTO } from "@/lib/portfolio";
 import { PLAN_STATE, Status } from "@/components/ui/status";
@@ -24,9 +25,9 @@ function nextStep(s: SubscriptionDTO, now: number | null) {
       }
       return `En pausa desde el ${formatDate(s.paidUntil)}. Paga el mes ${next} antes del ${formatDate(s.graceEndsAt ?? s.paidUntil)} o el plan se cierra.`;
     case "completada":
-      return `Terminó el ${formatDate(s.paidUntil)}.`;
+      return `Terminó el ${formatDate(s.paidUntil)}. Renuévalo para seguir generando energía con los precios vigentes.`;
     default:
-      return "Este plan se cerró. Para seguir generando energía, compra un plan nuevo.";
+      return "Este plan se cerró. Para seguir generando energía, cómpralo de nuevo.";
   }
 }
 
@@ -42,6 +43,17 @@ export function PlanRow({
   const canPay =
     (sub.state === "activa" || sub.state === "en_pausa") &&
     sub.paidMonths < sub.months;
+  // Renovar: un plan terminado o cerrado, o uno con todos sus meses pagados a una semana de terminar.
+  const endingSoon =
+    sub.state === "activa" &&
+    sub.paidMonths >= sub.months &&
+    now != null &&
+    sub.paidUntil - now <= 7 * DAY_MS;
+  const canRenew =
+    sub.state === "completada" ||
+    sub.state === "vencida" ||
+    sub.state === "cancelada" ||
+    endingSoon;
   return (
     <li className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-5 border-b border-line py-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] lg:items-center">
       <div>
@@ -111,6 +123,16 @@ export function PlanRow({
           className={`btn ${sub.state === "en_pausa" ? "btn-solid" : "btn-ghost"} lg:justify-self-end`}
         >
           Pagar el mes {sub.paidMonths + 1}
+        </Link>
+      )}
+      {canRenew && (
+        <Link
+          href={planCheckoutHref(sub.planId)}
+          className={`btn ${sub.state === "completada" ? "btn-solid" : "btn-ghost"} lg:justify-self-end`}
+        >
+          {sub.state === "vencida" || sub.state === "cancelada"
+            ? `Comprar de nuevo el ${sub.planName}`
+            : `Renovar el ${sub.planName}`}
         </Link>
       )}
       {sub.state === "en_revision" && (

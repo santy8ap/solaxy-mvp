@@ -116,7 +116,7 @@ function MeterRow({ name, share, figure, note }: { name: string; share: number; 
   );
 }
 
-function RenewalList({ items, empty, kind }: { items: Renewal[]; empty: string; kind: "pronto" | "pausa" }) {
+function RenewalList({ items, empty, kind, now = 0 }: { items: Renewal[]; empty: string; kind: "pronto" | "pausa" | "renovar"; now?: number }) {
   if (!items.length) return <p className="py-4 text-sm text-mute">{empty}</p>;
   return (
     <ul>
@@ -127,8 +127,9 @@ function RenewalList({ items, empty, kind }: { items: Renewal[]; empty: string; 
               {r.customer}
             </Link>
             <p className="mt-0.5 text-mute">
-              {r.planName}, mes {r.nextMonth} de {r.months}.{" "}
-              {kind === "pausa" && r.graceEndsAt ? `Puede pagar hasta el ${formatDate(r.graceEndsAt)}; después el plan se cierra.` : `Vence el ${formatDate(r.dueAt)}.`}
+              {kind === "renovar"
+                ? `${r.planName}, sus ${r.months} meses pagados. ${r.dueAt <= now ? "Terminó" : "Termina"} el ${formatDate(r.dueAt)}.`
+                : `${r.planName}, mes ${r.nextMonth} de ${r.months}. ${kind === "pausa" && r.graceEndsAt ? `Puede pagar hasta el ${formatDate(r.graceEndsAt)}; después el plan se cierra.` : `Vence el ${formatDate(r.dueAt)}.`}`}
             </p>
           </div>
           <span className="num">{formatCop(r.amountCop)}</span>
@@ -233,7 +234,7 @@ export function AdminAnalytics() {
         </Section>
       </div>
 
-      <Section id="vienen" title="Mensualidades que vienen" note="Para escribirle a cada cliente antes de que su plan se pause o se cierre.">
+      <Section id="vienen" title="Mensualidades y renovaciones" note="Para escribirle a cada cliente antes de que su plan se pause o se cierre, y para ofrecerle renovar cuando termina.">
         <div className="grid gap-x-16 gap-y-10 lg:grid-cols-2">
           <div>
             <h3 className="cap">Vencen en los próximos 7 días · {data.dueSoon.length}</h3>
@@ -246,6 +247,12 @@ export function AdminAnalytics() {
             <div className="mt-2 border-t border-line">
               <RenewalList items={data.paused} empty="Ningún plan está en pausa." kind="pausa" />
             </div>
+          </div>
+        </div>
+        <div className="mt-10">
+          <h3 className="cap">Por renovar · {data.toRenew.length}</h3>
+          <div className="mt-2 border-t border-line">
+            <RenewalList items={data.toRenew} empty="Ningún plan termina en las próximas dos semanas." kind="renovar" now={data.generatedAt} />
           </div>
         </div>
         <p className="mt-6 text-sm text-mute">

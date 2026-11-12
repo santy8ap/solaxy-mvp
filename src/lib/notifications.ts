@@ -1,6 +1,6 @@
 import type { PortfolioDTO } from "@/lib/portfolio";
 import { formatCop, formatDate } from "@/lib/format";
-import { renewalCheckoutHref } from "@/lib/navigation";
+import { planCheckoutHref, renewalCheckoutHref } from "@/lib/navigation";
 import { DAY_MS } from "@/lib/time";
 
 export interface AccountNotice {
@@ -29,6 +29,33 @@ export function accountNotices(
         href: "/ayuda",
         action: "Consultar ayuda",
         priority: true,
+      });
+    }
+    // Renovar: el plan pagó todos sus meses y termina pronto, o terminó hace poco. No se insiste si
+    // ya compró otro plan igual después de este.
+    const renewed = data.subscriptions.some(
+      (o) => o.id !== sub.id && o.planId === sub.planId && (o.startedAt ?? 0) > (sub.startedAt ?? 0),
+    );
+    if (!renewed && sub.state === "activa" && sub.paidMonths >= sub.months && sub.paidUntil - now <= 7 * DAY_MS) {
+      notices.push({
+        id: `renovar:${sub.id}`,
+        title: `Tu ${sub.planName} termina pronto`,
+        detail: `Termina el ${formatDate(sub.paidUntil)}. Renuévalo para seguir generando energía; el plan nuevo empieza cuando se confirme su primer pago.`,
+        at: sub.paidUntil - 7 * DAY_MS,
+        href: planCheckoutHref(sub.planId),
+        action: "Renovar",
+        priority: false,
+      });
+    }
+    if (!renewed && sub.state === "completada" && now - sub.paidUntil <= 30 * DAY_MS) {
+      notices.push({
+        id: `terminado:${sub.id}`,
+        title: `Tu ${sub.planName} terminó`,
+        detail: `Terminó el ${formatDate(sub.paidUntil)}, con sus ${sub.months} meses. Renuévalo para seguir generando energía con los precios vigentes.`,
+        at: sub.paidUntil,
+        href: planCheckoutHref(sub.planId),
+        action: "Renovar",
+        priority: false,
       });
     }
     if (

@@ -78,6 +78,11 @@ export interface BusinessAnalytics {
   dueSoon: Renewal[];
   /** Planes en pausa: terminó el mes y falta el pago del siguiente */
   paused: Renewal[];
+  /**
+   * Por renovar: pagaron todos sus meses y terminan en los próximos 14 días o terminaron hace menos de 30,
+   * sin que el cliente haya comprado otro plan igual después.
+   */
+  toRenew: Renewal[];
   /** Planes que se cerraron por falta de pago en los últimos 30 días */
   closedUnpaid30d: number;
   /** Mensualidades que deberían entrar en los próximos 30 días (en pausa y por vencer) */
@@ -171,6 +176,17 @@ export async function businessAnalytics(now = Date.now()): Promise<BusinessAnaly
     .filter(({ dto }) => dto.state === "en_pausa")
     .map(({ userId, dto }) => renewal(userId, dto))
     .sort((a, b) => (a.graceEndsAt ?? a.dueAt) - (b.graceEndsAt ?? b.dueAt));
+  const toRenew = plans
+    .filter(({ userId, dto }) => {
+      const endingSoon = dto.state === "activa" && dto.paidMonths >= dto.months && dto.paidUntil - now <= 14 * DAY_MS;
+      const justEnded = dto.state === "completada" && now - dto.paidUntil <= 30 * DAY_MS;
+      if (!endingSoon && !justEnded) return false;
+      return !plans.some(
+        (o) => o.userId === userId && o.dto.id !== dto.id && o.dto.planId === dto.planId && (o.dto.startedAt ?? 0) > (dto.startedAt ?? 0),
+      );
+    })
+    .map(({ userId, dto }) => renewal(userId, dto))
+    .sort((a, b) => a.dueAt - b.dueAt);
   const expectedNext30Cop = pending
     .filter(({ dto }) => (dto.state === "activa" || dto.state === "en_pausa") && dto.paidUntil - now <= 30 * DAY_MS)
     .reduce((s, { dto }) => s + dto.monthlyCop, 0);
@@ -201,6 +217,7 @@ export async function businessAnalytics(now = Date.now()): Promise<BusinessAnaly
     },
     dueSoon,
     paused,
+    toRenew,
     closedUnpaid30d,
     expectedNext30Cop,
     // El mismo cálculo con el que se venden los planes (lib/plans/service).
