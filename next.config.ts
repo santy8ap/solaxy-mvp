@@ -16,7 +16,8 @@ const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Las fotos de perfil de Google (lh3.googleusercontent.com y similares).
+  "img-src 'self' data: blob: https://*.googleusercontent.com",
   "font-src 'self' data:",
   `connect-src 'self' https: wss:${onVercel ? "" : " http://localhost:* ws://localhost:*"}`,
   "frame-src 'self' https://verify.walletconnect.com https://verify.walletconnect.org",

@@ -9,7 +9,9 @@ import { useJson } from "@/lib/client/use-json";
 import { usePlantNow } from "@/lib/client/use-catalog";
 import { formatClock } from "@/lib/format";
 import { ErrorNote } from "@/components/ui/field";
+import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
+import { useUser } from "@/components/panel/user-context";
 
 export const ADMIN_NAV = [
   { href: "/admin", label: "Resumen", icon: LayoutGrid },
@@ -46,6 +48,7 @@ function Count({ n }: { n: number }) {
 export function AdminSidebar() {
   const path = usePathname();
   const pending = usePending();
+  const user = useUser();
   const [leaving, startLeave] = useTransition();
   const [out, startOut] = useTransition();
   return (
@@ -70,6 +73,13 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col border-t border-line pt-4">
+        <div className="mb-2 flex items-center gap-3 px-6 py-2">
+          <Avatar name={user.name} image={user.image} size={32} />
+          <span className="min-w-0">
+            <span className="block truncate text-sm text-ink">{user.name}</span>
+            <span className="block truncate text-xs text-mute">{user.email}</span>
+          </span>
+        </div>
         <Link href="/panel" className={itemClass(false)}>
           <ArrowLeftCircle size={17} strokeWidth={1.5} />
           Ver como comercializador

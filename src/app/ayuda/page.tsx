@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BRAND } from "@/config/brand";
+import { AccountLink } from "@/components/auth/account-link";
 import { Logo } from "@/components/ui/logo";
 import { SupportContacts } from "@/components/support/support-contacts";
 
@@ -31,9 +32,7 @@ export default function HelpPage({ searchParams }: PageProps<"/ayuda">) {
           <Link href="/" aria-label={`${BRAND.name}, inicio`}>
             <Logo />
           </Link>
-          <Link href="/panel" className="link text-sm text-fog">
-            Mi panel
-          </Link>
+          <AccountLink />
         </div>
       </header>
       <main className="mx-auto max-w-[1100px] px-5 pb-24 pt-12 sm:pt-20">

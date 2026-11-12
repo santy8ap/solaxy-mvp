@@ -1,10 +1,10 @@
 "use client";
 import {
   ArrowLeftRight,
-  Building2,
   LayoutDashboard,
   LogOut,
   LifeBuoy,
+  UserRound,
   ShieldCheck,
   SunMedium,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import { useAppConfig } from "@/lib/client/use-app-config";
 import { usePlantNow } from "@/lib/client/use-catalog";
 import { formatClock } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
+import { Avatar } from "@/components/ui/avatar";
 import { useUser } from "./user-context";
 import { NotificationsLink } from "./notifications-link";
 
@@ -24,7 +25,7 @@ export const NAV = [
   { href: "/panel", label: "Resumen", icon: LayoutDashboard },
   { href: "/panel/planes", label: "Planes", icon: SunMedium },
   { href: "/panel/billetera", label: "Movimientos", icon: ArrowLeftRight },
-  { href: "/panel/perfil", label: "Comercializador", icon: Building2 },
+  { href: "/panel/perfil", label: "Comercializador", icon: UserRound },
 ] as const;
 
 function isActive(path: string, href: string) {
@@ -60,6 +61,13 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col border-t border-line pt-4">
+        <Link href="/panel/perfil" className="mb-2 flex items-center gap-3 px-6 py-2 hover:opacity-80" aria-label={`Mis datos, ${user.name}`}>
+          <Avatar name={user.name} image={user.image} size={32} />
+          <span className="min-w-0">
+            <span className="block truncate text-sm text-ink">{user.name}</span>
+            <span className="block truncate text-xs text-mute">{user.email}</span>
+          </span>
+        </Link>
         <Link href="/ayuda" className={itemClass(false)}>
           <LifeBuoy size={17} /> Centro de ayuda
         </Link>
@@ -123,6 +131,9 @@ export function MobileBar() {
         <Logo />
       </Link>
       <div className="flex items-center gap-4 text-sm text-mute">
+        <Link href="/panel/perfil" aria-label={`Mis datos, ${user.name}`} className="hover:opacity-80">
+          <Avatar name={user.name} image={user.image} size={26} />
+        </Link>
         <NotificationsLink />
         {user.canAdmin && (
           <Link href="/admin" className="hover:text-ink">

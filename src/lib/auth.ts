@@ -37,6 +37,8 @@ export const auth = betterAuth({
           clientId: env.googleClientId,
           clientSecret: env.googleClientSecret,
           prompt: "select_account",
+          // Cada ingreso trae el nombre y la foto vigentes de Google (los datos personales del perfil no cambian).
+          overrideUserInfoOnSignIn: true,
         },
       }
     : {},

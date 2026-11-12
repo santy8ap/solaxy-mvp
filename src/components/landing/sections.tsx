@@ -7,6 +7,7 @@ import { isDemoMode } from "@/lib/env";
 import { formatCop, formatHourLabel, formatNumber } from "@/lib/format";
 import { DEFAULT_MP_LIMITS } from "@/lib/payments/mercadopago-limits";
 import { MIN_WITHDRAWAL_COP } from "@/lib/withdrawal-schema";
+import { AccountLink } from "@/components/auth/account-link";
 import { Logo } from "@/components/ui/logo";
 import { CatalogValue } from "./catalog-value";
 
@@ -37,12 +38,7 @@ export function LandingNav() {
             Ayuda
           </Link>
         </nav>
-        <Link
-          href="/ingresar"
-          className="btn btn-ghost !min-h-10 !px-4 !py-2.5"
-        >
-          Ingresar
-        </Link>
+        <AccountLink />
       </div>
     </header>
   );
@@ -66,9 +62,7 @@ export function Hero() {
             <a href="#planes" className="btn btn-solid">
               Ver los planes
             </a>
-            <Link href="/ingresar" className="btn btn-ghost">
-              Ingresar
-            </Link>
+            <AccountLink variant="cta" />
           </div>
         </div>
       </div>
@@ -215,9 +209,7 @@ export function FinalCta() {
             Elige un plan, paga el primer mes y mira tu energía subir desde el
             primer amanecer.
           </p>
-          <Link href="/ingresar" className="btn btn-solid mt-6">
-            Empezar
-          </Link>
+          <AccountLink variant="cta" guestLabel="Empezar" className="mt-6" />
         </div>
       </div>
     </section>
