@@ -6,7 +6,7 @@ import type { SupportSettings } from "@/lib/support-schema";
 export function SupportContacts({ reference }: { reference?: string }) {
   const { data } = useJson<SupportSettings>("/api/support");
   if (!data?.email && !data?.whatsapp) return null;
-  const message = `Hola, necesito ayuda con ${reference ? `la operación ${reference}` : "mi paquete de energía"}.`;
+  const message = `Hola, necesito ayuda con ${reference ? `la operación ${reference}` : "mi plan de energía"}.`;
   return (
     <section
       className="mt-10 border-t border-line pt-7"
@@ -21,7 +21,7 @@ export function SupportContacts({ reference }: { reference?: string }) {
         {data.email && (
           <a
             className="btn btn-ghost"
-            href={`mailto:${data.email}?${new URLSearchParams({ subject: reference ? `Ayuda con ${reference}` : "Ayuda con mi paquete", body: message })}`}
+            href={`mailto:${data.email}?${new URLSearchParams({ subject: reference ? `Ayuda con ${reference}` : "Ayuda con mi plan", body: message })}`}
           >
             <Mail size={16} /> {data.email}
           </a>

@@ -1,4 +1,4 @@
-/** Condiciones que el servidor presenta antes de pagar un mes del paquete. */
+/** Condiciones que el servidor presenta antes de pagar un mes del plan. */
 export interface CheckoutRequest {
   planId?: string;
   subscriptionId?: string;

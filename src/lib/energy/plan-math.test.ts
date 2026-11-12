@@ -23,7 +23,7 @@ const period = (index: number, startsAt: number): Period => ({
 });
 
 describe("planes de energía (notas del cliente)", () => {
-  it("desglosa la compra, la venta y la utilidad mensual de los cuatro paquetes", () => {
+  it("desglosa la compra, la venta y la utilidad mensual de los cuatro planes", () => {
     const rows = PLANS.map((plan) => planEconomics(plan, SALE_COP_PER_KWH));
     expect(rows.map((row) => row.monthlyCop)).toEqual([
       76_800_000, 59_400_000, 40_800_000, 20_880_000,

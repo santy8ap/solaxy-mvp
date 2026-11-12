@@ -11,7 +11,7 @@ export const TERMS_VERSION = LEGAL.version;
 export interface ProfileDTO {
   companyName: string;
   nit: string;
-  /** Titular del paquete: el comercializador. */
+  /** Titular del plan: el comercializador. */
   fullName: string;
   docType: DocTypeId;
   docNumber: string;

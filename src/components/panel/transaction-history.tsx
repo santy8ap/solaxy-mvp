@@ -133,7 +133,7 @@ export function TransactionHistory({ asOf }: { asOf: number }) {
             className="field mt-2"
           >
             <option value="todos">Todos</option>
-            <option value="plan_mes">Pagos de paquetes</option>
+            <option value="plan_mes">Pagos de planes</option>
             <option value="retiro">Retiros</option>
           </select>
         </label>

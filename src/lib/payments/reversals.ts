@@ -27,7 +27,7 @@ export async function requireNoPaymentReview(userId: string) {
     .limit(1);
   if (open)
     throw new MarketError(
-      "Hay una devolución en revisión. Contacta a soporte para conciliarla antes de hacer retiros o nuevos pagos del paquete.",
+      "Hay una devolución en revisión. Contacta a soporte para conciliarla antes de hacer retiros o nuevos pagos del plan.",
       409,
     );
 }

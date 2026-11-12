@@ -22,7 +22,7 @@ test.afterEach(async () => {
 
 /** Datos personales de la cuenta de pruebas: los confirma si ya están guardados o los llena si faltan. */
 async function completeProfileIfAsked(page: Page) {
-  const summary = page.getByRole("heading", { name: /Así es tu paquete/i });
+  const summary = page.getByRole("heading", { name: /Así es tu plan/i });
   const saved = page.getByRole("button", { name: /Continuar al resumen/i });
   const name = page.getByLabel("Nombre completo", { exact: true });
   // El perfil se carga después del título: se espera a que se vea una de las tres pantallas.
@@ -40,7 +40,7 @@ async function completeProfileIfAsked(page: Page) {
   await expect(summary).toBeVisible();
 }
 
-test("transferencia: el admin publica la cuenta, la empresa reporta el pago y el admin lo confirma", async ({ page }) => {
+test("transferencia: el admin publica la cuenta, el comercializador reporta el pago y el admin lo confirma", async ({ page }) => {
   const BANK_REFERENCE = bankReference();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

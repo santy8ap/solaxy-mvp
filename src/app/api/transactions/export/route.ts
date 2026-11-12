@@ -30,7 +30,7 @@ export async function GET(req: Request) {
                 "Estado",
                 "Monto COP",
                 "Medio",
-                "Paquete",
+                "Plan",
                 "Mes",
                 "Energía kWh",
               ]);
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
             chunk += csvLine([
               formatDateTime(tx.createdAt),
               tx.id,
-              tx.kind === "retiro" ? "Retiro" : "Pago de paquete",
+              tx.kind === "retiro" ? "Retiro" : "Pago de un plan",
               txStatusLabel(tx.status),
               tx.kind === "retiro" ? -tx.amountCop : tx.amountCop,
               paymentMethodLabel(tx.method),

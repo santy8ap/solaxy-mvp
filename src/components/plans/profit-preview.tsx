@@ -14,10 +14,10 @@ export function ProfitPreview({ plans, initialPlanId }: { plans: CatalogDTO["pla
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <h2 id={`${id}-title`} className="text-xl font-medium">Compra, venta y utilidad</h2>
-          <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-mute">Consulta cuánto pagas por la energía, su valor de venta y la diferencia que genera cada paquete.</p>
+          <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-mute">Consulta cuánto pagas por la energía, su valor de venta y la diferencia que genera cada plan.</p>
         </div>
         <div className="w-full sm:w-[220px]">
-          <label htmlFor={id} className="cap block">Paquete</label>
+          <label htmlFor={id} className="cap block">Plan</label>
           <select id={id} value={plan.id} onChange={(event) => setSelectedId(event.target.value)} className="field">
             {plans.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>

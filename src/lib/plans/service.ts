@@ -272,7 +272,7 @@ export async function resolvePlanPayment(
     const state = stateOf(sub, now);
     if (state === "en_revision")
       throw new MarketError(
-        "Este paquete tiene una devolución en revisión. Contacta a soporte antes de pagar otro mes.",
+        "Este plan tiene una devolución en revisión. Contacta a soporte antes de pagar otro mes.",
         409,
       );
     if (state === "completada")

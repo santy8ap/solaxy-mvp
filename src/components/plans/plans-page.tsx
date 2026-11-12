@@ -45,7 +45,7 @@ export function PlansPage() {
       )}
 
       {!loaded ? (
-        <section aria-label="Cargando paquetes">
+        <section aria-label="Cargando planes">
           {error ? (
             <>
               <ErrorNote>{error}</ErrorNote>

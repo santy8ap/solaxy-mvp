@@ -22,7 +22,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Esta política describe el tratamiento de los datos personales que proporcionas al registrarte como comercializador y comprar paquetes de energía en {BRAND.name}.
+          Esta política describe el tratamiento de los datos personales que proporcionas al registrarte como comercializador y comprar planes de energía en {BRAND.name}.
         </p>
         <ul>
           <li>

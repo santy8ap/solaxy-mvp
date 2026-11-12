@@ -27,13 +27,13 @@ async function Purchase({ searchParams }: { searchParams: Promise<Params> }) {
   if ((!plan && !suscripcion) || (plan && suscripcion)) {
     return (
       <main className="mx-auto max-w-[700px] px-5 py-24">
-        <h1 className="display text-5xl">Elige tu paquete de energía</h1>
+        <h1 className="display text-5xl">Elige tu plan de energía</h1>
         <p className="mt-5 leading-relaxed text-fog">
-          Compara los precios de compra y venta y continúa con el paquete que
+          Compara los precios de compra y venta y continúa con el plan que
           prefieras.
         </p>
         <Link href="/#planes" className="btn btn-solid mt-8">
-          Ver los paquetes
+          Ver los planes
         </Link>
       </main>
     );

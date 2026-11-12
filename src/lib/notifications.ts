@@ -68,7 +68,7 @@ export function accountNotices(
       id: `mes:${sub.id}:${sub.paidMonths}`,
       title:
         sub.state === "en_pausa"
-          ? "Tu paquete está en pausa"
+          ? "Tu plan está en pausa"
           : "Se acerca tu próxima mensualidad",
       detail: `${sub.planName}: mes ${sub.paidMonths + 1}, ${formatCop(sub.monthlyCop)}. ${sub.state === "en_pausa" ? `Puedes retomarlo hasta el ${formatDate(sub.graceEndsAt ?? sub.paidUntil)}.` : `Paga antes del ${formatDate(sub.paidUntil)} para continuar generando.`}`,
       at: sub.paidUntil - 5 * DAY_MS,
@@ -109,7 +109,7 @@ export function accountNotices(
         (tx.status === "fallida" && tx.method === "transferencia"))
     ) {
       const titles: Record<string, string> = {
-        confirmada: "Pago del paquete confirmado",
+        confirmada: "Pago del plan confirmado",
         pendiente: "Tienes un pago pendiente",
         verificando: "Estamos verificando tu pago",
         por_reembolsar: "Tu pago necesita revisión",

@@ -42,7 +42,7 @@ export default function HelpPage({ searchParams }: PageProps<"/ayuda">) {
         </h1>
         <p className="mt-6 max-w-[62ch] text-lg leading-relaxed text-fog">
           Consulta el estado de tu compra y encuentra los pasos para resolver
-          dudas sobre pagos, paquetes y retiros.
+          dudas sobre pagos, planes y retiros.
         </p>
         <Suspense fallback={<div className="skeleton mt-10 h-24" />}>
           <Contacts searchParams={searchParams as Promise<{ ref?: string }>} />
@@ -57,9 +57,9 @@ export default function HelpPage({ searchParams }: PageProps<"/ayuda">) {
             ],
             [
               "Quiero pagar la próxima mensualidad",
-              "En tus paquetes encontrarás el mes disponible y el valor contratado. Pagar antes del vencimiento permite continuar sin pausa.",
+              "En tus planes encontrarás el mes disponible y el valor contratado. Pagar antes del vencimiento permite continuar sin pausa.",
               "/panel/planes",
-              "Ver mis paquetes",
+              "Ver mis planes",
             ],
             [
               "Necesito mi comprobante",

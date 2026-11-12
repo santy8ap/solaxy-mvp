@@ -25,7 +25,7 @@ test("los enlaces antiguos, la ayuda y las rutas privadas responden correctament
   expect((await request.get("/api/cron/payments")).status()).toBe(401);
 });
 
-test("paquete → ingreso → datos personales → resumen → pago de prueba → PDF e historial", async ({
+test("plan → ingreso → datos personales → resumen → pago de prueba → PDF e historial", async ({
   page,
 }) => {
   const config = await (await page.request.get("/api/config")).json();
@@ -72,10 +72,10 @@ test("paquete → ingreso → datos personales → resumen → pago de prueba �
     .getByRole("button", { name: /Guardar y continuar al resumen/i })
     .click();
   await expect(
-    page.getByRole("heading", { name: /Así es tu paquete/i }),
+    page.getByRole("heading", { name: /Así es tu plan/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole("complementary", { name: "Resumen del paquete" }),
+    page.getByRole("complementary", { name: "Resumen del plan" }),
   ).toContainText("20.880.000");
   await expect(page.getByText(/14,94/)).toBeVisible();
   await page.getByRole("button", { name: /Elegir medio de pago/i }).click();
@@ -109,7 +109,7 @@ test("paquete → ingreso → datos personales → resumen → pago de prueba �
   expect(await readFile((await csv.path())!, "utf8")).toContain(order.id);
   await page.goto("/panel/avisos");
   await expect(
-    page.getByText("Pago del paquete confirmado", { exact: true }).first(),
+    page.getByText("Pago del plan confirmado", { exact: true }).first(),
   ).toBeVisible();
   expect(
     await page.evaluate(

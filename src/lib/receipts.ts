@@ -148,7 +148,7 @@ export async function renderReceipt(data: ReceiptData): Promise<Uint8Array> {
   rule();
   if (data.planName)
     field(
-      "Paquete",
+      "Plan",
       `${data.planName}${data.periodIndex ? ` - mes ${data.periodIndex} de ${data.months}` : ""}`,
     );
   if (data.kwh != null)
@@ -178,7 +178,7 @@ export async function renderReceipt(data: ReceiptData): Promise<Uint8Array> {
   text(`${formatCop(data.amountCop)} COP`, 24);
   y -= 20;
   text(
-    "Documento informativo de una operación confirmada. No sustituye una factura fiscal. Los precios y la energía del paquete son los contratados; la utilidad bruta se expresa antes de costos e impuestos.",
+    "Documento informativo de una operación confirmada. No sustituye una factura fiscal. Los precios y la energía del plan son los contratados; la utilidad bruta se expresa antes de costos e impuestos.",
     8,
     true,
   );

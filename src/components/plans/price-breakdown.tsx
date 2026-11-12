@@ -12,7 +12,7 @@ export interface PriceBreakdownProps {
 export function PriceBreakdown({ monthlyKwh, months, priceCopPerKwh, saleCopPerKwh }: PriceBreakdownProps) {
   const economics = planEconomics({ totalKwh: monthlyKwh * months, priceCopPerKwh }, saleCopPerKwh, months);
   return (
-    <section aria-label="Compra, venta y utilidad del paquete" className="mt-7">
+    <section aria-label="Compra, venta y utilidad del plan" className="mt-7">
       <dl className="grid gap-4 sm:grid-cols-2">
         {[
           { label: "Valor de compra", price: priceCopPerKwh, total: economics.monthlyCop },
@@ -52,7 +52,7 @@ export function PriceBreakdown({ monthlyKwh, months, priceCopPerKwh, saleCopPerK
           ))}
         </dl>
       </div>
-      <p className="mt-4 text-xs leading-relaxed text-mute">Valores en COP. Utilidad bruta de referencia, antes de costos e impuestos, calculada con la energía del paquete y sus precios de compra y venta.</p>
+      <p className="mt-4 text-xs leading-relaxed text-mute">Valores en COP. Utilidad bruta de referencia, antes de costos e impuestos, calculada con la energía del plan y sus precios de compra y venta.</p>
     </section>
   );
 }

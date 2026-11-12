@@ -7,7 +7,7 @@ import { SupportInput } from "@/lib/support-schema";
 import { bogotaMs } from "@/lib/time";
 
 describe("continuidad segura de la compra", () => {
-  it("conserva el paquete al ir al ingreso", () => {
+  it("conserva el plan al ir al ingreso", () => {
     const destination = planCheckoutHref("p180");
     expect(
       new URL(loginHref(destination), "https://app.invalid").searchParams.get(

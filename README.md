@@ -1,8 +1,8 @@
 # X green Energy
 
-Plataforma de paquetes de energía para comercializadores. El front usa el sistema monocromático Eclipse y el mensaje **«Bienvenido al mundo de la energía»**. Conserva el reloj solar de 6 a. m. a 7 p. m., con máximo de 8.000 kW.
+Plataforma de planes de energía para comercializadores. El front usa el sistema monocromático Eclipse y el mensaje **«Bienvenido al mundo de la energía»**. Conserva el reloj solar de 6 a. m. a 7 p. m., con máximo de 8.000 kW.
 
-La generación que muestra la aplicación se calcula con una curva solar; no es telemetría de inversores. Un pago confirmado activa un período de 30 días. El contrato tiene tres mensualidades. Las condiciones de compra y venta se guardan en cada paquete: modificar el catálogo no cambia contratos existentes.
+La generación que muestra la aplicación se calcula con una curva solar; no es telemetría de inversores. Un pago confirmado activa un período de 30 días. El contrato tiene tres mensualidades. Las condiciones de compra y venta se guardan en cada plan: modificar el catálogo no cambia contratos existentes.
 
 ## Desarrollo
 
@@ -25,11 +25,11 @@ npm start
 
 ## Recorrido del cliente
 
-- Elegir un paquete abre `/comprar?plan=p180` (o el identificador seleccionado). Si falta sesión, `/ingresar` conserva el destino mediante `next`, limitado a rutas internas permitidas.
+- Elegir un plan abre `/comprar?plan=p180` (o el identificador seleccionado). Si falta sesión, `/ingresar` conserva el destino mediante `next`, limitado a rutas internas permitidas.
 - La compra tiene cuatro pasos: datos personales, resumen, medio de pago y confirmación. Solicita nombre, documento, celular, ciudad y aceptación de los términos vigentes; no requiere razón social ni NIT.
 - El resumen muestra compra por kWh, venta contratada, utilidad bruta y mensualidad en COP. Los porcentajes de la tabla con `≈` están redondeados; el detalle muestra dos decimales. Por ejemplo, `(400 − 348) / 348 × 100 = 14,94 %`, aproximadamente 15 %.
 - Los medios disponibles dependen de la configuración real: Mercado Pago, transferencia bancaria, USDT/BNB o pago de prueba. Los importes se calculan en el servidor y los medios de Mercado Pago respetan los topes reportados por la pasarela. Si los precios revisados cambian antes de crear la orden, se requiere actualizar el resumen.
-- Los movimientos confirmados tienen comprobante PDF privado con titular, documento, paquete, precios, fecha y referencia. Es informativo, no una factura fiscal. Las operaciones de prueba quedan identificadas y las devueltas no emiten comprobante de pago vigente.
+- Los movimientos confirmados tienen comprobante PDF privado con titular, documento, plan, precios, fecha y referencia. Es informativo, no una factura fiscal. Las operaciones de prueba quedan identificadas y las devueltas no emiten comprobante de pago vigente.
 - La billetera tiene filtros, paginación y exportación CSV de todo el historial coincidente. Los rendimientos pueden consultarse y exportarse por períodos de 7, 30 o 90 días.
 - `/panel/avisos` muestra confirmaciones, mensualidades próximas, retiros y casos que requieren atención. Son avisos dentro de la aplicación; no se envían correos ni mensajes automáticamente.
 - Un plan terminado o cerrado ofrece «Renovar» (la compra del mismo plan con los precios vigentes), y los avisos lo recuerdan cuando termina.
@@ -49,11 +49,11 @@ npm start
 
 ## Pagos y devoluciones
 
-La confirmación de una orden, la inserción del período y el inicio del paquete se guardan en una transacción. Un fallo revierte los tres cambios y permite reintentar. Los índices únicos impiden acreditar dos veces un mes o un pago. Los pagos reales que llegan sin cupo o para un mes ya pagado quedan por reembolsar.
+La confirmación de una orden, la inserción del período y el inicio del plan se guardan en una transacción. Un fallo revierte los tres cambios y permite reintentar. Los índices únicos impiden acreditar dos veces un mes o un pago. Los pagos reales que llegan sin cupo o para un mes ya pagado quedan por reembolsar.
 
 Los webhooks de Mercado Pago consultan el pago en la API del proveedor antes de aplicarlo. Una devolución o contracargo verificado cambia el movimiento a `reembolsada` y registra una revisión auditable. Solo el período afectado deja de generar desde la detección; se conservan el historial y las fechas de los demás meses pagados. No se descuentan automáticamente rendimientos ya acumulados ni se envían reembolsos desde esta aplicación.
 
-Mientras exista una devolución pendiente de conciliación, se bloquean nuevos retiros, su aprobación y las renovaciones del paquete afectado. En **Admin → Pagos → Registrar conciliación**, el equipo debe registrar el acuerdo y su referencia después de revisar el saldo y los retiros con el titular. Esta acción levanta el bloqueo, conserva el corte del período devuelto y no mueve dinero. Las demás mensualidades deben resolverse según el acuerdo comercial.
+Mientras exista una devolución pendiente de conciliación, se bloquean nuevos retiros, su aprobación y las renovaciones del plan afectado. En **Admin → Pagos → Registrar conciliación**, el equipo debe registrar el acuerdo y su referencia después de revisar el saldo y los retiros con el titular. Esta acción levanta el bloqueo, conserva el corte del período devuelto y no mueve dinero. Las demás mensualidades deben resolverse según el acuerdo comercial.
 
 Los retiros son manuales: el administrador verifica al titular, realiza el envío y registra su referencia. Los datos bancarios completos solo se muestran al administrador autorizado.
 

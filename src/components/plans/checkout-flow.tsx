@@ -22,7 +22,7 @@ import { PriceBreakdown } from "./price-breakdown";
 
 const TITLES = [
   "Tus datos, tu energía.",
-  "Así es tu paquete.",
+  "Así es tu plan.",
   "Un paso para empezar.",
   "Tu energía ya cuenta.",
 ];
@@ -96,7 +96,7 @@ function Purchase({
             onClick={(event) => busy && event.preventDefault()}
             className="link text-sm text-fog"
           >
-            {step === 4 ? "Ir a mi panel" : "Volver a los paquetes"}
+            {step === 4 ? "Ir a mi panel" : "Volver a los planes"}
           </Link>
         </div>
       </header>
@@ -106,14 +106,14 @@ function Purchase({
         {!available ? (
           <section className="py-16">
             <h1 className="display text-5xl">
-              Este paquete no está disponible.
+              Este plan no está disponible.
             </h1>
             <p className="mt-5 max-w-[55ch] leading-relaxed text-fog">
               El cupo o el período disponible para este pago cambió. Consulta
-              los paquetes vigentes para continuar.
+              los planes vigentes para continuar.
             </p>
             <Link href="/panel/planes" className="btn btn-solid mt-8">
-              Ver paquetes disponibles
+              Ver planes disponibles
             </Link>
           </section>
         ) : (
@@ -132,7 +132,7 @@ function Purchase({
               {step === 1 && (
                 <>
                   <p className="mb-8 mt-5 max-w-[55ch] leading-relaxed text-fog">
-                    Identifica al titular de este paquete. Tus datos personales
+                    Identifica al titular de este plan. Tus datos personales
                     se conservan para las próximas compras.
                   </p>
                   {error ? (
@@ -197,7 +197,7 @@ function Purchase({
                 <>
                   <p className="mt-5 max-w-[56ch] leading-relaxed text-fog">
                     Revisa el precio de compra, el valor de venta y la utilidad
-                    bruta de tu paquete. Hoy pagas únicamente el mes{" "}
+                    bruta de tu plan. Hoy pagas únicamente el mes{" "}
                     {request.periodIndex} de {request.months}.
                   </p>
                   <PriceBreakdown
@@ -235,7 +235,7 @@ function Purchase({
                 <>
                   <p className="mt-5 leading-relaxed text-fog">
                     Elige el medio de pago para activar el mes{" "}
-                    {request.periodIndex} de tu paquete.
+                    {request.periodIndex} de tu plan.
                   </p>
                   {!complete ? (
                     <>
@@ -270,7 +270,7 @@ function Purchase({
                   </div>
                   <p className="mt-6 text-lg leading-relaxed text-fog">
                     El pago del mes {order.periodIndex} está confirmado. Puedes
-                    consultar la energía y los movimientos de tu paquete desde
+                    consultar la energía y los movimientos de tu plan desde
                     tu panel.
                   </p>
                   {isTest && (
@@ -307,9 +307,9 @@ function Purchase({
             </section>
             <aside
               className="min-w-0 self-start border border-line-strong p-6 lg:sticky lg:top-8"
-              aria-label="Resumen del paquete"
+              aria-label="Resumen del plan"
             >
-              <p className="cap">Tu paquete de energía</p>
+              <p className="cap">Tu plan de energía</p>
               <h2 className="display mt-3 text-4xl">{request.planName}</h2>
               <dl className="mt-6 space-y-5 border-y border-line py-6">
                 {[

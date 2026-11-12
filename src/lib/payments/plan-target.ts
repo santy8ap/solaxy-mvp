@@ -29,7 +29,7 @@ export function assertExpectedPayment(
       actual.saleCopPerKwh !== expected.expectedSaleCopPerKwh)
   ) {
     throw new MarketError(
-      "Los precios del paquete se actualizaron. Actualiza el resumen y confirma los nuevos valores antes de pagar.",
+      "Los precios del plan se actualizaron. Actualiza el resumen y confirma los nuevos valores antes de pagar.",
       409,
       { code: "precio_actualizado" },
     );
