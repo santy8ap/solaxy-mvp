@@ -195,9 +195,9 @@ export function TransactionHistory({ asOf }: { asOf: number }) {
             return (
               <li
                 key={tx.id}
-                className="grid min-w-0 gap-x-8 gap-y-3 border-b border-line py-6 sm:grid-cols-[9.5rem_minmax(0,1fr)_auto]"
+                className="grid min-w-0 gap-x-8 gap-y-3 border-b border-line py-6 sm:grid-cols-[12.5rem_minmax(0,1fr)_auto]"
               >
-                <p className="num text-sm text-mute">
+                <p className="num whitespace-nowrap text-sm text-mute">
                   {formatDateTime(tx.createdAt)}
                 </p>
                 <div className="min-w-0">

@@ -29,7 +29,7 @@ export interface OverviewDTO {
   pendingWithdrawals: number;
   pendingWithdrawalsCop: number;
   paymentsToRefund: number;
-  /** Transferencias reportadas por las empresas que esperan confirmación */
+  /** Transferencias reportadas por los comercializadores que esperan confirmación */
   transfersToConfirm: number;
   /** Devoluciones que requieren conciliación */
   reviewsPending: number;

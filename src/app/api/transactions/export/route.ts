@@ -1,6 +1,7 @@
 import { handleError } from "@/lib/api";
 import { csvLine } from "@/lib/csv";
 import { formatDateTime } from "@/lib/format";
+import { paymentMethodLabel, txStatusLabel } from "@/lib/labels";
 import { historyFilters, isoColombiaDate } from "@/lib/history-filters";
 import { getSessionUser, unauthorized } from "@/lib/session";
 import { transactionBatch } from "@/lib/transactions";
@@ -39,9 +40,9 @@ export async function GET(req: Request) {
               formatDateTime(tx.createdAt),
               tx.id,
               tx.kind === "retiro" ? "Retiro" : "Pago de paquete",
-              tx.status,
+              txStatusLabel(tx.status),
               tx.kind === "retiro" ? -tx.amountCop : tx.amountCop,
-              tx.method,
+              paymentMethodLabel(tx.method),
               tx.planName,
               tx.periodIndex,
               tx.kwh,

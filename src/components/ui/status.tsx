@@ -1,4 +1,5 @@
 import { AlertTriangle, Check, X } from "lucide-react";
+import { TX_STATUS_LABEL } from "@/lib/labels";
 
 export type StatusTone = "ok" | "wait" | "off" | "act";
 
@@ -35,15 +36,15 @@ export function Status({
 
 /** Cómo se muestra el estado de un movimiento (pago o retiro). */
 export const TX_STATUS: Record<string, { label: string; tone: StatusTone }> = {
-  pendiente: { label: "Sin pagar", tone: "wait" },
-  verificando: { label: "Verificando", tone: "wait" },
-  por_aprobar: { label: "En revisión", tone: "wait" },
-  confirmada: { label: "Confirmado", tone: "ok" },
-  rechazada: { label: "Rechazado", tone: "off" },
-  fallida: { label: "No aprobado", tone: "off" },
-  cancelada: { label: "Cancelado", tone: "off" },
-  por_reembolsar: { label: "Por reembolsar", tone: "act" },
-  reembolsada: { label: "Reembolsado", tone: "ok" },
+  pendiente: { label: TX_STATUS_LABEL.pendiente, tone: "wait" },
+  verificando: { label: TX_STATUS_LABEL.verificando, tone: "wait" },
+  por_aprobar: { label: TX_STATUS_LABEL.por_aprobar, tone: "wait" },
+  confirmada: { label: TX_STATUS_LABEL.confirmada, tone: "ok" },
+  rechazada: { label: TX_STATUS_LABEL.rechazada, tone: "off" },
+  fallida: { label: TX_STATUS_LABEL.fallida, tone: "off" },
+  cancelada: { label: TX_STATUS_LABEL.cancelada, tone: "off" },
+  por_reembolsar: { label: TX_STATUS_LABEL.por_reembolsar, tone: "act" },
+  reembolsada: { label: TX_STATUS_LABEL.reembolsada, tone: "ok" },
 };
 
 /** Cómo se muestra el estado de un plan. */

@@ -22,7 +22,7 @@ const Body = z.discriminatedUnion("to", [
   }),
 ]);
 
-/** Solicita un retiro: a una cuenta bancaria de la empresa, o a una wallet (devuelve el mensaje por firmar). */
+/** Solicita un retiro: a una cuenta bancaria a nombre del titular, o a una wallet (devuelve el mensaje por firmar). */
 export async function POST(req: Request) {
   try {
     const user = await getSessionUser();

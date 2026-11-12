@@ -46,6 +46,3 @@ export async function getRates(): Promise<Rates> {
   }
 }
 
-export function isAsset(value: unknown): value is Asset {
-  return typeof value === "string" && (ASSETS as readonly string[]).includes(value);
-}

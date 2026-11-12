@@ -9,7 +9,7 @@ const Body = z
   .object({ ...planTarget, receipt: z.string().max(200) })
   .refine(onePlanTarget, PLAN_TARGET_ERROR);
 
-/** La empresa avisa que ya transfirió el mes: la orden queda por verificar hasta que el admin la confirme. */
+/** El comercializador avisa que ya transfirió el mes: la orden queda por verificar hasta que el admin la confirme. */
 export async function POST(req: Request) {
   try {
     const user = await getSessionUser();

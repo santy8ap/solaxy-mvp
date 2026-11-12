@@ -2,9 +2,6 @@
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 3_600_000;
 export const DAY_MS = 86_400_000;
-export const INTERVAL_MS = 15 * MINUTE_MS;
-export const INTERVALS_PER_DAY = DAY_MS / INTERVAL_MS;
-export const INTERVAL_HOURS = INTERVAL_MS / HOUR_MS;
 export const TZ_OFFSET_MS = -5 * HOUR_MS;
 
 /** Instante (ms UTC) de una hora local de Bogotá. `month` va de 1 a 12. */
@@ -26,13 +23,4 @@ export function dayStartMs(dayIndex: number) {
 export function localHour(ts: number) {
   const local = ts + TZ_OFFSET_MS;
   return (((local % DAY_MS) + DAY_MS) % DAY_MS) / HOUR_MS;
-}
-
-/** Inicio del intervalo de 15 minutos que contiene a `ts`. */
-export function intervalStart(ts: number) {
-  return Math.floor(ts / INTERVAL_MS) * INTERVAL_MS;
-}
-
-export function inWindow(hour: number, window: readonly [number, number]) {
-  return hour >= window[0] && hour < window[1];
 }

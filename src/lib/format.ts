@@ -32,16 +32,6 @@ export function formatCopCompact(n: number) {
   return `$ ${fmt(0, 0).format(n)}`;
 }
 
-export function formatKw(n: number, decimals = 2) {
-  return `${fmt(decimals, decimals).format(n)} kW`;
-}
-
-export function formatKwh(n: number, decimals = 0) {
-  if (Math.abs(n) >= 1e6) return `${fmt(0, 2).format(n / 1e6)} GWh`;
-  if (Math.abs(n) >= 1e4) return `${fmt(0, 1).format(n / 1e3)} MWh`;
-  return `${fmt(decimals, decimals).format(n)} kWh`;
-}
-
 export function formatPct(fraction: number, decimals = 1) {
   return `${fmt(decimals, decimals).format(fraction * 100)} %`;
 }

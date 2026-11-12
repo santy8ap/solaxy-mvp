@@ -5,17 +5,10 @@ import { useState } from "react";
 import type { BusinessAnalytics, MonthStats, Renewal } from "@/lib/admin/analytics";
 import { useJson } from "@/lib/client/use-json";
 import { downloadCsv } from "@/lib/csv";
-import { formatCop, formatDate, formatNumber, formatPct } from "@/lib/format";
-import { methodLabel } from "@/components/panel/tx-meta";
+import { adminMethodLabel } from "@/lib/labels";
+import { formatCop, formatCopCompact, formatDate, formatNumber, formatPct } from "@/lib/format";
 import { ErrorNote } from "@/components/ui/field";
 import { AdminTopbar } from "./shell";
-
-/** $ 83,5 M: para los rótulos cortos de las gráficas. El valor exacto está en el tooltip y en la tabla. */
-function shortCop(n: number) {
-  if (n >= 1_000_000) return `$ ${formatNumber(n / 1_000_000, n >= 100_000_000 ? 0 : 1)} M`;
-  if (n >= 1_000) return `$ ${formatNumber(n / 1_000, 0)} mil`;
-  return formatCop(n);
-}
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
@@ -48,7 +41,7 @@ function MonthlyChart({ months }: { months: MonthStats[] }) {
   return (
     <div className="relative">
       <div className="flex items-baseline justify-between text-xs text-mute">
-        <span className="num">{shortCop(max)}</span>
+        <span className="num">{formatCopCompact(max)}</span>
       </div>
       <ul className="relative mt-1 flex h-48 items-end border-b border-line-strong border-t border-t-line" aria-label="Recaudo por mes, de los últimos 12 meses">
         {months.map((m, i) => {
@@ -66,7 +59,7 @@ function MonthlyChart({ months }: { months: MonthStats[] }) {
             >
               {i === last && m.collectedCop > 0 && m.collectedCop < max && (
                 <span className="num pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.7rem] text-fog" style={{ bottom: `calc(${h}% + 6px)` }}>
-                  {shortCop(m.collectedCop)}
+                  {formatCopCompact(m.collectedCop)}
                 </span>
               )}
               <span
@@ -230,7 +223,7 @@ export function AdminAnalytics() {
               {data.methods.map((m) => (
                 <MeterRow
                   key={m.method}
-                  name={m.method === "manual" ? "Registrado a mano" : methodLabel(m.method)}
+                  name={adminMethodLabel(m.method)}
                   share={totalMethods ? m.cop / totalMethods : 0}
                   figure={`${formatCop(m.cop)} · ${formatPct(totalMethods ? m.cop / totalMethods : 0, 0)}`}
                   note={`${m.payments} ${m.payments === 1 ? "pago" : "pagos"}`}

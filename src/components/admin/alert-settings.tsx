@@ -46,7 +46,7 @@ export function AlertSettings() {
         Alertas por correo
       </h2>
       <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-mute">
-        Te escribimos cuando entra un pago, cuando una empresa reporta una transferencia, cuando alguien pide un retiro, cuando Mercado Pago devuelve un pago y cuando algo falla en el servidor.
+        Te escribimos cuando entra un pago, cuando un comercializador reporta una transferencia, cuando alguien pide un retiro, cuando Mercado Pago devuelve un pago y cuando algo falla en el servidor.
       </p>
       {error && <ErrorNote className="mt-6">{error}</ErrorNote>}
       {!data && !error && <div className="skeleton mt-6 h-20" aria-busy="true" aria-label="Cargando el estado de las alertas" />}

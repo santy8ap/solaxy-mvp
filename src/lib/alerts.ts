@@ -246,7 +246,7 @@ export const alertMessages = {
     subject: "Prueba de las alertas por correo",
     lines: [
       "Si lees esto, las alertas por correo funcionan.",
-      "Te escribimos cuando entra un pago, cuando una empresa reporta una transferencia, cuando alguien pide un retiro, cuando Mercado Pago devuelve un pago y cuando algo falla en el servidor.",
+      "Te escribimos cuando entra un pago, cuando un comercializador reporta una transferencia, cuando alguien pide un retiro, cuando Mercado Pago devuelve un pago y cuando algo falla en el servidor.",
     ],
     path: "/admin",
   }),

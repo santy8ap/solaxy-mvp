@@ -10,11 +10,6 @@ export type Db = LibSQLDatabase<typeof schema>;
 /** Operaciones compartidas por la conexión y una transacción de libSQL. */
 export type DbSession = Pick<Db, "select" | "insert" | "update" | "run">;
 
-/** La URL de la base de esta ejecución (ver lib/db/target). */
-export function resolveDatabaseUrl(): string {
-  return databaseTarget().url;
-}
-
 /** Sin argumentos se conecta a la base de esta ejecución; con una URL, a esa (las pruebas usan archivos temporales). */
 export function createDb(url?: string, authToken?: string) {
   const target = url ? { url, authToken } : databaseTarget();

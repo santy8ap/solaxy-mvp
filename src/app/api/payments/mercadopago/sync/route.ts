@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { handleError, readJson } from "@/lib/api";
+import { isOrderCode } from "@/lib/ids";
 import { getOrder } from "@/lib/orders";
 import { syncMercadoPagoOrder } from "@/lib/payments/mercadopago-service";
 import { toTxDTO } from "@/lib/portfolio";
@@ -7,7 +8,7 @@ import { syncLimiter } from "@/lib/security/limits";
 import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 
 const Body = z.object({
-  ref: z.string().regex(/^IWE-[0-9A-F]{6,12}$/, "Orden inválida"),
+  ref: z.string().refine(isOrderCode, "Orden inválida"),
   paymentId: z.string().regex(/^\d{1,20}$/).optional(),
 });
 

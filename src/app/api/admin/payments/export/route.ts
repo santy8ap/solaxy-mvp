@@ -5,23 +5,7 @@ import { handleError } from "@/lib/api";
 import { csvLine } from "@/lib/csv";
 import { formatDateTime } from "@/lib/format";
 import { isoColombiaDate } from "@/lib/history-filters";
-
-const STATUS: Record<string, string> = {
-  pendiente: "Pendiente",
-  verificando: "Verificando",
-  confirmada: "Confirmado",
-  fallida: "No aprobado",
-  cancelada: "Cancelado",
-  por_reembolsar: "Por reembolsar",
-  reembolsada: "Reembolsado",
-};
-const METHOD: Record<string, string> = {
-  mercadopago: "Mercado Pago",
-  crypto: "Cripto",
-  transferencia: "Transferencia bancaria",
-  manual: "Registrado a mano",
-  demo: "Pago de prueba",
-};
+import { adminMethodLabel, txStatusLabel } from "@/lib/labels";
 
 /** Los pagos de la lista (con los mismos filtros) en CSV para la contabilidad. Máximo 10.000 filas. */
 export async function GET(req: Request) {
@@ -44,8 +28,8 @@ export async function GET(req: Request) {
         p.planName,
         p.periodIndex,
         p.kwh,
-        p.method ? (METHOD[p.method] ?? p.method) : "",
-        STATUS[p.status] ?? p.status,
+        adminMethodLabel(p.method),
+        txStatusLabel(p.status),
         p.amountCop,
         p.providerId,
         p.txHash,

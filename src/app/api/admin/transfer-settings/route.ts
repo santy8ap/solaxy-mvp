@@ -3,7 +3,7 @@ import { requireAdminApi } from "@/lib/admin/access";
 import { handleError, readJson } from "@/lib/api";
 import { getTransferAccount, saveTransferAccount } from "@/lib/payments/transfer";
 
-/** La cuenta que ven las empresas para pagar por transferencia (null si no se ha configurado). */
+/** La cuenta que ven los comercializadores para pagar por transferencia (null si no se ha configurado). */
 export async function GET() {
   try {
     await connection();

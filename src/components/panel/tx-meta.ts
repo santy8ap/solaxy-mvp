@@ -1,5 +1,6 @@
 import { formatAsset, formatNumber, shortAddress } from "@/lib/format";
 import type { TxDTO } from "@/lib/portfolio";
+import { paymentMethodLabel as methodName } from "@/lib/labels";
 import { accountTypeLabel } from "@/lib/withdrawal-schema";
 
 /** Hash de una transacción EVM (los comprobantes bancarios de un retiro no lo son). */
@@ -12,15 +13,7 @@ export function explorerTxUrl(t: Pick<TxDTO, "txHash" | "chainId">) {
   return null;
 }
 
-const METHOD: Record<string, string> = {
-  mercadopago: "Mercado Pago",
-  crypto: "Cripto",
-  transferencia: "Transferencia bancaria",
-  manual: "Transferencia bancaria",
-  demo: "Pago de prueba",
-};
-
-export const methodLabel = (method: string | null) => (method ? (METHOD[method] ?? method) : "—");
+export const methodLabel = (method: string | null): string => methodName(method) || "—";
 
 /** El medio de un pago, avisando cuando no movió dinero real (credenciales de prueba o red de pruebas). */
 export function paymentMethodLabel(t: Pick<TxDTO, "method" | "network" | "chainId" | "asset">) {

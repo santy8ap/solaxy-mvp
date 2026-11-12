@@ -1,4 +1,5 @@
 import "server-only";
+import { paymentMethodLabel } from "@/lib/labels";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { and, eq } from "drizzle-orm";
@@ -58,13 +59,6 @@ export async function receiptData(
       "Completa tus datos personales para emitir el comprobante.",
       412,
     );
-  const methods: Record<string, string> = {
-    mercadopago: "Mercado Pago",
-    crypto: "Cripto",
-    transferencia: "Transferencia bancaria",
-    manual: "Transferencia bancaria",
-    demo: "Pago de prueba",
-  };
   return {
     id: tx.id,
     kind: tx.kind,
@@ -79,7 +73,7 @@ export async function receiptData(
     priceCopPerKwh: sub?.priceCopPerKwh ?? null,
     saleCopPerKwh: sub?.saleCopPerKwh ?? null,
     method:
-      methods[tx.method ?? ""] ?? (tx.kind === "retiro" ? "Retiro" : "Pago"),
+      paymentMethodLabel(tx.method) || (tx.kind === "retiro" ? "Retiro" : "Pago"),
     reference: tx.providerId ?? tx.txHash,
     test:
       tx.method === "demo" ||

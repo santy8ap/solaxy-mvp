@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { AdminPaymentRow, PaymentFilter } from "@/lib/admin/payments";
 import { useAppConfig } from "@/lib/client/use-app-config";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
+import { adminMethodLabel } from "@/lib/labels";
 import { transferReference } from "@/lib/transfer-reference";
 import {
   formatAsset,
@@ -85,7 +86,7 @@ function PaymentActions({
       setBusy(false);
     }
   };
-  // Mercado Pago se consulta por la referencia de la orden: sirve aunque la empresa no haya vuelto del pago.
+  // Mercado Pago se consulta por la referencia de la orden: sirve aunque el comercializador no haya vuelto del pago.
   const canReverify =
     (p.method === "mercadopago" &&
       [
@@ -99,7 +100,7 @@ function PaymentActions({
   const canAttach =
     p.method === "crypto" && p.status === "pendiente" && !p.providerId;
   const canRefund = p.status === "por_reembolsar";
-  // Transferencia que reportó la empresa: el admin la busca en el banco y la confirma o la rechaza.
+  // Transferencia que reportó el comercializador: el admin la busca en el banco y la confirma o la rechaza.
   const canReviewTransfer =
     p.method === "transferencia" &&
     (p.status === "pendiente" || p.status === "verificando");
@@ -318,7 +319,7 @@ function PaymentRow({ p, listUrl }: { p: AdminPaymentRow; listUrl: string }) {
           p.subscriptionId && p.periodIndex
             ? `Referencia en el banco: ${transferReference(p.subscriptionId, p.periodIndex)}`
             : null,
-          p.txHash ? `comprobante de la empresa: ${p.txHash}` : null,
+          p.txHash ? `comprobante del comercializador: ${p.txHash}` : null,
         ]
           .filter(Boolean)
           .join(", ") || null
@@ -336,7 +337,7 @@ function PaymentRow({ p, listUrl }: { p: AdminPaymentRow; listUrl: string }) {
         <p className="font-medium">{p.companyName || p.userName}</p>
         <p className="mt-1 break-words text-sm leading-relaxed text-mute">
           {what ? `${what}. ` : ""}
-          {p.method === "manual" ? "Pago registrado a mano" : paymentMethodLabel(p)}
+          {p.method === "manual" ? adminMethodLabel(p.method) : paymentMethodLabel(p)}
           {p.method === "crypto" && p.assetAmount != null && p.asset
             ? `, ${formatAsset(p.assetAmount, p.asset)}`
             : ""}
