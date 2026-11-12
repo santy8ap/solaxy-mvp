@@ -52,11 +52,11 @@ test("transferencia: el admin publica la cuenta, la empresa reporta el pago y el
   await expect(page).toHaveURL(/\/panel/);
 
   // 1. El admin publica la cuenta de la empresa.
-  await page.goto("/admin/planta");
+  await page.goto("/admin/configuracion");
   await page.getByLabel("PIN de administrador").fill(ADMIN_PIN);
   await page.getByRole("button", { name: /Entrar a la administración/i }).click();
   await expect(page).toHaveURL(/\/admin$/);
-  await page.goto("/admin/planta");
+  await page.goto("/admin/configuracion");
   const settings = page.getByRole("region", { name: "Cuenta para transferencias" });
   await settings.getByLabel("Banco").selectOption("Bancolombia");
   await settings.getByLabel("Tipo de cuenta").selectOption("corriente");
@@ -107,7 +107,18 @@ test("transferencia: el admin publica la cuenta, la empresa reporta el pago y el
     db.close();
   }
 
-  // 4. La empresa ve el mes confirmado en sus movimientos.
+  // 4. El admin lo ve reflejado: la bitácora, el análisis del mes y nada pendiente de esa transferencia.
+  await page.goto("/admin/actividad");
+  await page.getByLabel("Tipo").selectOption({ label: "Transferencia confirmada" });
+  await expect(page.getByRole("region", { name: "Bitácora" })).toContainText(order.id);
+  await page.goto("/admin/analisis");
+  await expect(page.getByRole("heading", { name: "Recaudo por mes" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Embudo de clientes" })).toBeVisible();
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: /Para atender/ })).toBeVisible();
+  await expect(page.getByText("Transferencia por confirmar", { exact: true })).toHaveCount(0);
+
+  // 5. La empresa ve el mes confirmado en sus movimientos.
   await page.goto("/panel/billetera");
   const history = page.getByRole("region", { name: "Historial completo de movimientos" });
   await expect(history.getByText(order.id, { exact: false })).toBeVisible();

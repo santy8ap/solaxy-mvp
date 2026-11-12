@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PLANS } from "@/config/plans";
 import { refetch, useJson } from "@/lib/client/use-json";
@@ -20,9 +21,6 @@ import { SolarClock } from "@/components/solar/solar-clock";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { AdminTopbar } from "./shell";
-import { AlertSettings } from "./alert-settings";
-import { SupportSettingsForm } from "./support-settings";
-import { TransferSettingsForm } from "./transfer-settings";
 import type { OverviewDTO } from "./types";
 
 /** "8.000" o "8000" → 8000. Vacío o con letras → NaN, y la validación lo explica. */
@@ -340,9 +338,13 @@ export function AdminPlant() {
           contractedDailyKwh={data.contractedDailyKwh}
         />
       )}
-      <TransferSettingsForm />
-      <SupportSettingsForm />
-      <AlertSettings />
+      <p className="mt-14 border-t border-line pt-6 text-sm text-mute">
+        La cuenta para transferencias, el contacto de soporte y las alertas por correo están en{" "}
+        <Link href="/admin/configuracion" className="link text-ink">
+          Configuración
+        </Link>
+        .
+      </p>
     </>
   );
 }

@@ -1,8 +1,11 @@
 "use client";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { useCatalog } from "@/lib/client/use-catalog";
+import { downloadCsv } from "@/lib/csv";
 import { formatCop, formatDate, formatNumber } from "@/lib/format";
 import type { SubscriptionDTO } from "@/lib/portfolio";
 import { ErrorNote, Field } from "@/components/ui/field";
@@ -135,43 +138,128 @@ function ClosePlanDialog({ plan, onClose, listUrl }: { plan: SubscriptionDTO | n
   );
 }
 
+/** Grupos de clientes según en qué va cada uno. */
+const SEGMENTS = [
+  { id: "todos", label: "Todos", test: () => true },
+  { id: "generando", label: "Generando", test: (c: AdminClient) => c.plans.some((p) => p.state === "activa" || p.state === "en_revision") },
+  { id: "en_pausa", label: "En pausa", test: (c: AdminClient) => c.plans.some((p) => p.state === "en_pausa") },
+  { id: "por_confirmar", label: "Transferencia por confirmar", test: (c: AdminClient) => c.openTransfers > 0 },
+  { id: "sin_pagar", label: "Sin pagar", test: (c: AdminClient) => !!c.profile?.termsCurrent && c.plans.length === 0 && c.openTransfers === 0 },
+  { id: "sin_datos", label: "Sin datos", test: (c: AdminClient) => !c.profile?.termsCurrent },
+] as const;
+type Segment = (typeof SEGMENTS)[number]["id"];
+const SEGMENT_IDS = new Set<string>(SEGMENTS.map((g) => g.id));
+
+const nameOf = (c: AdminClient) => c.profile?.companyName || c.profile?.fullName || c.name;
+
+function exportClients(list: AdminClient[]) {
+  // La fecha del nombre del archivo, en hora de Colombia (UTC−5), como la exportación de pagos.
+  const today = new Date(Date.now() - 5 * 3_600_000).toISOString().slice(0, 10);
+  downloadCsv(`clientes-${today}.csv`, [
+    ["Cliente", "NIT", "Correo", "Titular", "Documento", "Celular", "Ciudad", "Cliente desde", "Último pago", "Planes generando", "Planes en pausa", "Energía kWh", "Saldo COP", "Retirado COP"],
+    ...list.map((c) => [
+      nameOf(c),
+      c.profile?.nit ?? "",
+      c.email,
+      c.profile?.fullName ?? "",
+      c.profile?.docNumber ? `${c.profile.docType} ${c.profile.docNumber}` : "",
+      c.profile?.phone ?? "",
+      c.profile?.city ?? "",
+      formatDate(c.createdAt),
+      c.lastPaymentAt ? formatDate(c.lastPaymentAt) : "",
+      c.plans.filter((p) => p.state === "activa").length,
+      c.plans.filter((p) => p.state === "en_pausa").length,
+      Math.round(c.generatedKwh),
+      c.balanceCop,
+      c.withdrawnCop,
+    ]),
+  ]);
+}
+
 export function AdminClients() {
-  const [query, setQuery] = useState("");
-  const [search, setSearch] = useState("");
+  // La búsqueda y el grupo también llegan por la URL: desde el Resumen o el Análisis.
+  const params = useSearchParams();
+  const [query, setQuery] = useState(() => params.get("q") ?? "");
+  const [search, setSearch] = useState(() => (params.get("q") ?? "").trim());
+  const [segment, setSegment] = useState<Segment>(() => {
+    const v = params.get("estado") ?? "";
+    return SEGMENT_IDS.has(v) ? (v as Segment) : "todos";
+  });
   const url = `/api/admin/clients${search ? `?q=${encodeURIComponent(search)}` : ""}`;
   const { data, loading, error } = useJson<{ clients: AdminClient[] }>(url, { refreshMs: 30_000 });
   const [paying, setPaying] = useState<AdminClient | null>(null);
   const [closing, setClosing] = useState<SubscriptionDTO | null>(null);
-  const clients = data?.clients ?? [];
+  const all = data?.clients ?? [];
+  const active = SEGMENTS.find((g) => g.id === segment) ?? SEGMENTS[0];
+  const clients = all.filter((c) => active.test(c));
 
   return (
     <>
       <AdminTopbar title="Clientes" subtitle="Los comercializadores registrados, sus planes, su energía y su saldo." />
-      <form
-        className="flex max-w-[520px] items-end gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSearch(query.trim());
-        }}
-      >
-        <div className="flex-1">
-          <label htmlFor="q" className="cap">
-            Buscar por nombre, documento o correo
-          </label>
-          <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} className="field" />
-        </div>
-        <button type="submit" className="btn btn-ghost">
-          Buscar
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <form
+          role="search"
+          className="flex w-full max-w-[520px] items-end gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSearch(query.trim());
+          }}
+        >
+          <div className="flex-1">
+            <label htmlFor="q" className="cap">
+              Buscar por nombre, NIT, documento o correo
+            </label>
+            <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={80} className="field" />
+          </div>
+          <button type="submit" className="btn btn-ghost">
+            Buscar
+          </button>
+        </form>
+        <button type="button" className="link text-sm" disabled={!clients.length} onClick={() => exportClients(clients)}>
+          Exportar esta lista (CSV)
         </button>
-      </form>
+      </div>
+
+      <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-b border-line-strong pb-4" role="group" aria-label="Filtrar clientes">
+        {SEGMENTS.map((g) => {
+          const n = all.filter((c) => g.test(c)).length;
+          if (g.id !== "todos" && g.id !== segment && n === 0) return null;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              aria-pressed={segment === g.id}
+              onClick={() => setSegment(g.id)}
+              className={`border-b pb-1 text-sm transition-colors ${segment === g.id ? "border-ink text-ink" : "border-transparent text-mute hover:text-ink"}`}
+            >
+              {g.label} <span className="num">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+      {search && (
+        <p className="mt-4 text-sm text-fog">
+          Clientes que coinciden con «{search}».{" "}
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              setSearch("");
+              setQuery("");
+            }}
+          >
+            Ver todos
+          </button>
+        </p>
+      )}
 
       {error && <ErrorNote className="mt-8">{error}</ErrorNote>}
-      <ul className="mt-10 border-t border-line-strong">
+      <ul>
         {clients.map((c) => (
           <li key={c.id} className="border-b border-line py-7">
             <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-start">
               <div className="min-w-0">
-                <h2 className="text-xl font-medium">{c.profile?.companyName || c.profile?.fullName || c.name}</h2>
+                <h2 className="text-xl font-medium">{nameOf(c)}</h2>
                 <p className="mt-1 break-words text-sm text-mute">
                   {c.profile?.nit ? `NIT ${c.profile.nit}, ` : ""}
                   {c.email}
@@ -182,11 +270,18 @@ export function AdminClients() {
                     {c.profile.docNumber ? `, ${c.profile.docType} ${c.profile.docNumber}` : ""}. {c.profile.phone}, {c.profile.city}.
                   </p>
                 ) : null}
-                {!c.profile?.termsCurrent && (
-                  <p className="mt-2.5">
-                    <Status tone="wait">{c.profile ? "Falta completar los datos o aceptar los términos" : "No ha registrado sus datos personales"}</Status>
-                  </p>
-                )}
+                <p className="mt-1 text-sm text-mute">
+                  Cliente desde el {formatDate(c.createdAt)}
+                  {c.lastPaymentAt ? `. Último pago el ${formatDate(c.lastPaymentAt)}` : ". Todavía no ha pagado"}.
+                </p>
+                <p className="mt-2.5 flex flex-wrap gap-x-5 gap-y-2">
+                  {!c.profile?.termsCurrent && <Status tone="wait">{c.profile ? "Falta completar los datos o aceptar los términos" : "No ha registrado sus datos personales"}</Status>}
+                  {c.openTransfers > 0 && (
+                    <Link href={`/admin/pagos?cliente=${encodeURIComponent(c.id)}&estado=en_proceso&metodo=transferencia`} className="hover:opacity-80">
+                      <Status tone="act">{c.openTransfers === 1 ? "Transferencia por confirmar" : `${c.openTransfers} transferencias por confirmar`}</Status>
+                    </Link>
+                  )}
+                </p>
               </div>
               <dl className="grid grid-cols-3 gap-4 text-sm">
                 <div>
@@ -202,9 +297,16 @@ export function AdminClients() {
                   <dd className="num mt-1">{formatCop(c.withdrawnCop)}</dd>
                 </div>
               </dl>
-              <button type="button" className="btn btn-ghost lg:justify-self-end" onClick={() => setPaying(c)} disabled={!c.profile?.termsCurrent} title={c.profile?.termsCurrent ? undefined : "El comercializador debe completar sus datos personales primero"}>
-                Registrar un pago
-              </button>
+              <div className="flex flex-col items-start gap-3 lg:items-end">
+                <button type="button" className="btn btn-ghost" onClick={() => setPaying(c)} disabled={!c.profile?.termsCurrent} title={c.profile?.termsCurrent ? undefined : "El comercializador debe completar sus datos personales primero"}>
+                  Registrar un pago
+                </button>
+                {(c.lastPaymentAt || c.openTransfers > 0 || c.plans.length > 0) && (
+                  <Link href={`/admin/pagos?cliente=${encodeURIComponent(c.id)}`} className="link text-sm">
+                    Ver sus pagos
+                  </Link>
+                )}
+              </div>
             </div>
             {c.plans.length > 0 && (
               <ul className="mt-5 border-t border-line">
@@ -217,7 +319,9 @@ export function AdminClients() {
                       <span className="num text-mute">
                         Mes {Math.min(p.paidMonths, p.months)} de {p.months}
                       </span>
-                      <span className="num text-mute">Pagado hasta el {formatDate(p.paidUntil)}</span>
+                      <span className="num text-mute">
+                        {p.state === "en_pausa" && p.graceEndsAt ? `Puede pagar hasta el ${formatDate(p.graceEndsAt)}` : `Pagado hasta el ${formatDate(p.paidUntil)}`}
+                      </span>
                       <span className="num text-mute">{formatCop(p.priceCopPerKwh)} / kWh</span>
                       <span className="num ml-auto text-dim">{p.id}</span>
                       {(p.state === "activa" || p.state === "en_pausa") && (
@@ -233,7 +337,9 @@ export function AdminClients() {
           </li>
         ))}
       </ul>
-      {!loading && clients.length === 0 && <p className="py-10 text-mute">{search ? "Ningún comercializador coincide con esa búsqueda." : "Todavía no hay comercializadores registrados."}</p>}
+      {!loading && clients.length === 0 && (
+        <p className="py-10 text-mute">{search ? "Ningún comercializador coincide con esa búsqueda." : segment !== "todos" ? "Ningún comercializador está en este grupo." : "Todavía no hay comercializadores registrados."}</p>
+      )}
 
       <ManualPaymentDialog client={paying} onClose={() => setPaying(null)} listUrl={url} />
       <ClosePlanDialog plan={closing} onClose={() => setClosing(null)} listUrl={url} />

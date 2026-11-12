@@ -1,7 +1,8 @@
 "use client";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useJson } from "@/lib/client/use-json";
-import { formatCop, formatNumber } from "@/lib/format";
+import { formatCop, formatNumber, formatPct } from "@/lib/format";
 import { ErrorNote } from "@/components/ui/field";
 import { AuditList } from "./activity";
 import { AdminTopbar } from "./shell";
@@ -18,13 +19,44 @@ function Stat({ label, value, note, href, alert = false }: { label: string; valu
   return <div className="border-b border-line py-5 pr-6">{href ? <Link href={href} className="block hover:opacity-80">{body}</Link> : body}</div>;
 }
 
-/** Lo que espera en Pagos: transferencias por confirmar en el banco y pagos que llegaron sin activar un mes. */
-function paymentsNote(d: Pick<OverviewDTO, "transfersToConfirm" | "paymentsToRefund">) {
-  const parts = [
-    d.transfersToConfirm ? `${d.transfersToConfirm} ${d.transfersToConfirm === 1 ? "transferencia" : "transferencias"} por confirmar` : null,
-    d.paymentsToRefund ? `${d.paymentsToRefund} por reembolsar` : null,
-  ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Ninguno";
+interface Pending {
+  n: number;
+  title: string;
+  detail: string;
+  href: string;
+}
+
+/** Lo que espera al administrador, de lo más urgente a lo que conviene mirar pronto. */
+function pendingOf(d: OverviewDTO): Pending[] {
+  const items: Pending[] = [
+    { n: d.transfersToConfirm, title: d.transfersToConfirm === 1 ? "Transferencia por confirmar" : "Transferencias por confirmar", detail: d.transfersToConfirm === 1 ? "Búscala en el banco con su referencia y confírmala para activar el mes." : "Búscalas en el banco con su referencia y confírmalas para activar cada mes.", href: "/admin/pagos?estado=en_proceso&metodo=transferencia" },
+    { n: d.pendingWithdrawals, title: d.pendingWithdrawals === 1 ? "Retiro por pagar" : "Retiros por pagar", detail: `${formatCop(d.pendingWithdrawalsCop)} apartados mientras haces el envío.`, href: "/admin/retiros" },
+    { n: d.paymentsToRefund, title: d.paymentsToRefund === 1 ? "Pago por devolver" : "Pagos por devolver", detail: d.paymentsToRefund === 1 ? "Llegó pero no activó un mes. Devuélvelo y márcalo como reembolsado." : "Llegaron pero no activaron un mes. Devuélvelos y márcalos como reembolsados.", href: "/admin/pagos?estado=por_reembolsar" },
+    { n: d.reviewsPending, title: d.reviewsPending === 1 ? "Devolución por conciliar" : "Devoluciones por conciliar", detail: d.reviewsPending === 1 ? "Mercado Pago devolvió un pago: esa cuenta no puede retirar hasta que registres la conciliación." : "Mercado Pago devolvió pagos: esas cuentas no pueden retirar hasta que registres la conciliación.", href: "/admin/pagos?estado=por_reembolsar" },
+    { n: d.pausedPlans, title: d.pausedPlans === 1 ? "Plan en pausa por falta de pago" : "Planes en pausa por falta de pago", detail: d.pausedPlans === 1 ? "Escríbele antes de que se cierre: tiene 15 días para pagar." : "Escríbeles antes de que se cierren: tienen 15 días para pagar.", href: "/admin/clientes?estado=en_pausa" },
+    { n: d.dueSoon, title: d.dueSoon === 1 ? "Mensualidad que vence esta semana" : "Mensualidades que vencen esta semana", detail: d.dueSoon === 1 ? "Recuérdale el pago para que su energía no se detenga." : "Recuérdales el pago para que su energía no se detenga.", href: "/admin/analisis#vienen" },
+  ];
+  return items.filter((i) => i.n > 0);
+}
+
+function PendingList({ items }: { items: Pending[] }) {
+  if (!items.length) return <p className="border-t border-line py-6 text-mute">Nada pendiente: no hay transferencias, retiros ni devoluciones esperando.</p>;
+  return (
+    <ul className="border-t border-line">
+      {items.map((i) => (
+        <li key={i.title}>
+          <Link href={i.href} className="group flex items-start gap-5 border-b border-line py-4 hover:opacity-80">
+            <span className="num min-w-[2.25rem] bg-ink px-2 py-0.5 text-center text-sm text-void">{i.n}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{i.title}</span>
+              <span className="mt-0.5 block text-sm leading-relaxed text-mute">{i.detail}</span>
+            </span>
+            <ArrowRight size={16} strokeWidth={1.5} className="mt-1 shrink-0 text-mute group-hover:text-ink" aria-hidden="true" />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function AdminOverview() {
@@ -38,9 +70,18 @@ export function AdminOverview() {
     );
   }
   const used = data.plantDailyKwh > 0 ? data.contractedDailyKwh / data.plantDailyKwh : 0;
+  const pending = pendingOf(data);
+  const change = data.previousMonthCollectedCop > 0 ? data.monthCollectedCop / data.previousMonthCollectedCop - 1 : null;
   return (
     <>
       <AdminTopbar title="Resumen" subtitle={`${data.settings.name}, ${data.settings.location}.`} />
+
+      <section className="mb-12" aria-labelledby="pending-title">
+        <h2 id="pending-title" className="pb-4 text-xl font-medium">
+          Para atender {pending.length > 0 && <span className="num text-mute">{pending.reduce((s, i) => s + i.n, 0)}</span>}
+        </h2>
+        <PendingList items={pending} />
+      </section>
 
       <section className="border-t border-line-strong pt-7" aria-label="Cupo de la planta">
         <div className="flex flex-wrap items-end justify-between gap-6">
@@ -60,12 +101,17 @@ export function AdminOverview() {
       </section>
 
       <dl className="mt-10 grid border-t border-line-strong sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Planes generando" value={String(data.activePlans)} note={data.pausedPlans ? `${data.pausedPlans} en pausa por falta de pago` : `${data.clients} ${data.clients === 1 ? "comercializador" : "comercializadores"}`} href="/admin/clientes" />
-        <Stat label="Mensualidades cobradas" value={formatCop(data.collectedCop)} href="/admin/pagos" />
+        <Stat
+          label="Recaudo de este mes"
+          value={formatCop(data.monthCollectedCop)}
+          note={change == null ? (data.previousMonthCollectedCop ? undefined : "Sin recaudo el mes anterior") : `${change >= 0 ? "+" : "−"}${formatPct(Math.abs(change), 0)} frente al mes anterior`}
+          href="/admin/analisis"
+        />
+        <Stat label="Mensualidades cobradas" value={formatCop(data.collectedCop)} note="Desde el inicio" href="/admin/pagos" />
+        <Stat label="Planes generando" value={String(data.activePlans)} note={data.pausedPlans ? `${data.pausedPlans} en pausa por falta de pago` : "Ninguno en pausa"} href="/admin/clientes" />
+        <Stat label="Clientes con plan" value={String(data.clients)} note={`${data.registeredClients} ${data.registeredClients === 1 ? "cuenta registrada" : "cuentas registradas"}`} href="/admin/clientes" />
         <Stat label="Se les debe a los clientes" value={formatCop(data.owedCop)} note="Venta de su energía menos lo ya pagado" />
         <Stat label="Pagado en retiros" value={formatCop(data.paidOutCop)} href="/admin/retiros" />
-        <Stat label="Retiros por revisar" value={String(data.pendingWithdrawals)} note={data.pendingWithdrawals ? formatCop(data.pendingWithdrawalsCop) : "Ninguno pendiente"} href="/admin/retiros" alert={data.pendingWithdrawals > 0} />
-        <Stat label="Pagos por revisar" value={String(data.transfersToConfirm + data.paymentsToRefund)} note={paymentsNote(data)} href="/admin/pagos" alert={data.transfersToConfirm + data.paymentsToRefund > 0} />
         <Stat label="Energía generada" value={`${formatNumber(data.generatedKwh)} kWh`} note="Por todos los planes" />
         <Stat label="Precio de venta" value={`${formatCop(data.settings.saleCopPerKwh)} / kWh`} href="/admin/planta" />
       </dl>

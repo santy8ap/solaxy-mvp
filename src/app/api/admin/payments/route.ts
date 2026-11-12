@@ -1,24 +1,16 @@
 import { connection } from "next/server";
 import { requireAdminApi } from "@/lib/admin/access";
-import { listPayments, paymentSummary, type PaymentFilter } from "@/lib/admin/payments";
+import { listPayments, paymentFiltersFrom, paymentSummary } from "@/lib/admin/payments";
 import { handleError } from "@/lib/api";
 
-const FILTERS: PaymentFilter[] = ["todos", "en_proceso", "confirmadas", "fallidas", "por_reembolsar"];
-const METHODS = ["todos", "mercadopago", "crypto", "transferencia", "manual", "demo"] as const;
-
-/** Órdenes de pago para la sección Pagos del admin. */
+/** Órdenes de pago para la sección Pagos del admin (?estado=&metodo=&q=&cliente=). */
 export async function GET(req: Request) {
   try {
     await connection();
     const admin = await requireAdminApi();
     if (admin instanceof Response) return admin;
-    const url = new URL(req.url);
-    const estado = url.searchParams.get("estado") as PaymentFilter | null;
-    const metodo = url.searchParams.get("metodo") as (typeof METHODS)[number] | null;
-    const [payments, summary] = await Promise.all([
-      listPayments({ status: estado && FILTERS.includes(estado) ? estado : "todos", method: metodo && METHODS.includes(metodo) ? metodo : "todos" }),
-      paymentSummary(),
-    ]);
+    const filters = paymentFiltersFrom(new URL(req.url).searchParams);
+    const [payments, summary] = await Promise.all([listPayments(filters), paymentSummary()]);
     return Response.json({ payments, summary });
   } catch (e) {
     return handleError(e);

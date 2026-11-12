@@ -224,7 +224,7 @@ export async function configStatus({
     detail:
       support.email || support.whatsapp
         ? "Hay un contacto publicado en el centro de ayuda."
-        : "Guarda un correo o WhatsApp real desde Admin → Planta.",
+        : "Guarda un correo o WhatsApp real más abajo, en «Atención al comercializador».",
     required: true,
   });
   add({
@@ -248,7 +248,7 @@ export async function configStatus({
     state: transfer ? "ok" : "aviso",
     detail: transfer
       ? `Las empresas ven la cuenta ${transfer.accountType} de ${transfer.bank} terminada en ${transfer.accountNumber.slice(-4)}.`
-      : "Sin ella no aparece el pago por transferencia, y los planes de más de $ 50.000.000 al mes solo se pagan por PSE o cripto. Guárdala en Admin → Planta.",
+      : "Sin ella no aparece el pago por transferencia, y los planes de más de $ 50.000.000 al mes solo se pagan por PSE o cripto. Guárdala más abajo, en «Cuenta para transferencias».",
     required: false,
   });
   add({
@@ -257,7 +257,7 @@ export async function configStatus({
     title: "Alertas por correo",
     state: alerts.enabled ? "ok" : "aviso",
     detail: alerts.enabled
-      ? `Llegan a ${alerts.to.length === 1 ? "1 correo" : `${alerts.to.length} correos`}. Pruébalas desde Admin → Planta.`
+      ? `Llegan a ${alerts.to.length === 1 ? "1 correo" : `${alerts.to.length} correos`}. Pruébalas más abajo, en «Alertas por correo».`
       : process.env.RESEND_API_KEY?.trim()
         ? "Falta a quién enviarlas: agrega tu correo a ALERT_EMAIL o a ADMIN_EMAILS."
         : "Crea una clave en resend.com y guárdala en Vercel como RESEND_API_KEY (Production, Sensitive). Sin ella no se envían correos.",

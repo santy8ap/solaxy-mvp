@@ -28,11 +28,21 @@ npm start
 - Elegir un paquete abre `/comprar?plan=p180` (o el identificador seleccionado). Si falta sesión, `/ingresar` conserva el destino mediante `next`, limitado a rutas internas permitidas.
 - La compra tiene cuatro pasos: datos personales, resumen, medio de pago y confirmación. Solicita nombre, documento, celular, ciudad y aceptación de los términos vigentes; no requiere razón social ni NIT.
 - El resumen muestra compra por kWh, venta contratada, utilidad bruta y mensualidad en COP. Los porcentajes de la tabla con `≈` están redondeados; el detalle muestra dos decimales. Por ejemplo, `(400 − 348) / 348 × 100 = 14,94 %`, aproximadamente 15 %.
-- Los medios disponibles dependen de la configuración real: Mercado Pago, USDT/BNB o pago de prueba. Los importes se calculan en el servidor y los medios de Mercado Pago respetan los topes reportados por la pasarela. Si los precios revisados cambian antes de crear la orden, se requiere actualizar el resumen.
+- Los medios disponibles dependen de la configuración real: Mercado Pago, transferencia bancaria, USDT/BNB o pago de prueba. Los importes se calculan en el servidor y los medios de Mercado Pago respetan los topes reportados por la pasarela. Si los precios revisados cambian antes de crear la orden, se requiere actualizar el resumen.
 - Los movimientos confirmados tienen comprobante PDF privado con titular, documento, paquete, precios, fecha y referencia. Es informativo, no una factura fiscal. Las operaciones de prueba quedan identificadas y las devueltas no emiten comprobante de pago vigente.
 - La billetera tiene filtros, paginación y exportación CSV de todo el historial coincidente. Los rendimientos pueden consultarse y exportarse por períodos de 7, 30 o 90 días.
 - `/panel/avisos` muestra confirmaciones, mensualidades próximas, retiros y casos que requieren atención. Son avisos dentro de la aplicación; no se envían correos ni mensajes automáticamente.
-- `/ayuda` es pública. El contacto oficial se guarda desde **Admin → Planta** o con `SUPPORT_EMAIL` / `SUPPORT_WHATSAPP`. No se publica un contacto ficticio si faltan esos datos.
+
+## Administración
+
+`/admin` exige una cuenta de `ADMIN_EMAILS` y el `ADMIN_PIN` (5 intentos por minuto). Secciones:
+
+- **Resumen**: lo que hay que atender (transferencias por confirmar, retiros por pagar, pagos por devolver, devoluciones por conciliar, planes en pausa y mensualidades que vencen esta semana), el cupo de la planta y los totales.
+- **Análisis**: recaudo por mes y por medio de pago, embudo de clientes, mensualidades que vienen y cupo, con tabla de datos. Las visitas y la velocidad de la página se ven en Vercel (Web Analytics y Speed Insights), que no miden el admin ni envían los parámetros de las direcciones.
+- **Clientes**: búsqueda, grupos (generando, en pausa, transferencia por confirmar, sin pagar, sin datos), registro de pagos a mano, cierre de planes y exportación CSV.
+- **Pagos**: filtros por estado y medio, búsqueda por cliente, NIT, orden o referencia, acciones de verificación, transferencias y reembolsos, y exportación CSV para la contabilidad.
+- **Retiros**, **Planta** (potencia y precios), **Configuración** (lista para cobrar dinero real, cuenta para transferencias, soporte y alertas por correo) y **Actividad** (bitácora con filtros).
+- `/ayuda` es pública. El contacto oficial se guarda desde **Admin → Configuración** o con `SUPPORT_EMAIL` / `SUPPORT_WHATSAPP`. No se publica un contacto ficticio si faltan esos datos.
 - `/planes`, `/planta` y las rutas anteriores del panel redirigen a sus vistas actuales.
 
 ## Pagos y devoluciones
@@ -55,7 +65,7 @@ Referencias: [seguridad y funcionamiento de cron](https://vercel.com/docs/schedu
 
 ## Configuración y despliegue
 
-Consulta [.env.example](.env.example) y **Admin → Pagos → Para cobrar de verdad**. Nunca subas `.env.local`, claves privadas de wallets ni tokens al repositorio.
+Consulta [.env.example](.env.example) y **Admin → Configuración → Para cobrar de verdad**. Nunca subas `.env.local`, claves privadas de wallets ni tokens al repositorio.
 
 | Configuración | Propósito |
 | --- | --- |

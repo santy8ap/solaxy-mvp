@@ -159,8 +159,8 @@ function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: bo
 function ReviewedWithdrawal({ w }: { w: AdminWithdrawal }) {
   const paid = w.status === "confirmada";
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[9.5rem_minmax(0,1fr)_auto] sm:items-baseline">
-      <p className="num text-sm text-mute">{formatDateTime(w.confirmedAt ?? w.createdAt)}</p>
+    <li className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[12.5rem_minmax(0,1fr)_auto] sm:items-baseline">
+      <p className="num whitespace-nowrap text-sm text-mute">{formatDateTime(w.confirmedAt ?? w.createdAt)}</p>
       <div className="min-w-0">
         <p className="font-medium">{ownerOf(w)}</p>
         <p className="mt-1 break-words text-sm leading-relaxed text-mute">

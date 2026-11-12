@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, like, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   companyProfile,
@@ -45,6 +45,8 @@ export interface AdminPaymentRow extends TxDTO {
   userName: string;
   userEmail: string;
   companyName: string | null;
+  /** NIT de la empresa o documento del titular, para la contabilidad */
+  customerId: string | null;
   planName: string | null;
   method: PaymentMethod | null;
   providerId: string | null;
@@ -59,6 +61,9 @@ type Who = {
   name: string | null;
   email: string | null;
   companyName: string | null;
+  nit?: string | null;
+  docType?: string | null;
+  docNumber?: string | null;
   planName: string | null;
   reviewRequired?: number;
 };
@@ -70,6 +75,7 @@ function toRow(t: OrderRow, w: Who | null): AdminPaymentRow {
     userName: w?.name ?? "—",
     userEmail: w?.email ?? "",
     companyName: w?.companyName || null,
+    customerId: w?.nit || (w?.docNumber ? `${w.docType ?? ""} ${w.docNumber}`.trim() : null),
     planName: w?.planName ?? null,
     method: t.method,
     providerId: t.providerId,
@@ -88,6 +94,9 @@ const paymentRows = () =>
       name: user.name,
       email: user.email,
       companyName: companyProfile.companyName,
+      nit: companyProfile.nit,
+      docType: companyProfile.docType,
+      docNumber: companyProfile.docNumber,
       planName: planSubscription.planName,
       reviewRequired: sql<number>`CASE WHEN ${paymentReview.paymentId} IS NOT NULL AND ${paymentReview.resolvedAt} IS NULL THEN 1 ELSE 0 END`,
     })
@@ -100,23 +109,63 @@ const paymentRows = () =>
     )
     .leftJoin(paymentReview, eq(paymentReview.paymentId, ledgerTx.id));
 
-/** Pagos de mensualidades (confirmados, en proceso o fallidos) por cualquier medio. */
+const FILTER_IDS: PaymentFilter[] = ["todos", "en_proceso", "confirmadas", "fallidas", "por_reembolsar"];
+const METHOD_IDS = ["todos", "mercadopago", "crypto", "transferencia", "manual", "demo"] as const;
+
+/** Los filtros de la lista de pagos desde la URL (?estado=&metodo=&q=&cliente=), con valores válidos. */
+export function paymentFiltersFrom(params: URLSearchParams) {
+  const estado = params.get("estado") as PaymentFilter | null;
+  const metodo = params.get("metodo") as (typeof METHOD_IDS)[number] | null;
+  return {
+    status: estado && FILTER_IDS.includes(estado) ? estado : ("todos" as const),
+    method: metodo && METHOD_IDS.includes(metodo) ? metodo : ("todos" as const),
+    query: (params.get("q") ?? "").slice(0, 80),
+    userId: params.get("cliente")?.slice(0, 80) || undefined,
+  };
+}
+
+/**
+ * Pagos de mensualidades (confirmados, en proceso o fallidos) por cualquier medio.
+ * `query` busca en el cliente (nombre, empresa, titular, correo, NIT o documento), la orden, el plan y las
+ * referencias del pago; `userId` deja solo los de un cliente.
+ */
 export async function listPayments({
   status = "todos",
   method = "todos",
+  query = "",
+  userId,
   limit = 200,
 }: {
   status?: PaymentFilter;
   method?: PaymentMethod | "todos";
+  query?: string;
+  userId?: string;
   limit?: number;
 } = {}) {
   await readSettings();
+  const q = query.trim().slice(0, 80);
+  const text = `%${q}%`;
   const where = and(
     isNotNull(ledgerTx.method),
     eq(ledgerTx.kind, "plan_mes"),
     method !== "todos" ? eq(ledgerTx.method, method) : undefined,
     status !== "todos"
       ? inArray(ledgerTx.status, STATUS_BY_FILTER[status])
+      : undefined,
+    userId ? eq(ledgerTx.userId, userId) : undefined,
+    q
+      ? or(
+          like(user.name, text),
+          like(user.email, text),
+          like(companyProfile.companyName, text),
+          like(companyProfile.fullName, text),
+          like(companyProfile.nit, text),
+          like(companyProfile.docNumber, text),
+          like(ledgerTx.id, text),
+          like(ledgerTx.providerId, text),
+          like(ledgerTx.txHash, text),
+          like(ledgerTx.subscriptionId, text),
+        )
       : undefined,
   );
   const rows = await paymentRows()

@@ -31,6 +31,13 @@ export interface OverviewDTO {
   paymentsToRefund: number;
   /** Transferencias reportadas por las empresas que esperan confirmación */
   transfersToConfirm: number;
+  /** Devoluciones que requieren conciliación */
+  reviewsPending: number;
+  /** Mensualidades que vencen en los próximos 7 días */
+  dueSoon: number;
+  monthCollectedCop: number;
+  previousMonthCollectedCop: number;
+  registeredClients: number;
   recent: AuditEntry[];
 }
 
@@ -58,6 +65,10 @@ export interface AdminClient {
   withdrawnCop: number;
   reservedCop: number;
   balanceCop: number;
+  /** Transferencias reportadas que esperan confirmación */
+  openTransfers: number;
+  /** Último pago confirmado (ms) */
+  lastPaymentAt: number | null;
 }
 
 export interface AdminWithdrawal extends TxDTO {
@@ -71,7 +82,8 @@ export interface AdminWithdrawal extends TxDTO {
   signed: boolean;
 }
 
-const ACTION_LABEL: Record<string, string> = {
+/** Cada acción de la bitácora con su nombre legible. El tipo obliga a nombrar las acciones nuevas. */
+const ACTION_LABEL: Record<AdminAction, string> = {
   config_planta: "Configuración",
   pago_manual: "Pago manual",
   config_transferencia: "Cuenta para transferencias",
@@ -84,9 +96,20 @@ const ACTION_LABEL: Record<string, string> = {
   registrar_hash: "Hash registrado",
   marcar_reembolso: "Reembolso",
   borrar_datos_prueba: "Datos de prueba",
-  // Acciones del modelo anterior que siguen en la bitácora
+  conciliar_devolucion: "Conciliación",
+  devolucion_proveedor: "Devolución de Mercado Pago",
+};
+
+/** Acciones del modelo anterior que siguen en la bitácora. */
+const LEGACY_LABEL: Record<string, string> = {
   ajuste_kw: "Ajuste (modelo anterior)",
   borrar_datos_demo: "Datos de prueba",
 };
 
-export const actionLabel = (action: string) => ACTION_LABEL[action] ?? action;
+/** Para el filtro de la bitácora: cada acción con su nombre, en orden alfabético. */
+export const ACTION_OPTIONS = Object.entries(ACTION_LABEL)
+  .map(([id, label]) => ({ id, label }))
+  .sort((a, b) => a.label.localeCompare(b.label, "es"));
+
+export const actionLabel = (action: string) =>
+  (ACTION_LABEL as Record<string, string>)[action] ?? LEGACY_LABEL[action] ?? action.replaceAll("_", " ");

@@ -1,18 +1,21 @@
 import "server-only";
 import { hasPersonalDetails } from "@/lib/profile-schema";
-import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { PLANT } from "@/config/plant";
 import { db } from "@/lib/db";
 import {
   adminAudit,
   companyProfile,
   ledgerTx,
+  paymentReview,
   plant,
   planSubscription,
   user,
   type AdminAction,
 } from "@/lib/db/schema";
-import { isDemoMode } from "@/lib/env";
+import { monthKey, monthStartMs } from "./analytics";
+import { DAY_MS } from "@/lib/time";
+import { env, isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
 import { newId, orderCode, simulatedTxHash } from "@/lib/ids";
@@ -58,14 +61,22 @@ export async function audit(
   });
 }
 
-export async function listAudit(limit = 50) {
+/** La bitácora, de lo más reciente a lo más antiguo; `action` deja un tipo y `query` busca en el texto y en quién lo hizo. */
+export async function listAudit(limit = 50, { action, query = "" }: { action?: string; query?: string } = {}) {
   await readSettings();
+  const q = query.trim().slice(0, 80);
   // rowid desempata las acciones registradas en el mismo milisegundo: siempre la más reciente primero.
   return db
     .select()
     .from(adminAudit)
+    .where(
+      and(
+        action ? eq(adminAudit.action, action as AdminAction) : undefined,
+        q ? or(like(adminAudit.summary, `%${q}%`), like(adminAudit.actorName, `%${q}%`)) : undefined,
+      ),
+    )
     .orderBy(desc(adminAudit.createdAt), desc(sql`rowid`))
-    .limit(limit);
+    .limit(Math.min(Math.max(limit, 1), 500));
 }
 
 /* ───────────── Clientes ───────────── */
@@ -155,6 +166,20 @@ export async function listClients({ query = "" }: { query?: string } = {}) {
   );
   const subs = await listAllSubscriptions();
   const money = await withdrawalsByUser();
+  // Por cliente: transferencias que esperan confirmación y la fecha de su último pago confirmado.
+  const activity = new Map(
+    (
+      await db
+        .select({
+          userId: ledgerTx.userId,
+          openTransfers: sql<number>`sum(case when ${ledgerTx.method} = 'transferencia' and ${ledgerTx.status} in ('pendiente', 'verificando') then 1 else 0 end)`,
+          lastPaymentAt: sql<number | null>`max(case when ${ledgerTx.status} = 'confirmada' then coalesce(${ledgerTx.confirmedAt}, ${ledgerTx.createdAt}) end)`,
+        })
+        .from(ledgerTx)
+        .where(and(eq(ledgerTx.kind, "plan_mes"), inArray(ledgerTx.userId, ids)))
+        .groupBy(ledgerTx.userId)
+    ).map((a) => [a.userId, a]),
+  );
 
   return rows
     .map((r) => {
@@ -175,6 +200,8 @@ export async function listClients({ query = "" }: { query?: string } = {}) {
         profitCop: Math.floor(totals.profitCop),
         withdrawnCop: w.withdrawn,
         reservedCop: w.reserved,
+        openTransfers: Number(activity.get(r.id)?.openTransfers ?? 0),
+        lastPaymentAt: activity.get(r.id)?.lastPaymentAt ?? null,
         balanceCop: Math.max(
           0,
           Math.floor(totals.soldCop) - w.withdrawn - w.reserved,
@@ -488,7 +515,9 @@ export async function adminOverview() {
     (p) => p.state === "activa" || p.state === "en_pausa",
   );
   const totals = summarize(plans, solar, now);
-  const contracted = live.reduce((s, p) => s + p.dailyKwh, 0);
+  // El mismo cálculo con el que se venden los planes: incluye los que están en pausa o en conciliación
+  // mientras conservan su cupo.
+  const contracted = await contractedDailyKwh(now);
   const [w] = await db
     .select({
       pending: sql<number>`coalesce(sum(case when ${ledgerTx.status} = 'por_aprobar' then 1 else 0 end), 0)`,
@@ -515,6 +544,26 @@ export async function adminOverview() {
         inArray(ledgerTx.status, ["pendiente", "verificando"]),
       ),
     );
+  // Recaudo de este mes y del anterior, en hora de Colombia.
+  const thisMonth = monthStartMs(monthKey(now));
+  const lastMonth = monthStartMs(monthKey(thisMonth - DAY_MS));
+  const at = sql`coalesce(${ledgerTx.confirmedAt}, ${ledgerTx.createdAt})`;
+  const [m] = await db
+    .select({
+      current: sql<number>`coalesce(sum(case when ${at} >= ${thisMonth} then ${ledgerTx.amountCop} end), 0)`,
+      previous: sql<number>`coalesce(sum(case when ${at} >= ${lastMonth} and ${at} < ${thisMonth} then ${ledgerTx.amountCop} end), 0)`,
+    })
+    .from(ledgerTx)
+    .where(and(eq(ledgerTx.kind, "plan_mes"), eq(ledgerTx.status, "confirmada"), collectedWhere()));
+  // Devoluciones de Mercado Pago que esperan la conciliación del admin.
+  const [r] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(paymentReview)
+    .where(isNull(paymentReview.resolvedAt));
+  const [u] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(user)
+    .where(sql`lower(${user.email}) <> ${env.demoEmail}`);
   const paidOut = Number(w?.paidCop ?? 0);
   return {
     settings,
@@ -536,6 +585,14 @@ export async function adminOverview() {
     pendingWithdrawalsCop: Number(w?.pendingCop ?? 0),
     paymentsToRefund: Number(p?.toRefund ?? 0),
     transfersToConfirm: Number(t?.n ?? 0),
+    /** Devoluciones que requieren conciliación antes de que el cliente pueda retirar */
+    reviewsPending: Number(r?.n ?? 0),
+    /** Planes generando cuyo mes vence en los próximos 7 días y les falta pagar meses */
+    dueSoon: plans.filter((x) => x.state === "activa" && x.paidMonths < x.months && x.paidUntil - now <= 7 * DAY_MS).length,
+    monthCollectedCop: Number(m?.current ?? 0),
+    previousMonthCollectedCop: Number(m?.previous ?? 0),
+    /** Cuentas registradas, sin la de pruebas */
+    registeredClients: Number(u?.n ?? 0),
     recent: await listAudit(8),
   };
 }

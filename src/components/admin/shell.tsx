@@ -1,8 +1,8 @@
 "use client";
-import { ArrowLeftCircle, Banknote, Building2, CreditCard, History, LayoutGrid, LogOut, ShieldCheck, SunMedium } from "lucide-react";
+import { ArrowLeftCircle, Banknote, Building2, ChartColumn, CreditCard, Ellipsis, History, LayoutGrid, LogOut, Settings2, ShieldCheck, SunMedium } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useActionState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { becomeAdmin, leaveAdmin, signOut } from "@/app/ingresar/actions";
 import { BRAND } from "@/config/brand";
 import { useJson } from "@/lib/client/use-json";
@@ -13,12 +13,17 @@ import { Logo } from "@/components/ui/logo";
 
 export const ADMIN_NAV = [
   { href: "/admin", label: "Resumen", icon: LayoutGrid },
+  { href: "/admin/analisis", label: "Análisis", icon: ChartColumn },
   { href: "/admin/clientes", label: "Clientes", icon: Building2 },
   { href: "/admin/pagos", label: "Pagos", icon: CreditCard },
   { href: "/admin/retiros", label: "Retiros", icon: Banknote },
   { href: "/admin/planta", label: "Planta", icon: SunMedium },
+  { href: "/admin/configuracion", label: "Configuración", icon: Settings2 },
   { href: "/admin/actividad", label: "Actividad", icon: History },
 ] as const;
+
+/** En celular caben cinco: las cuatro de todos los días y «Más» con el resto. */
+const MOBILE_MAIN = new Set(["/admin", "/admin/clientes", "/admin/pagos", "/admin/retiros"]);
 
 function isActive(path: string, href: string) {
   return href === "/admin" ? path === "/admin" : path.startsWith(href);
@@ -85,24 +90,85 @@ export function AdminSidebar() {
 export function AdminBottomNav() {
   const path = usePathname();
   const pending = usePending();
+  // El menú «Más» queda abierto solo en la página donde se abrió: al navegar se cierra solo.
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const more = openAt === path;
+  const setMore = (open: boolean | ((v: boolean) => boolean)) => setOpenAt((typeof open === "function" ? open(more) : open) ? path : null);
+  const sheet = useRef<HTMLDivElement>(null);
+  const [leaving, startLeave] = useTransition();
+  const [out, startOut] = useTransition();
+  const main = ADMIN_NAV.filter((n) => MOBILE_MAIN.has(n.href));
+  const rest = ADMIN_NAV.filter((n) => !MOBILE_MAIN.has(n.href));
+  const inRest = rest.some((n) => isActive(path, n.href));
+
+  // Con Escape o tocando fuera, el menú «Más» se cierra.
+  useEffect(() => {
+    if (!more) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenAt(null);
+    const onDown = (e: PointerEvent) => {
+      if (sheet.current && !sheet.current.contains(e.target as Node)) setOpenAt(null);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onDown);
+    };
+  }, [more]);
+
+  const cell = (active: boolean) => `relative flex w-full flex-col items-center gap-1.5 border-t-2 pb-2.5 pt-2.5 text-[0.62rem] ${active ? "border-ink text-ink" : "border-transparent text-mute"}`;
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line-strong bg-void/95 backdrop-blur-md lg:hidden" aria-label="Administración">
-      <ul className="mx-auto grid max-w-[640px] grid-cols-6">
-        {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
-          const active = isActive(path, href);
-          const dot = (href === "/admin/retiros" && pending.retiros > 0) || (href === "/admin/pagos" && pending.pagos > 0);
-          return (
-            <li key={href}>
-              <Link href={href} aria-current={active ? "page" : undefined} className={`relative flex flex-col items-center gap-1.5 border-t-2 pb-2.5 pt-2.5 text-[0.62rem] ${active ? "border-ink text-ink" : "border-transparent text-mute"}`}>
-                <Icon size={19} strokeWidth={1.5} />
-                {label}
-                {dot && <span className="absolute right-[24%] top-2 h-1.5 w-1.5 bg-ink" aria-label="Hay pendientes" />}
-              </Link>
+    <div ref={sheet} className="lg:hidden">
+      {more && (
+        <div id="admin-more" className="fixed inset-x-0 bottom-[60px] z-40 border-t border-line-strong bg-void/98 pb-2 backdrop-blur-md">
+          <ul className="mx-auto max-w-[640px]">
+            {rest.map(({ href, label, icon: Icon }) => (
+              <li key={href}>
+                <Link href={href} aria-current={isActive(path, href) ? "page" : undefined} className={itemClass(isActive(path, href))}>
+                  <Icon size={17} strokeWidth={1.5} />
+                  {label}
+                </Link>
+              </li>
+            ))}
+            <li className="border-t border-line">
+              <button type="button" disabled={leaving} onClick={() => startLeave(() => leaveAdmin())} className={`${itemClass(false)} w-full text-left`}>
+                <ShieldCheck size={17} strokeWidth={1.5} />
+                {leaving ? "Saliendo…" : "Salir del modo admin"}
+              </button>
             </li>
-          );
-        })}
-      </ul>
-    </nav>
+            <li>
+              <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className={`${itemClass(false)} w-full text-left`}>
+                <LogOut size={17} strokeWidth={1.5} />
+                {out ? "Cerrando sesión…" : "Cerrar sesión"}
+              </button>
+            </li>
+          </ul>
+        </div>
+      )}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line-strong bg-void/95 backdrop-blur-md" aria-label="Administración">
+        <ul className="mx-auto grid max-w-[640px] grid-cols-5">
+          {main.map(({ href, label, icon: Icon }) => {
+            const active = isActive(path, href);
+            const dot = (href === "/admin/retiros" && pending.retiros > 0) || (href === "/admin/pagos" && pending.pagos > 0);
+            return (
+              <li key={href}>
+                <Link href={href} aria-current={active ? "page" : undefined} className={cell(active)}>
+                  <Icon size={19} strokeWidth={1.5} />
+                  {label}
+                  {dot && <span className="absolute right-[24%] top-2 h-1.5 w-1.5 bg-ink" aria-label="Hay pendientes" />}
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <button type="button" aria-expanded={more} aria-controls="admin-more" onClick={() => setMore((v) => !v)} className={cell(more || inRest)}>
+              <Ellipsis size={19} strokeWidth={1.5} />
+              Más
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   );
 }
 
