@@ -47,6 +47,8 @@ export interface MonthStats {
   label: string;
   collectedCop: number;
   payments: number;
+  /** Energía de los meses pagados en este mes (kWh) */
+  soldKwh: number;
   withdrawnCop: number;
   newClients: number;
   newPlans: number;
@@ -98,7 +100,7 @@ export async function businessAnalytics(now = Date.now()): Promise<BusinessAnaly
   const at = sql<number>`coalesce(${ledgerTx.confirmedAt}, ${ledgerTx.createdAt})`;
   const [payments, withdrawals, users, profiles, subs, config, contracted] = await Promise.all([
     db
-      .select({ at, amountCop: ledgerTx.amountCop, method: ledgerTx.method, userId: ledgerTx.userId })
+      .select({ at, amountCop: ledgerTx.amountCop, kwh: ledgerTx.kwh, method: ledgerTx.method, userId: ledgerTx.userId })
       .from(ledgerTx)
       .where(and(eq(ledgerTx.kind, "plan_mes"), eq(ledgerTx.status, "confirmada"), collectedWhere())),
     db
@@ -122,7 +124,7 @@ export async function businessAnalytics(now = Date.now()): Promise<BusinessAnaly
   };
 
   const byMonth = new Map<string, MonthStats>(
-    months.map((m) => [m, { month: m, label: monthLabel(m), collectedCop: 0, payments: 0, withdrawnCop: 0, newClients: 0, newPlans: 0 }]),
+    months.map((m) => [m, { month: m, label: monthLabel(m), collectedCop: 0, payments: 0, soldKwh: 0, withdrawnCop: 0, newClients: 0, newPlans: 0 }]),
   );
   const methods = new Map<string, { method: string; cop: number; payments: number }>();
   for (const p of payments) {
@@ -131,6 +133,7 @@ export async function businessAnalytics(now = Date.now()): Promise<BusinessAnaly
     if (m) {
       m.collectedCop += p.amountCop;
       m.payments += 1;
+      m.soldKwh += p.kwh ?? 0;
     }
     const key = p.method ?? "otro";
     const row = methods.get(key) ?? { method: key, cop: 0, payments: 0 };

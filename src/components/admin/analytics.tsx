@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { BusinessAnalytics, MonthStats, Renewal } from "@/lib/admin/analytics";
 import { useJson } from "@/lib/client/use-json";
+import { downloadCsv } from "@/lib/csv";
 import { formatCop, formatDate, formatNumber, formatPct } from "@/lib/format";
 import { methodLabel } from "@/components/panel/tx-meta";
 import { ErrorNote } from "@/components/ui/field";
@@ -139,6 +140,15 @@ function RenewalList({ items, empty, kind, now = 0 }: { items: Renewal[]; empty:
   );
 }
 
+/** El reporte de los últimos 12 meses en CSV (Excel lo abre con tildes y separador «;»). */
+function exportMonths(months: MonthStats[]) {
+  const last = months[months.length - 1]?.month ?? "";
+  downloadCsv(`reporte-mensual-${last}.csv`, [
+    ["Mes", "Recaudo COP", "Pagos", "Energía vendida kWh", "Retiros pagados COP", "Clientes nuevos", "Planes nuevos"],
+    ...months.map((m) => [m.label, m.collectedCop, m.payments, Math.round(m.soldKwh), m.withdrawnCop, m.newClients, m.newPlans]),
+  ]);
+}
+
 export function AdminAnalytics() {
   const { data, error } = useJson<BusinessAnalytics>("/api/admin/analytics", { refreshMs: 60_000 });
   if (!data)
@@ -174,15 +184,22 @@ export function AdminAnalytics() {
 
       <Section id="mensual" title="Recaudo por mes" note="Mensualidades confirmadas en cada mes. Pasa el cursor o usa el tabulador sobre una columna para ver el valor exacto.">
         <MonthlyChart months={data.months} />
-        <details className="mt-6 text-sm">
+        <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 text-sm">
+          <p className="text-mute">Los mismos datos, mes a mes, para la contabilidad:</p>
+          <button type="button" className="link" onClick={() => exportMonths(data.months)}>
+            Descargar el reporte mensual (CSV para Excel)
+          </button>
+        </div>
+        <details className="mt-4 text-sm">
           <summary className="link cursor-pointer text-fog">Ver los datos de cada mes en una tabla</summary>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left">
+            <table className="w-full min-w-[760px] text-left">
               <thead className="cap">
                 <tr className="border-b border-line-strong">
                   <th className="py-2 pr-4 font-normal">Mes</th>
                   <th className="py-2 pr-4 text-right font-normal">Recaudo</th>
                   <th className="py-2 pr-4 text-right font-normal">Pagos</th>
+                  <th className="py-2 pr-4 text-right font-normal">Energía vendida</th>
                   <th className="py-2 pr-4 text-right font-normal">Retiros pagados</th>
                   <th className="py-2 pr-4 text-right font-normal">Clientes nuevos</th>
                   <th className="py-2 text-right font-normal">Planes nuevos</th>
@@ -194,6 +211,7 @@ export function AdminAnalytics() {
                     <td className="py-2 pr-4">{m.label}</td>
                     <td className="py-2 pr-4 text-right">{formatCop(m.collectedCop)}</td>
                     <td className="py-2 pr-4 text-right">{m.payments}</td>
+                    <td className="py-2 pr-4 text-right">{formatNumber(m.soldKwh)} kWh</td>
                     <td className="py-2 pr-4 text-right">{formatCop(m.withdrawnCop)}</td>
                     <td className="py-2 pr-4 text-right">{m.newClients}</td>
                     <td className="py-2 text-right">{m.newPlans}</td>

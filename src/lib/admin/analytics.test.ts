@@ -46,7 +46,7 @@ describe("analítica del negocio", () => {
     const current = a.months[11];
     // El plan de a2 empezó hace 40 días: cuenta en su mes, no en este (salvo que el mes acabe de empezar).
     const a2Month = analytics.monthKey(Date.now() - 40 * 86_400_000);
-    expect(current).toMatchObject({ collectedCop: 2 * MONTH_180, payments: 2 });
+    expect(current).toMatchObject({ collectedCop: 2 * MONTH_180, payments: 2, soldKwh: 2 * 60_000 });
     expect(a.months.reduce((s, m) => s + m.newPlans, 0)).toBe(2);
     expect(a.months.find((m) => m.month === a2Month)!.newPlans).toBeGreaterThanOrEqual(1);
     expect(current.newClients).toBe(4);

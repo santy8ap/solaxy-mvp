@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { createClient } from "@libsql/client";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -114,6 +115,16 @@ test("transferencia: el admin publica la cuenta, la empresa reporta el pago y el
   await page.goto("/admin/analisis");
   await expect(page.getByRole("heading", { name: "Recaudo por mes" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Embudo de clientes" })).toBeVisible();
+  const report = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Descargar el reporte mensual/ }).click();
+  const reportFile = await (await report).path();
+  const reportCsv = await readFile(reportFile!, "utf8");
+  const lines = reportCsv.trim().split("\r\n");
+  expect(lines[0]).toContain("Energía vendida kWh");
+  expect(lines).toHaveLength(13);
+  // El mes actual incluye la transferencia confirmada (Plan 360, $ 40.800.000).
+  const current = lines[12].split(";").map((c) => c.replaceAll('"', ""));
+  expect(Number(current[1])).toBeGreaterThanOrEqual(40_800_000);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: /Para atender/ })).toBeVisible();
   await expect(page.getByText("Transferencia por confirmar", { exact: true })).toHaveCount(0);
