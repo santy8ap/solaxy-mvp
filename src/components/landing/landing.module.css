@@ -1,0 +1,183 @@
+.nav a {
+  position: relative;
+  transition: color 180ms;
+}
+
+.nav a::after {
+  position: absolute;
+  inset: auto 0 -7px;
+  height: 1px;
+  background: currentColor;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms var(--ease-out-soft);
+}
+
+.nav a:is(:hover, :focus-visible)::after {
+  transform: scaleX(1);
+}
+
+.headline {
+  font-size: clamp(3rem, 11vw, 6rem);
+}
+
+.headline > span {
+  display: block;
+}
+
+.headlineAccent {
+  color: rgb(var(--solar-halo));
+}
+
+.heroVisual {
+  position: relative;
+  display: flex;
+  isolation: isolate;
+  align-items: flex-end;
+  aspect-ratio: 3 / 2;
+  max-height: 440px;
+  overflow: hidden;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-raise);
+}
+
+.heroPhoto {
+  object-fit: cover;
+  object-position: 60% center;
+  filter: var(--hero-photo-filter);
+  transition: transform 650ms var(--ease-out-soft);
+}
+
+.heroVisual::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(0 0 0 / 0.52), transparent 38%);
+  content: "";
+}
+
+.visualLink {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.65rem;
+  margin: clamp(0.65rem, 2vw, 1rem);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-raise);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: border-color 180ms, background-color 180ms;
+}
+
+.heroVisual:is(:hover, :focus-visible) .visualLink {
+  border-color: var(--color-ink);
+  background: var(--color-void);
+}
+
+.heroAction svg {
+  transition: transform 220ms var(--ease-out-soft);
+}
+
+.clockFrame {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgb(var(--solar-halo) / 0.09), transparent 70%),
+    var(--color-raise);
+}
+
+@media (min-width: 64rem) {
+  .headline {
+    font-size: clamp(4.6rem, 8.5vw, 7.5rem);
+  }
+
+  .heroVisual {
+    aspect-ratio: 10 / 9;
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.headline) {
+    scroll-behavior: smooth;
+  }
+
+  .headline > span,
+  .heroIntro,
+  .heroVisual {
+    animation: rise-in 680ms var(--ease-out-soft) both;
+  }
+
+  .headline > span:nth-child(2) {
+    animation-delay: 70ms;
+  }
+
+  .headline > span:nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .heroIntro {
+    animation-delay: 190ms;
+  }
+
+  .heroVisual {
+    animation-delay: 100ms;
+  }
+
+  .heroVisual:is(:hover, :focus-visible) .heroPhoto {
+    transform: scale(1.045);
+  }
+
+  .heroAction:is(:hover, :focus-visible) svg {
+    transform: translateX(3px);
+  }
+
+  @supports (animation-timeline: view()) {
+    .clockFrame {
+      view-timeline-name: --solar-clock;
+    }
+
+    .clockFrame [data-solar-trace] {
+      stroke-dasharray: 1;
+      animation: trace-curve linear both;
+      animation-timeline: --solar-clock;
+      animation-range: entry 5% entry 70%;
+    }
+
+    .reveal {
+      animation: section-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 85%;
+    }
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes section-rise {
+  from {
+    opacity: 0.65;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes trace-curve {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}

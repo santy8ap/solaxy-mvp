@@ -11,19 +11,22 @@ export function LogoMark({ size = 26, className = "" }: { size?: number; classNa
 }
 
 /** Marca con el nombre en dos líneas: cabe en la barra lateral y en el celular. */
-export function Logo({ className = "" }: { className?: string }) {
+export function Logo({ className = "", size = "compact" }: { className?: string; size?: "compact" | "header" }) {
   const [first, ...rest] = BRAND.name.toUpperCase().split(" ");
   const split = rest.length > 1;
+  const header = size === "header";
   return (
-    <span className={`inline-flex items-center gap-3 text-ink ${className}`}>
-      <LogoMark />
-      <span className="text-[0.6875rem] font-medium leading-[1.35] tracking-[0.3em]">
+    <span className={`inline-flex items-center text-ink ${header ? "gap-2.5 sm:gap-3" : "gap-3"} ${className}`}>
+      <LogoMark size={header ? 48 : 26} className={header ? "size-9 shrink-0 sm:size-12" : undefined} />
+      <span className={header
+        ? "whitespace-nowrap text-[0.8125rem] font-semibold leading-tight tracking-[0.14em] sm:text-[0.9375rem] sm:tracking-[0.18em]"
+        : "text-[0.6875rem] font-medium leading-[1.35] tracking-[0.3em]"}>
         {split ? (
           <>
             <span className="block">
               {first} {rest.slice(0, -1).join(" ")}
             </span>
-            <span className="block">{rest.at(-1)}</span>
+            <span className={header ? "block text-[0.85em] tracking-[0.27em]" : "block"}>{rest.at(-1)}</span>
           </>
         ) : (
           BRAND.name.toUpperCase()

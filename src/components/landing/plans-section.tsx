@@ -6,6 +6,7 @@ import { ErrorNote } from "@/components/ui/field";
 import { formatCop } from "@/lib/format";
 import { PlansTable } from "@/components/plans/plans-table";
 import { ProfitPreview } from "@/components/plans/profit-preview";
+import styles from "./landing.module.css";
 
 /** Los planes, con sus precios vigentes. Para comprar hay que ingresar. */
 export function PlansSection() {
@@ -16,7 +17,7 @@ export function PlansSection() {
       className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8"
     >
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[1fr_minmax(0,38ch)] lg:items-end">
-        <h2 className="display text-[clamp(3rem,7vw,5.5rem)]">Cuatro planes</h2>
+        <h2 className={`display ${styles.reveal} text-[clamp(3rem,7vw,5.5rem)]`}>Cuatro planes</h2>
         <p className="leading-relaxed text-fog">
           Cada plan es una cantidad de energía para 3 meses, que se paga mes a
           mes. Entre más grande el plan, menos pagas por cada{" "}

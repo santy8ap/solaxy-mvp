@@ -1,7 +1,7 @@
 export const THEMES = {
   light: { label: "Claro", background: "#f6f5ee", foreground: "#19251d" },
   dark: { label: "Oscuro", background: "#050505", foreground: "#f2f2f0" },
-  green: { label: "Verde", background: "#0d281d", foreground: "#eaf5e4" },
+  green: { label: "Verde", background: "#284c35", foreground: "#ffedaa" },
 } as const;
 
 export type ThemeMode = keyof typeof THEMES;

@@ -23,13 +23,20 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   await trigger.click();
   await choices.getByRole("button", { name: "Verde" }).click();
   await expect(root).toHaveAttribute("data-theme", "green");
-  await expect(root).toHaveCSS("background-color", "rgb(13, 40, 29)");
+  await expect(root).toHaveCSS("background-color", "rgb(40, 76, 53)");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("color", "rgb(255, 237, 170)");
   await expect(trigger).toHaveAccessibleName(/Verde seleccionado/);
+
+  const clockLink = page.getByRole("link", { name: "Ver reloj solar", exact: true });
+  await expect.poll(() => clockLink.locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  await clockLink.click();
+  await expect(page).toHaveURL(/\/#reloj$/);
+  await expect(page.getByRole("heading", { name: /^Reloj solar$/i })).toBeInViewport();
 
   await page.reload();
   await expect(root).toHaveAttribute("data-theme", "green");
   await expect(themeColor).toHaveCount(1);
-  await expect(themeColor).toHaveAttribute("content", "#0d281d");
+  await expect(themeColor).toHaveAttribute("content", "#284c35");
   await login.click();
   await expect(page).toHaveURL(/\/ingresar$/);
   await expect(trigger).toHaveAccessibleName(/Verde seleccionado/);

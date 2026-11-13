@@ -27,12 +27,14 @@
 
 @layer base {
   html {
+    --hero-photo-filter: grayscale(1);
     --solar-halo: 255 255 255;
     color-scheme: dark;
     background: var(--color-void);
   }
 
   html[data-theme="light"] {
+    --hero-photo-filter: saturate(0.48);
     --color-void: #f6f5ee;
     --color-disc: #fffdf5;
     --color-raise: #fffdf7;
@@ -49,19 +51,20 @@
   }
 
   html[data-theme="green"] {
-    --color-void: #0d281d;
-    --color-disc: #071910;
-    --color-raise: #17392a;
-    --color-ink: #eaf5e4;
-    --color-fog: #c4dbbf;
-    --color-mute: #abc7aa;
-    --color-dim: #91b39a;
-    --color-line: rgb(234 245 228 / 0.17);
-    --color-line-strong: rgb(234 245 228 / 0.50);
-    --color-action: #d0ed9b;
-    --color-action-hover: #e0f9b4;
-    --solar-halo: 206 245 145;
-    --theme-ambient: radial-gradient(ellipse 900px 620px at 92% 0%, rgb(128 179 98 / 0.16), transparent);
+    --hero-photo-filter: saturate(0.88);
+    --color-void: #284c35;
+    --color-disc: #1b3726;
+    --color-raise: #33563b;
+    --color-ink: #ffedaa;
+    --color-fog: #f2e7b8;
+    --color-mute: #e1dbb3;
+    --color-dim: #c7cca6;
+    --color-line: rgb(255 237 170 / 0.22);
+    --color-line-strong: rgb(255 237 170 / 0.50);
+    --color-action: #f7d77b;
+    --color-action-hover: #ffe698;
+    --solar-halo: 255 219 127;
+    --theme-ambient: radial-gradient(ellipse 900px 700px at 92% 0%, rgb(122 161 104 / 0.24), transparent);
   }
 
   body {
@@ -363,14 +366,14 @@
   }
 }
 
-/* El halo del sol respira muy despacio: es el único movimiento que no responde a un dato. */
-@keyframes corona {
-  0%,
-  100% {
-    opacity: 0.75;
+@keyframes solar-halo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
   }
-  50% {
+  to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
