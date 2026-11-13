@@ -104,7 +104,12 @@ const SECTIONS: LegalSection[] = [
             gestión manual que no podemos garantizar.
           </li>
           <li>
-            <strong>Transferencia bancaria:</strong> se coordina con nuestro equipo, que registra el pago con el número del comprobante.
+            <strong>Transferencia bancaria (cuando está disponible):</strong> la plataforma te muestra la cuenta de {LEGAL.company}, el valor exacto del mes y una referencia que debes escribir en la
+            descripción de la transferencia. Después de transferir nos avisas con el número del comprobante. El mes se activa cuando nuestro equipo confirma el dinero en el banco, no cuando haces la
+            transferencia. Si no la encontramos o el valor no coincide, te lo indicamos en tus movimientos con el motivo.
+          </li>
+          <li>
+            <strong>Pago registrado por nuestro equipo:</strong> si acordamos contigo otro medio, nuestro equipo registra el pago con la referencia del comprobante y el mes se activa en ese momento.
           </li>
         </ul>
         <p>
@@ -165,6 +170,10 @@ const SECTIONS: LegalSection[] = [
           deja de generar energía y libera su cupo.
         </p>
         <p>
+          Si la pasarela nos informa que un pago fue devuelto o desconocido, el mes que ese pago activó deja de generar energía en ese momento. Mientras conciliamos la devolución contigo no podrás
+          retirar saldo ni pagar más meses de ese plan.
+        </p>
+        <p>
           <Ph>
             [El asesor legal debe definir qué pasa con el saldo cuando el pago fue reversado, y la política de retracto y devoluciones de un mes ya pagado, según el Estatuto del Consumidor cuando
             aplique.]
@@ -199,6 +208,33 @@ const SECTIONS: LegalSection[] = [
       <p>
         {BRAND.name} responde por la prestación diligente de sus servicios. No responde por fallas de terceros (Mercado Pago, redes blockchain, wallets, bancos o proveedores de internet) ni por
         casos de fuerza mayor o caso fortuito. <Ph>[El asesor legal debe ajustar esta cláusula a la ley colombiana.]</Ph>
+      </p>
+    ),
+  },
+  {
+    id: "renovacion",
+    title: "Al terminar un plan",
+    body: (
+      <ul>
+        <li>Un plan no se renueva solo ni se cobra de forma automática. Tu panel te avisa cuando se acerca el vencimiento de cada mes y el final del plan.</li>
+        <li>
+          Puedes comprar el mismo plan de nuevo con un clic. El plan nuevo se compra con los precios publicados ese día, según el cupo disponible de la planta y con los términos vigentes.
+        </li>
+        <li>La energía que generó el plan terminado y su venta se conservan en tu saldo.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "cuenta",
+    title: "Tus datos y tu cuenta",
+    body: (
+      <p>
+        Desde tu perfil puedes descargar tus datos y pedir que eliminemos tu cuenta. Para eliminarla no puedes tener planes vigentes, saldo a favor ni pagos, retiros o devoluciones en curso.
+        Conservamos lo que exigen las normas contables, tributarias y de prevención de lavado de activos, como explica la{" "}
+        <Link href="/privacidad" className="link text-ink">
+          Política de Tratamiento de Datos
+        </Link>
+        .
       </p>
     ),
   },

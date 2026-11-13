@@ -81,7 +81,7 @@ const STEPS: { title: string; text: React.ReactNode }[] = [
   },
   {
     title: "Elige un plan y paga el primer mes",
-    text: `Por PSE o con tarjeta a través de Mercado Pago (con tarjeta, hasta ${formatCop(DEFAULT_MP_LIMITS.cardMaxCop)} por pago), o con USDT o BNB desde tu wallet. La energía empieza a contar cuando el pago queda confirmado.`,
+    text: `Por PSE o con tarjeta a través de Mercado Pago (con tarjeta, hasta ${formatCop(DEFAULT_MP_LIMITS.cardMaxCop)} por pago), con USDT o BNB desde tu wallet o, cuando está disponible, por transferencia bancaria. La energía empieza a contar cuando el pago queda confirmado.`,
   },
   {
     title: "Mira tu energía y retira",
