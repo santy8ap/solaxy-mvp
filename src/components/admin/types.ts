@@ -104,6 +104,7 @@ const ACTION_LABEL: Record<AdminAction, string> = {
   devolucion_proveedor: "Devolución de Mercado Pago",
   eliminar_cuenta: "Cuenta eliminada",
   responder_solicitud_datos: "Solicitud de datos respondida",
+  cambio_titular: "Cambio de titular",
 };
 
 /** Acciones del modelo anterior que siguen en la bitácora. */

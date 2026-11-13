@@ -3,14 +3,17 @@ import { csvLine } from "@/lib/csv";
 import { formatDateTime } from "@/lib/format";
 import { paymentMethodLabel, txStatusLabel } from "@/lib/labels";
 import { historyFilters, isoColombiaDate } from "@/lib/history-filters";
-import { getSessionUser, unauthorized } from "@/lib/session";
+import { TOO_MANY_EXPORTS, exportLimiter } from "@/lib/security/limits";
+import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 import { transactionBatch } from "@/lib/transactions";
 
+/** Todo el historial del usuario en CSV (con los filtros de la página), por tandas. */
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
     const filters = historyFilters(new URL(req.url).searchParams);
+    if (!(await exportLimiter.hit(user.id))) return jsonError(TOO_MANY_EXPORTS, 429);
     const encoder = new TextEncoder();
     let cursor: { createdAt: number; id: string } | undefined;
     let started = false;

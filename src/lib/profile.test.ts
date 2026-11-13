@@ -81,3 +81,48 @@ describe("datos del comercializador", () => {
     await expect(profile.requireCompleteProfile("inv-015")).resolves.toMatchObject({ fullName: "Laura Gómez", complete: true });
   });
 });
+
+describe("cambio de titular (nombre o documento) en una cuenta que ya movió dinero", () => {
+  const changes = async (userId: string) => {
+    const { and, eq } = drizzle;
+    return dbMod.db
+      .select()
+      .from(schema.adminAudit)
+      .where(and(eq(schema.adminAudit.action, "cambio_titular"), eq(schema.adminAudit.targetUserId, userId)));
+  };
+  const paid = (userId: string) =>
+    dbMod.db.insert(schema.ledgerTx).values({ id: `XGE-PAGO-${userId}`, userId, kind: "plan_mes", status: "confirmada", amountCop: 20_880_000, method: "manual", createdAt: Date.now(), confirmedAt: Date.now() });
+
+  it("antes del primer pago, corregir el nombre o el documento no deja constancia", async () => {
+    await createUser("tit-1", { profile: false });
+    await profile.saveProfile("tit-1", personal);
+    await profile.saveProfile("tit-1", { ...personal, fullName: "Laura Gómez Restrepo" });
+    expect(await changes("tit-1")).toHaveLength(0);
+  });
+
+  it("con pagos, cambiar el nombre o el documento queda en la bitácora con el antes y el después", async () => {
+    await createUser("tit-2", { profile: false });
+    await profile.saveProfile("tit-2", personal);
+    await paid("tit-2");
+    await profile.saveProfile("tit-2", { ...personal, fullName: "Carlos Pérez", docNumber: "79.555.444" });
+    const [log, ...rest] = await changes("tit-2");
+    expect(rest).toHaveLength(0);
+    expect(log).toMatchObject({ actorUserId: "tit-2", actorName: "Carlos Pérez" });
+    expect(log.summary).toBe("Cambió los datos del titular: de Laura Gómez (CC 1036123456) a Carlos Pérez (CC 79555444).");
+    expect(JSON.parse(log.detail!)).toEqual({
+      antes: { fullName: "Laura Gómez", docType: "CC", docNumber: "1036123456" },
+      despues: { fullName: "Carlos Pérez", docType: "CC", docNumber: "79555444" },
+    });
+  });
+
+  it("cambiar el celular o la ciudad, o volver a aceptar los términos, no deja constancia", async () => {
+    await createUser("tit-3", { profile: false });
+    await profile.saveProfile("tit-3", personal);
+    await paid("tit-3");
+    await profile.saveProfile("tit-3", { ...personal, phone: "310 555 4433", city: "Bogotá" });
+    await profile.saveProfile("tit-3", personal);
+    // Escribir el mismo documento con otro formato tampoco es un cambio.
+    await profile.saveProfile("tit-3", { ...personal, docNumber: "1036123456" });
+    expect(await changes("tit-3")).toHaveLength(0);
+  });
+});

@@ -1,8 +1,9 @@
 import { isAddress } from "viem";
 import { z } from "zod";
 import { handleError, readJson } from "@/lib/api";
-import { getSessionUser, unauthorized } from "@/lib/session";
+import { getSessionUser, jsonError, unauthorized } from "@/lib/session";
 import { createBankWithdrawal, createWalletWithdrawal } from "@/lib/withdrawals";
+import { TOO_MANY_WITHDRAWALS, withdrawalLimiter } from "@/lib/security/limits";
 import { safeText } from "@/lib/security/text";
 
 const Body = z.discriminatedUnion("to", [
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     const user = await getSessionUser();
     if (!user) return unauthorized();
     const b = Body.parse(await readJson(req));
+    if (!(await withdrawalLimiter.hit(user.id))) return jsonError(TOO_MANY_WITHDRAWALS, 429);
     if (b.to === "banco") {
       const { amountCop, ...destination } = b;
       return Response.json({ withdrawal: await createBankWithdrawal({ userId: user.id, amountCop, destination }) }, { status: 201 });

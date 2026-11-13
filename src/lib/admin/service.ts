@@ -4,7 +4,6 @@ import { and, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { PLANT } from "@/config/plant";
 import type { SolarDay } from "@/config/solar";
 import { db } from "@/lib/db";
-import { writeTransaction } from "@/lib/db/transaction";
 import {
   adminAudit,
   companyProfile,
@@ -17,11 +16,12 @@ import {
   type AdminAction,
 } from "@/lib/db/schema";
 import { monthKey, monthStartMs } from "./analytics";
+import { audit, type Actor } from "./audit";
 import { DAY_MS } from "@/lib/time";
 import { env, isDemoMode } from "@/lib/env";
 import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
-import { newId, orderCode, simulatedTxHash } from "@/lib/ids";
+import { orderCode, simulatedTxHash } from "@/lib/ids";
 import { fulfillOrder } from "@/lib/orders";
 import { collectedWhere } from "@/lib/payments/real-money";
 import {
@@ -40,36 +40,8 @@ import { summarize, toSubscriptionDTO, toTxDTO, type SubscriptionDTO } from "@/l
 import { TERMS_VERSION, requireCompleteProfile } from "@/lib/profile";
 import { invalidateSettings, readConfig, readSettings } from "@/lib/settings";
 
-export interface Actor {
-  id: string;
-  name: string;
-}
-
-/**
- * Deja constancia en la bitácora. Va en una transacción de escritura para esperar su turno: si otra escritura
- * (por ejemplo, un doble clic que confirma el mismo pago) tiene la base ocupada, la constancia no se pierde.
- * No se llama dentro de otra transacción de escritura.
- */
-export async function audit(
-  actor: Actor,
-  action: AdminAction,
-  summary: string,
-  detail?: unknown,
-  targetUserId?: string,
-) {
-  await writeTransaction((session) =>
-    session.insert(adminAudit).values({
-      id: newId("aud-"),
-      actorUserId: actor.id,
-      actorName: actor.name,
-      action,
-      targetUserId: targetUserId ?? null,
-      summary,
-      detail: detail === undefined ? null : JSON.stringify(detail),
-      createdAt: Date.now(),
-    }),
-  );
-}
+// La bitácora vive en su propio módulo (lo usan también el perfil y los pagos); se sigue exportando desde aquí.
+export { audit, type Actor };
 
 /** La bitácora, de lo más reciente a lo más antiguo; `action` deja un tipo y `query` busca en el texto y en quién lo hizo. */
 export async function listAudit(limit = 50, { action, query = "" }: { action?: string; query?: string } = {}) {
@@ -349,7 +321,8 @@ export async function closeSubscription(
     throw new MarketError("Plan no encontrado", 404);
   const now = Date.now();
   const state = stateOf(sub, now);
-  if (state !== "activa" && state !== "en_pausa")
+  // También en revisión: un pago devuelto es justo el caso en que el plan se cierra.
+  if (sub.cancelledAt != null || !["activa", "en_pausa", "en_revision"].includes(state))
     throw new MarketError("Este plan ya terminó o ya estaba cerrado.", 409);
   const res = await db
     .update(planSubscription)
@@ -378,6 +351,7 @@ export async function closeSubscription(
 
 /* ───────────── Retiros ───────────── */
 
+/** Los retiros para el admin: primero todos los que esperan el envío, después los ya revisados más recientes. */
 export async function listWithdrawals() {
   await readSettings();
   const rows = await db
@@ -398,8 +372,9 @@ export async function listWithdrawals() {
         inArray(ledgerTx.status, ["por_aprobar", "confirmada", "rechazada"]),
       ),
     )
-    .orderBy(desc(ledgerTx.createdAt))
-    .limit(100);
+    // Un retiro por pagar nunca se queda por fuera de la lista, por antiguo que sea.
+    .orderBy(sql`case when ${ledgerTx.status} = 'por_aprobar' then 0 else 1 end`, desc(ledgerTx.createdAt))
+    .limit(200);
   return rows.map((r) => ({
     ...toTxDTO(r.tx),
     userId: r.tx.userId,

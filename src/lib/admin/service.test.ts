@@ -85,6 +85,7 @@ describe("cerrar un plan", () => {
     await expect(admin.closeSubscription(actor, sub.id, "otra vez")).rejects.toMatchObject({ status: 409 });
     vi.setSystemTime(T0);
   });
+
 });
 
 describe("clientes y resumen", () => {
@@ -168,6 +169,51 @@ describe("comercializador con datos personales", () => {
       vi.setSystemTime(T0 + 10 * DAY_MS);
       const w = await createBankWithdrawal({ userId: "personal", amountCop: 100_000, destination: { bank: "Bancolombia", accountType: "ahorros", accountNumber: "12345678901" } });
       expect((await admin.listWithdrawals()).find((item) => item.id === w.id)).toMatchObject({ fullName: "Mariana Restrepo", userName: "Alias de Google", companyName: "", nit: "", status: "por_aprobar" });
+    } finally {
+      vi.setSystemTime(T0);
+    }
+  });
+});
+
+describe("retiros para el admin", () => {
+  it("los que esperan el envío van primero, aunque sean más antiguos que los ya revisados", async () => {
+    const { db } = await import("@/lib/db");
+    const { ledgerTx } = await import("@/lib/db/schema");
+    await createUser("orden-retiros");
+    const retiro = (id: string, status: "por_aprobar" | "confirmada" | "rechazada", daysAgo: number) => ({
+      id,
+      userId: "orden-retiros",
+      kind: "retiro" as const,
+      status,
+      amountCop: 200_000,
+      createdAt: T0 - daysAgo * DAY_MS,
+    });
+    await db.insert(ledgerTx).values([retiro("RET-VIEJO-PENDIENTE", "por_aprobar", 40), retiro("RET-NUEVO-PAGADO", "confirmada", 1), retiro("RET-NUEVO-RECHAZADO", "rechazada", 2)]);
+    const list = (await admin.listWithdrawals()).filter((w) => w.userId === "orden-retiros").map((w) => w.id);
+    expect(list).toEqual(["RET-VIEJO-PENDIENTE", "RET-NUEVO-PAGADO", "RET-NUEVO-RECHAZADO"]);
+    const all = await admin.listWithdrawals();
+    const firstReviewed = all.findIndex((w) => w.status !== "por_aprobar");
+    expect(all.slice(firstReviewed).some((w) => w.status === "por_aprobar")).toBe(false);
+  });
+});
+
+// Al final del archivo: este plan nuevo no debe cambiar los totales que comprueban las pruebas anteriores.
+describe("cerrar un plan en revisión", () => {
+  it("también se puede cerrar un plan con una devolución por conciliar: deja de generar y libera el cupo", async () => {
+    const { db } = await import("@/lib/db");
+    const { paymentReview } = await import("@/lib/db/schema");
+    await createUser("revision", { name: "Pago Devuelto S.A.S." });
+    const { order } = await pay.payWithTestPayment({ userId: "revision", planId: "p180" });
+    // La pasarela devolvió el pago: el plan queda en revisión hasta conciliar.
+    await db.insert(paymentReview).values({ paymentId: order.id, userId: "revision", subscriptionId: order.subscriptionId!, occurredAt: T0 + DAY_MS, reason: "charged_back" });
+    vi.setSystemTime(T0 + 2 * DAY_MS);
+    try {
+      const [sub] = await plans.listSubscriptions("revision");
+      expect(plans.stateOf(sub, Date.now())).toBe("en_revision");
+      const before = await plans.contractedDailyKwh();
+      await admin.closeSubscription(actor, sub.id, "El banco desconoció el pago");
+      expect(await plans.contractedDailyKwh()).toBe(before - 2000);
+      await expect(admin.closeSubscription(actor, sub.id, "otra vez")).rejects.toMatchObject({ status: 409 });
     } finally {
       vi.setSystemTime(T0);
     }

@@ -368,6 +368,8 @@ export const ADMIN_ACTIONS = [
   "rechazar_transferencia",
   "eliminar_cuenta",
   "responder_solicitud_datos",
+  // Lo hace el propio titular: cambió su nombre o su documento teniendo ya pagos o retiros.
+  "cambio_titular",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

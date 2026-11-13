@@ -97,6 +97,15 @@ describe("lista de configuración", () => {
     expect(checks["cripto-billetera"].state).toBe("ok");
   });
 
+  it("los textos legales aprobados pero con los datos de la empresa sin completar todavía bloquean", () => {
+    const filled = { reviewed: true, version: "2026-11-12", nit: "901234567-1", address: "Calle 10 # 43-12, oficina 501", city: "Medellín", email: "datos@xgreen.co", phone: "604 444 5566" };
+    expect(status.legalCheck(filled)).toEqual({ state: "ok", detail: "Versión 2026-11-12." });
+    expect(status.legalCheck({ ...filled, reviewed: false }).state).toBe("falta");
+    const missing = status.legalCheck({ ...filled, nit: "[NIT de la empresa]", phone: " " });
+    expect(missing.state).toBe("falta");
+    expect(missing.detail).toMatch(/el NIT, el teléfono/);
+  });
+
   it("el modo de pruebas, los textos legales pendientes y la falta de soporte bloquean la salida en vivo", async () => {
     const checks = await byId();
     expect(checks.modo).toMatchObject({ required: true, state: "falta" });

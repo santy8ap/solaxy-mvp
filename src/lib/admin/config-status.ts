@@ -39,6 +39,29 @@ export interface ConfigCheck {
 
 const has = (name: string) => Boolean(process.env[name]?.trim());
 
+/**
+ * Los textos legales están listos cuando un abogado los aprobó (`reviewed`) y los datos de la empresa ya no
+ * son los de la plantilla (entre corchetes): si no, las páginas públicas muestran «[NIT de la empresa]».
+ */
+export function legalCheck(legal: { reviewed: boolean; version: string; nit: string; address: string; city: string; email: string; phone: string }): { state: CheckState; detail: string } {
+  const pending = (
+    [
+      ["el NIT", legal.nit],
+      ["la dirección", legal.address],
+      ["la ciudad", legal.city],
+      ["el correo", legal.email],
+      ["el teléfono", legal.phone],
+    ] as const
+  )
+    .filter(([, value]) => !value.trim() || value.trim().startsWith("["))
+    .map(([label]) => label);
+  if (!legal.reviewed)
+    return { state: "falta", detail: "Están en borrador: un abogado debe revisarlos y completar los datos de la empresa (src/config/legal.ts)." };
+  if (pending.length)
+    return { state: "falta", detail: `Faltan datos de la empresa en src/config/legal.ts: ${pending.join(", ")}. Hoy salen entre corchetes en los Términos y en la Política de Datos.` };
+  return { state: "ok", detail: `Versión ${legal.version}.` };
+}
+
 async function probe<T>(fn: () => Promise<T>, ms = 6000): Promise<T> {
   return Promise.race([
     fn(),
@@ -208,10 +231,7 @@ export async function configStatus({
     id: "legal",
     group: "Legal",
     title: "Términos y Política de Datos",
-    state: LEGAL.reviewed ? "ok" : "falta",
-    detail: LEGAL.reviewed
-      ? `Versión ${LEGAL.version}.`
-      : "Están en borrador: un abogado debe revisarlos y completar los datos de la empresa (src/config/legal.ts).",
+    ...legalCheck(LEGAL),
     required: true,
   });
 
