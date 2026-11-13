@@ -22,9 +22,18 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+/** La URL pública para los metadatos. Si BETTER_AUTH_URL estuviera mal escrita, la página igual compila. */
+function siteUrl() {
+  try {
+    return new URL(baseUrl());
+  } catch {
+    return undefined;
+  }
+}
+
 export const metadata: Metadata = {
   // Con la URL pública, los enlaces compartidos (WhatsApp, redes) y los buscadores resuelven las rutas completas.
-  metadataBase: new URL(baseUrl()),
+  metadataBase: siteUrl(),
   title: { default: `${BRAND.name} · ${BRAND.tagline}`, template: `%s · ${BRAND.name}` },
   description: BRAND.description,
   applicationName: BRAND.name,

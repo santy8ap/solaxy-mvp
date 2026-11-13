@@ -117,7 +117,7 @@ export async function configStatus({
             ? "Esta vista previa no tiene base propia: usa un archivo temporal y nunca la base de producción. Conéctale una en Vercel › Storage con el prefijo PREVIEW."
             : process.env.VERCEL
               ? "Sin Turso, los datos se borran cuando Vercel reinicia la función. Conéctalo en Vercel › Storage."
-              : "Archivo local (data/iwe.db).",
+              : `Archivo local (${target.url.replace(/^file:/, "")}).`,
     vars: process.env.VERCEL_ENV === "preview" ? ["PREVIEW_TURSO_DATABASE_URL", "PREVIEW_TURSO_AUTH_TOKEN"] : ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"],
     required: Boolean(process.env.VERCEL),
   });
