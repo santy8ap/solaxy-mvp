@@ -4,13 +4,17 @@ import { useId, useState } from "react";
 import type { CatalogDTO } from "@/lib/client/use-catalog";
 import { PriceBreakdown } from "./price-breakdown";
 
-export function ProfitPreview({ plans, initialPlanId }: { plans: CatalogDTO["plans"]; initialPlanId?: string | null }) {
+export function ProfitPreview({ plans, initialPlanId, className = "" }: {
+  plans: CatalogDTO["plans"];
+  initialPlanId?: string | null;
+  className?: string;
+}) {
   const id = useId();
   const [selectedId, setSelectedId] = useState(initialPlanId ?? plans[0]?.id ?? "");
   const plan = plans.find((item) => item.id === selectedId) ?? plans[0];
   if (!plan) return null;
   return (
-    <section className="mt-12 border-t border-line-strong pt-8" aria-labelledby={`${id}-title`}>
+    <section className={`mt-12 border-t border-line-strong pt-8 ${className}`} aria-labelledby={`${id}-title`}>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <h2 id={`${id}-title`} className="text-xl font-medium">Compra, venta y utilidad</h2>

@@ -17,12 +17,16 @@ import { CatalogValue } from "./catalog-value";
 export function LandingNav() {
   return (
     <header className="landing-header sticky top-0 z-40 border-b border-line bg-void/90 backdrop-blur-md">
-      <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-8 lg:gap-6">
-        <Link href="/" className="inline-flex shrink-0 items-center" aria-label={`${BRAND.name}, inicio`}>
+      <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)_auto] grid-rows-[68px_auto] items-center gap-x-2 px-4 sm:px-8 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[80px] lg:gap-x-6">
+        <Link href="/" className="col-start-1 row-start-1 inline-flex items-center justify-self-start" aria-label={`${BRAND.name}, inicio`}>
           <Logo size="header" />
         </Link>
+        <div className="col-start-2 row-start-1 flex items-center gap-1.5 sm:gap-2 lg:col-start-3">
+          <AccountLink />
+          <ThemeSelector />
+        </div>
         <nav
-          className="landing-nav hidden items-center gap-3 whitespace-nowrap text-xs text-fog md:flex lg:gap-5 lg:text-sm xl:gap-7"
+          className="landing-nav col-span-2 col-start-1 row-start-2 flex min-h-11 items-stretch justify-between gap-1 whitespace-nowrap border-t border-line text-xs text-fog lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:justify-center lg:gap-4 lg:border-0 lg:text-sm xl:gap-7"
           aria-label="Secciones"
         >
           <a href="#reloj" className="hover:text-ink">
@@ -41,10 +45,6 @@ export function LandingNav() {
             Ayuda
           </Link>
         </nav>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <AccountLink />
-          <ThemeSelector />
-        </div>
       </div>
     </header>
   );
@@ -122,7 +122,7 @@ export function HowItWorks() {
   return (
     <section
       id="como-funciona"
-      className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8"
+      className="mx-auto max-w-[1240px] px-5 sm:px-8"
     >
       <h2 className="display landing-reveal text-[clamp(3rem,7vw,5.5rem)]">Cómo funciona</h2>
       <ol className="mt-10 grid gap-0 border-t border-line-strong md:grid-cols-3">
@@ -196,7 +196,7 @@ export function Faq() {
   return (
     <section
       id="preguntas"
-      className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8"
+      className="mx-auto max-w-[1240px] px-5 sm:px-8"
     >
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
         <h2 className="display landing-reveal text-[clamp(3rem,7vw,5.5rem)]">Preguntas</h2>

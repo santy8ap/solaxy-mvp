@@ -25,16 +25,24 @@ export function PlansTable({
   catalog,
   action,
   selectedId,
+  layout = "responsive",
 }: {
   catalog: CatalogDTO;
   action?: (plan: Plan) => React.ReactNode;
   selectedId?: string | null;
+  layout?: "responsive" | "table";
 }) {
+  const tableOnly = layout === "table";
   return (
     <>
       {/* Escritorio: una tabla */}
-      <div className="hidden lg:block">
-        <table className="w-full border-collapse text-left">
+      <div
+        className={tableOnly ? "overflow-x-auto" : "hidden lg:block"}
+        role={tableOnly ? "region" : undefined}
+        aria-label={tableOnly ? "Tabla comparativa de planes" : undefined}
+        tabIndex={tableOnly ? 0 : undefined}
+      >
+        <table className={`w-full border-collapse text-left ${tableOnly ? "min-w-[760px]" : ""}`}>
           <caption className="sr-only">
             Planes de energía de 3 meses, con pago mensual
           </caption>
@@ -117,58 +125,60 @@ export function PlansTable({
       </div>
 
       {/* Celular y tableta: un bloque por plan */}
-      <ul className="lg:hidden">
-        {catalog.plans.map((p) => {
-          const selected = p.id === selectedId;
-          return (
-            <li
-              key={p.id}
-              className={`border-t border-line-strong py-6 ${selected ? "-mx-4 bg-ink px-4 text-void" : ""} ${p.available ? "" : "text-dim"}`}
-            >
-              <div className="flex items-end justify-between gap-4">
-                <h3 className="display text-[2.75rem]">{p.name}</h3>
-                <p className="text-right">
-                  <span
-                    className={`cap block ${selected ? "text-void/70" : ""}`}
-                  >
-                    Utilidad bruta
-                  </span>
-                  <span className="figure text-[2.75rem]">
-                    {pctLabel(p.profitPct)}
-                  </span>
-                </p>
-              </div>
-              <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                {[
-                  ["Energía en 3 meses", `${formatNumber(p.totalKwh)} kWh`],
-                  ["Cada día", `${formatNumber(p.dailyKwh)} kWh`],
-                  ["Compra / kWh", formatCop(p.priceCopPerKwh)],
-                  ["Venta / kWh", formatCop(p.saleCopPerKwh)],
-                ].map(([k, v]) => (
-                  <div key={k}>
-                    <dt className={`cap ${selected ? "text-void/70" : ""}`}>
-                      {priceLabel(k)}
-                    </dt>
-                    <dd className="num mt-1 text-base">{v}</dd>
-                  </div>
-                ))}
-                <div className="col-span-2">
-                  <dt className={`cap ${selected ? "text-void/70" : ""}`}>
-                    Pago mensual
-                  </dt>
-                  <dd className="num mt-1 text-xl">
-                    {formatCop(p.monthlyCop)}
-                  </dd>
+      {!tableOnly && (
+        <ul className="lg:hidden">
+          {catalog.plans.map((p) => {
+            const selected = p.id === selectedId;
+            return (
+              <li
+                key={p.id}
+                className={`border-t border-line-strong py-6 ${selected ? "-mx-4 bg-ink px-4 text-void" : ""} ${p.available ? "" : "text-dim"}`}
+              >
+                <div className="flex items-end justify-between gap-4">
+                  <h3 className="display text-[2.75rem]">{p.name}</h3>
+                  <p className="text-right">
+                    <span
+                      className={`cap block ${selected ? "text-void/70" : ""}`}
+                    >
+                      Utilidad bruta
+                    </span>
+                    <span className="figure text-[2.75rem]">
+                      {pctLabel(p.profitPct)}
+                    </span>
+                  </p>
                 </div>
-              </dl>
-              {!p.available && (
-                <p className="cap mt-3 text-dim">Sin cupo por ahora</p>
-              )}
-              {action && <div className="mt-5">{action(p)}</div>}
-            </li>
-          );
-        })}
-      </ul>
+                <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  {[
+                    ["Energía en 3 meses", `${formatNumber(p.totalKwh)} kWh`],
+                    ["Cada día", `${formatNumber(p.dailyKwh)} kWh`],
+                    ["Compra / kWh", formatCop(p.priceCopPerKwh)],
+                    ["Venta / kWh", formatCop(p.saleCopPerKwh)],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <dt className={`cap ${selected ? "text-void/70" : ""}`}>
+                        {priceLabel(k)}
+                      </dt>
+                      <dd className="num mt-1 text-base">{v}</dd>
+                    </div>
+                  ))}
+                  <div className="col-span-2">
+                    <dt className={`cap ${selected ? "text-void/70" : ""}`}>
+                      Pago mensual
+                    </dt>
+                    <dd className="num mt-1 text-xl">
+                      {formatCop(p.monthlyCop)}
+                    </dd>
+                  </div>
+                </dl>
+                {!p.available && (
+                  <p className="cap mt-3 text-dim">Sin cupo por ahora</p>
+                )}
+                {action && <div className="mt-5">{action(p)}</div>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </>
   );
 }

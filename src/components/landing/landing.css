@@ -27,12 +27,15 @@ html[data-theme="green"] .landing-main {
 
 .landing-nav a {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 0.25rem;
   transition: color 180ms;
 }
 
 .landing-nav a::after {
   position: absolute;
-  inset: auto 0 -7px;
+  inset: auto 0 0;
   height: 1px;
   background: currentColor;
   content: "";
@@ -41,8 +44,29 @@ html[data-theme="green"] .landing-main {
   transition: transform 220ms var(--ease-out-soft);
 }
 
-.landing-nav a:is(:hover, :focus-visible)::after {
+html:has(#reloj:target) .landing-nav a[href="#reloj"],
+html:has(#planes:target) .landing-nav a[href="#planes"],
+html:has(#como-funciona:target) .landing-nav a[href="#como-funciona"],
+html:has(#preguntas:target) .landing-nav a[href="#preguntas"] {
+  color: var(--color-ink);
+}
+
+.landing-nav a:is(:hover, :focus-visible)::after,
+html:has(#reloj:target) .landing-nav a[href="#reloj"]::after,
+html:has(#planes:target) .landing-nav a[href="#planes"]::after,
+html:has(#como-funciona:target) .landing-nav a[href="#como-funciona"]::after,
+html:has(#preguntas:target) .landing-nav a[href="#preguntas"]::after {
   transform: scaleX(1);
+}
+
+.landing-main section[id] {
+  scroll-margin-top: 8rem;
+}
+
+@media (min-width: 64rem) {
+  .landing-main section[id] {
+    scroll-margin-top: 6rem;
+  }
 }
 
 .landing-headline > span {
@@ -121,18 +145,46 @@ html[data-theme="green"] .landing-main {
   background: rgb(var(--landing-sunlight) / 0.05);
 }
 
-.landing-plan-list tbody tr,
-.landing-plan-list li,
+.landing-plan-comparison tbody tr,
 .landing-step,
 .landing-faq {
   transition: background-color 220ms;
 }
 
-.landing-plan-list tbody tr:is(:hover, :focus-within),
-.landing-plan-list li:is(:hover, :focus-within),
+.landing-plan-comparison tbody tr:hover,
 .landing-step:hover,
 .landing-faq[open] {
   background-color: rgb(var(--landing-sunlight) / 0.07);
+}
+
+.landing-plan-card {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(var(--landing-sunlight) / 0.08), transparent 65%),
+    var(--color-raise);
+  transition: border-color 220ms, translate 220ms var(--ease-out-soft);
+}
+
+.landing-plan-card:is(:hover, :focus-within),
+.landing-plan-comparison[open] {
+  border-color: rgb(var(--landing-sunlight) / 0.75);
+}
+
+.landing-plan-margin {
+  color: rgb(var(--landing-sunlight));
+}
+
+.landing-plan-action svg {
+  transition: transform 220ms var(--ease-out-soft);
+}
+
+.landing-plan-comparison summary:hover {
+  background-color: rgb(var(--landing-sunlight) / 0.06);
+}
+
+.landing-profit {
+  background:
+    radial-gradient(ellipse at 92% 0%, rgb(var(--landing-sunlight) / 0.09), transparent 64%),
+    var(--color-raise);
 }
 
 .landing-finale {
@@ -203,6 +255,20 @@ html[data-theme="green"] .landing-main {
     animation: landing-rise-in 280ms var(--ease-out-soft) both;
   }
 
+  .landing-plan-comparison[open] > div {
+    animation: landing-rise-in 260ms var(--ease-out-soft) both;
+  }
+
+  .landing-plan-action:is(:hover, :focus-visible) svg {
+    transform: translateX(3px);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .landing-plan-card:hover {
+      translate: 0 -3px;
+    }
+  }
+
   @supports (animation-timeline: view()) {
     .landing-header::after {
       animation: landing-scroll-progress linear both;
@@ -234,8 +300,7 @@ html[data-theme="green"] .landing-main {
       animation-range: entry 12% entry 100%;
     }
 
-    .landing-reveal,
-    .landing-plan-list {
+    .landing-reveal {
       animation: landing-section-rise linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 85%;

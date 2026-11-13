@@ -25,6 +25,36 @@ test("los enlaces antiguos, la ayuda y las rutas privadas responden correctament
   expect((await request.get("/api/cron/payments")).status()).toBe(401);
 });
 
+test("la navegación y el comparador de planes funcionan desde la portada", async ({ page }) => {
+  await page.goto("/");
+  const header = page.getByRole("banner");
+  const nav = header.getByRole("navigation", { name: "Secciones" });
+  await nav.getByRole("link", { name: "Planes", exact: true }).click();
+  await expect(page).toHaveURL(/\/#planes$/);
+
+  const plans = page.getByRole("region", { name: /Cuatro planes/i });
+  const plan = plans.getByRole("list", { name: "Planes de energía" })
+    .getByRole("listitem").filter({ has: page.getByRole("heading", { name: /^Plan 180$/i }) });
+  await expect(plan).toContainText("20.880.000");
+  await expect(plan).toContainText("14,94");
+  await expect(plan.getByRole("link", { name: "Elegir Plan 180" })).toHaveAttribute("href", "/comprar?plan=p180");
+
+  await plans.getByText("Comparar todos los planes", { exact: true }).click();
+  const comparison = plans.getByRole("region", { name: "Tabla comparativa de planes" });
+  await expect(comparison.getByRole("rowheader")).toHaveCount(4);
+  await expect(comparison.getByRole("row").filter({ hasText: /Plan 180/i })).toContainText("20.880.000");
+  await expect(plans.getByRole("heading", { name: /Cuatro planes/i })).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
+  ).toBe(true);
+
+  const preview = plans.getByRole("region", { name: "Compra, venta y utilidad" });
+  await preview.getByRole("combobox", { name: "Plan" }).selectOption("p180");
+  await expect(preview.getByText(/14,94\s*% sobre la compra/)).toBeVisible();
+  await nav.getByRole("link", { name: "Ayuda", exact: true }).click();
+  await expect(page).toHaveURL(/\/ayuda$/);
+});
+
 test("plan → ingreso → datos personales → resumen → pago de prueba → PDF e historial", async ({
   page,
 }) => {

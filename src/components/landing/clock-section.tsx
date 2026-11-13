@@ -24,7 +24,7 @@ export function ClockSection() {
   const dash = <span className="text-dim">—</span>;
 
   return (
-    <section id="reloj" aria-labelledby="reloj-titulo" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8">
+    <section id="reloj" aria-labelledby="reloj-titulo" className="mx-auto max-w-[1240px] px-5 sm:px-8">
       <div className="landing-clock border border-line-strong">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 px-4 pt-5 sm:px-7 sm:pt-7">
           <h2 id="reloj-titulo" className="display landing-reveal text-[clamp(2.25rem,6vw,3.75rem)]">
