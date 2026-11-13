@@ -155,13 +155,13 @@ export function MobileBar() {
   );
 }
 
-/** Aviso fijo mientras la página está en modo de pruebas: nada de lo que se ve aquí es dinero real. */
+/** Indica que está habilitada la opción de pago de prueba. */
 export function TestModeBar() {
   const { config } = useAppConfig();
   if (!config?.demoMode) return null;
   return (
     <p className="border-b border-line bg-ink px-4 py-1.5 text-center text-xs font-medium text-void">
-      Modo de pruebas: los pagos y los saldos no son dinero real.
+      Pago de prueba habilitado. Consulta el medio de cada pago en Movimientos.
     </p>
   );
 }

@@ -95,6 +95,8 @@ test("el resultado muestra el comprobante solo cuando se confirma el pago", asyn
           amountCop: 20_880_000,
           kwh: 60_000,
           periodIndex: 2,
+          method: "mercadopago",
+          network: "Mercado Pago (pruebas)",
           status: confirmed ? "confirmada" : "pendiente",
         },
         outcome: confirmed ? "aprobada" : "sin_pago",
@@ -111,6 +113,7 @@ test("el resultado muestra el comprobante solo cuando se confirma el pago", asyn
   await page.getByRole("button", { name: "Volver a consultar" }).click();
   await expect(page.getByRole("heading", { name: "Pago confirmado" })).toBeVisible();
   await expect(page.getByText(/Si pagaste por adelantado, el nuevo periodo empieza al terminar el anterior/)).toBeVisible();
+  await expect(page.getByText("Operación de prueba", { exact: true })).toBeVisible();
   await expect(receipt).toBeVisible();
 });
 
@@ -191,6 +194,7 @@ test("plan → ingreso → datos personales → resumen → pago de prueba → P
     page.getByRole("heading", { name: "Pago confirmado" }),
   ).toBeVisible();
   await expect(page.getByText(/Registramos el pago del mes 1.*60\.000 kWh durante 30 días/)).toBeVisible();
+  await expect(page.getByText("Operación de prueba", { exact: true })).toBeVisible();
   await expect(page.getByText(order.id, { exact: true })).toBeVisible();
   const pdfDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: /Comprobante PDF/i }).click();

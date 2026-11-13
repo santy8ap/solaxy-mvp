@@ -170,8 +170,8 @@ const FAQ = [
 ];
 
 const FAQ_TEST: (typeof FAQ)[number] = {
-  q: "¿Esta página ya cobra dinero real?",
-  a: "Todavía no. Está en modo de pruebas: los pagos son de prueba y no se mueve dinero real.",
+  q: "¿Cómo hago un pago de prueba?",
+  a: "En la compra, elige «Pago de prueba» para simular el pago de una mensualidad. Revisa el medio seleccionado antes de continuar.",
 };
 
 export function Faq() {
@@ -237,10 +237,6 @@ export function Footer() {
         <div>
           <Logo />
           <p className="mt-5 max-w-[52ch] leading-relaxed">
-            {BRAND.legalName}.{" "}
-            {isDemoMode()
-              ? "Página en modo de pruebas: los pagos son de prueba y no se mueve dinero real. "
-              : ""}
             La energía de cada plan se calcula con la curva estimada del
             reloj solar.
           </p>

@@ -4,6 +4,7 @@ import { Download } from "lucide-react";
 import { downloadCsv } from "@/lib/csv";
 import { isoColombiaDate } from "@/lib/history-filters";
 import { useState } from "react";
+import { PLAN_MONTHS } from "@/config/plans";
 import { isGenerating, nextSunriseMs, sunsetMs } from "@/lib/energy/solar-day";
 import { userPowerKw } from "@/lib/energy/plan-math";
 import { dailyReturns, type DayReturn } from "@/lib/energy/summary";
@@ -136,7 +137,7 @@ function DailyReturns({
               Venta
             </th>
             <th scope="col" className="cap py-3 pl-6 text-right font-medium">
-              Utilidad
+              Utilidad bruta
             </th>
           </tr>
         </thead>
@@ -215,9 +216,9 @@ export function Overview() {
               Elige tu primer plan
             </h2>
             <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
-              Compras energía para 3 meses y la pagas mes a mes. Cuando se
-              confirma el primer pago, tu energía empieza a contar aquí, segundo
-              a segundo, mientras la planta genera.
+              Contrata energía para {PLAN_MONTHS} meses y paga mes a mes.
+              Una vez confirmado el primer pago, el contador avanza durante
+              el horario del reloj solar.
             </p>
             <Link href="/panel/planes" className="btn btn-solid mt-8">
               Ver los planes
@@ -299,15 +300,15 @@ export function Overview() {
           )}
           {idle ? (
             <p className="mt-8 max-w-[46ch] text-sm leading-relaxed text-mute">
-              Sin un mes activo, tus planes no generan. Lo que ya generaste
-              sigue en tu saldo.
+              Sin un periodo activo, el contador se detiene. Puedes consultar
+              el saldo disponible en Movimientos.
             </p>
           ) : (
             <dl className="mt-9 grid grid-cols-2 gap-6">
-              <Reading label="Potencia ahora">
+              <Reading label="Potencia estimada">
                 {now == null ? "\u00a0" : `${formatNumber(power, 1)} kW`}
               </Reading>
-              <Reading label={sunUp ? "Genera hasta" : "Vuelve a generar"}>
+              <Reading label={sunUp ? "Fin del horario solar" : "Próximo horario solar"}>
                 {now == null
                   ? "\u00a0"
                   : formatTime(
@@ -332,14 +333,14 @@ export function Overview() {
           {formatCop(Math.floor(totals.soldCop))}
         </Stat>
         <Stat
-          label="Utilidad"
+          label="Utilidad bruta"
           note="La venta menos lo que pagaste por esa energía"
         >
           {formatCop(Math.floor(totals.profitCop))}
         </Stat>
         <Stat
           label="Rendimiento diario"
-          note={idle ? "Sin un mes activo" : "Utilidad de cada día completo"}
+          note={idle ? "Sin un periodo activo" : "Utilidad bruta estimada por día completo"}
         >
           {formatCop(Math.round(totals.dailyProfitCop))}
         </Stat>

@@ -76,7 +76,7 @@ export function SolarClock({ solar, now, previewFraction, size = "hero", classNa
       : now == null
         ? `Curva solar estimada de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}, con un máximo de ${formatNumber(solar.peakKw)} kW.`
         : generating
-          ? `Curva solar a las ${formatTime(now)}. Potencia estimada de ${formatNumber(power)} kW, el ${Math.round(s * 100)} % del máximo.`
+          ? `A las ${formatTime(now)}, la curva solar estima ${formatNumber(power)} kW, el ${Math.round(s * 100)} % del máximo.`
           : `Curva solar a las ${formatTime(now)}, fuera del horario de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}.`;
 
   return (

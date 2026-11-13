@@ -51,8 +51,8 @@ async function Options({ searchParams }: { searchParams: Promise<Params> }) {
       />
       {isDemoMode() && (
         <p className="mt-7 text-xs leading-relaxed text-mute">
-          Página en modo de pruebas: la cuenta de pruebas y sus pagos no mueven
-          dinero real.
+          La cuenta de pruebas está habilitada. Elige «Pago de prueba» al
+          comprar para simular una mensualidad.
         </p>
       )}
     </>

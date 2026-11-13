@@ -81,10 +81,6 @@ function Purchase({
     [move],
   );
   const complete = Boolean(profile?.complete);
-  const isTest =
-    order?.method === "demo" ||
-    order?.chainId === 97 ||
-    Boolean(order?.network?.includes("pruebas"));
 
   return (
     <div className="min-h-dvh bg-void">
@@ -283,11 +279,6 @@ function Purchase({
                     order={order}
                     className="mt-6 text-lg leading-relaxed text-fog"
                   />
-                  {isTest && (
-                    <p className="mt-5 border-l-2 border-ink pl-4 text-sm text-fog">
-                      Operación de prueba: no se movió dinero real.
-                    </p>
-                  )}
                   <dl className="mt-8 space-y-4 border-y border-line py-6">
                     {[
                       ["Referencia", order.id],

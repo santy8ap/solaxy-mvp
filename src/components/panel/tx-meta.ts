@@ -36,7 +36,7 @@ export function txDetail(t: TxDTO) {
     const amount = t.assetAmount != null && t.asset && t.asset !== "COP" ? `${formatAsset(t.assetAmount, t.asset)} a ` : "";
     return `${amount}${t.walletName ?? "wallet"} ${shortAddress(t.walletAddress)}`;
   }
-  const parts = [methodLabel(t.method)];
+  const parts = [paymentMethodLabel(t)];
   if (t.method === "crypto" && t.assetAmount != null && t.asset) parts.push(formatAsset(t.assetAmount, t.asset));
   if (t.kwh) parts.push(`${formatNumber(t.kwh)} kWh`);
   if (t.status === "verificando" && t.providerStatus) parts.push(t.providerStatus);
