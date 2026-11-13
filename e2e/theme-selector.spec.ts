@@ -28,6 +28,7 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   await expect(trigger).toHaveAccessibleName(/Verde seleccionado/);
 
   const clockLink = page.getByRole("link", { name: "Ver reloj solar", exact: true });
+  await expect(clockLink).toHaveCSS("position", "relative");
   await expect.poll(() => clockLink.locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await clockLink.click();
   await expect(page).toHaveURL(/\/#reloj$/);

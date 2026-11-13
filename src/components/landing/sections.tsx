@@ -13,7 +13,6 @@ import { AccountLink } from "@/components/auth/account-link";
 import { Logo } from "@/components/ui/logo";
 import { ThemeSelector } from "@/components/ui/theme-selector";
 import { CatalogValue } from "./catalog-value";
-import styles from "./landing.module.css";
 
 export function LandingNav() {
   return (
@@ -23,7 +22,7 @@ export function LandingNav() {
           <Logo size="header" />
         </Link>
         <nav
-          className={`${styles.nav} hidden items-center gap-3 whitespace-nowrap text-xs text-fog md:flex lg:gap-5 lg:text-sm xl:gap-7`}
+          className="landing-nav hidden items-center gap-3 whitespace-nowrap text-xs text-fog md:flex lg:gap-5 lg:text-sm xl:gap-7"
           aria-label="Secciones"
         >
           <a href="#reloj" className="hover:text-ink">
@@ -55,12 +54,12 @@ export function Hero() {
   return (
     <section className="mx-auto grid max-w-[1240px] items-center gap-9 px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-16 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-10 lg:pt-[4.5rem] xl:gap-14">
       <div className="min-w-0">
-        <h1 className={`display ${styles.headline}`}>
+        <h1 className="display landing-headline text-[clamp(3rem,11vw,6rem)] lg:text-[clamp(4.6rem,8.5vw,7.5rem)]">
           <span>Bienvenido</span>{" "}
           <span>al mundo de</span>{" "}
-          <span className={styles.headlineAccent}>la energía</span>
+          <span className="landing-headline-accent">la energía</span>
         </h1>
-        <div className={`${styles.heroIntro} mt-6 sm:mt-8`}>
+        <div className="landing-intro mt-6 sm:mt-8">
           <p className="max-w-[47ch] leading-relaxed text-fog sm:text-lg">
             Como comercializador compras energía a precio de plan, desde{" "}
             <CatalogValue pick="lowestPrice" /> el kWh. La planta la genera cada
@@ -68,7 +67,7 @@ export function Hero() {
             utilidad, y la ves crecer mientras sale el sol.
           </p>
           <div className="mt-6 flex flex-wrap gap-3 sm:mt-7">
-            <a href="#planes" className={`btn btn-solid ${styles.heroAction}`}>
+            <a href="#planes" className="btn btn-solid landing-hero-action">
               Ver los planes
               <ArrowRight aria-hidden="true" size={16} />
             </a>
@@ -76,7 +75,7 @@ export function Hero() {
           </div>
         </div>
       </div>
-      <a href="#reloj" className={styles.heroVisual}>
+      <a href="#reloj" className="landing-hero-visual relative isolate flex aspect-[3/2] max-h-[440px] items-end overflow-hidden border border-line-strong bg-raise lg:aspect-[10/9] lg:max-h-none">
         <Image
           src="/solar-field-sunrise.webp"
           alt=""
@@ -84,9 +83,9 @@ export function Hero() {
           loading="eager"
           fetchPriority="high"
           sizes="(min-width: 1240px) 510px, (min-width: 1024px) 44vw, 100vw"
-          className={styles.heroPhoto}
+          className="landing-hero-photo object-cover object-[60%_center]"
         />
-        <span className={styles.visualLink}>
+        <span className="landing-visual-link">
           <Sun aria-hidden="true" size={20} strokeWidth={1.5} />
           Ver reloj solar
           <ArrowDownRight aria-hidden="true" size={18} className="ml-auto" />
@@ -123,7 +122,7 @@ export function HowItWorks() {
       id="como-funciona"
       className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8"
     >
-      <h2 className={`display ${styles.reveal} text-[clamp(3rem,7vw,5.5rem)]`}>Cómo funciona</h2>
+      <h2 className="display landing-reveal text-[clamp(3rem,7vw,5.5rem)]">Cómo funciona</h2>
       <ol className="mt-10 grid gap-0 border-t border-line-strong md:grid-cols-3">
         {STEPS.map((s, i) => (
           <li
@@ -198,7 +197,7 @@ export function Faq() {
       className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8"
     >
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
-        <h2 className={`display ${styles.reveal} text-[clamp(3rem,7vw,5.5rem)]`}>Preguntas</h2>
+        <h2 className="display landing-reveal text-[clamp(3rem,7vw,5.5rem)]">Preguntas</h2>
         <div className="border-t border-line-strong">
           {items.map((f) => (
             <details key={f.q} className="group border-b border-line">
@@ -227,7 +226,7 @@ export function FinalCta() {
   return (
     <section className="mx-auto max-w-[1240px] px-5 sm:px-8">
       <div className="flex flex-col gap-8 border-y border-line-strong py-14 md:flex-row md:items-end md:justify-between">
-        <h2 className={`display ${styles.reveal} max-w-[14ch] text-[clamp(3rem,7vw,5.5rem)]`}>
+        <h2 className="display landing-reveal max-w-[14ch] text-[clamp(3rem,7vw,5.5rem)]">
           El sol sale todos los días.
         </h2>
         <div>

@@ -1,9 +1,9 @@
-.nav a {
+.landing-nav a {
   position: relative;
   transition: color 180ms;
 }
 
-.nav a::after {
+.landing-nav a::after {
   position: absolute;
   inset: auto 0 -7px;
   height: 1px;
@@ -14,42 +14,24 @@
   transition: transform 220ms var(--ease-out-soft);
 }
 
-.nav a:is(:hover, :focus-visible)::after {
+.landing-nav a:is(:hover, :focus-visible)::after {
   transform: scaleX(1);
 }
 
-.headline {
-  font-size: clamp(3rem, 11vw, 6rem);
-}
-
-.headline > span {
+.landing-headline > span {
   display: block;
 }
 
-.headlineAccent {
+.landing-headline-accent {
   color: rgb(var(--solar-halo));
 }
 
-.heroVisual {
-  position: relative;
-  display: flex;
-  isolation: isolate;
-  align-items: flex-end;
-  aspect-ratio: 3 / 2;
-  max-height: 440px;
-  overflow: hidden;
-  border: 1px solid var(--color-line-strong);
-  background: var(--color-raise);
-}
-
-.heroPhoto {
-  object-fit: cover;
-  object-position: 60% center;
+.landing-hero-photo {
   filter: var(--hero-photo-filter);
   transition: transform 650ms var(--ease-out-soft);
 }
 
-.heroVisual::after {
+.landing-hero-visual::after {
   position: absolute;
   z-index: 0;
   inset: 0;
@@ -57,7 +39,7 @@
   content: "";
 }
 
-.visualLink {
+.landing-visual-link {
   position: relative;
   z-index: 1;
   display: flex;
@@ -74,88 +56,77 @@
   transition: border-color 180ms, background-color 180ms;
 }
 
-.heroVisual:is(:hover, :focus-visible) .visualLink {
+.landing-hero-visual:is(:hover, :focus-visible) .landing-visual-link {
   border-color: var(--color-ink);
   background: var(--color-void);
 }
 
-.heroAction svg {
+.landing-hero-action svg {
   transition: transform 220ms var(--ease-out-soft);
 }
 
-.clockFrame {
+.landing-clock {
   background:
     radial-gradient(ellipse at 50% 0%, rgb(var(--solar-halo) / 0.09), transparent 70%),
     var(--color-raise);
 }
 
-@media (min-width: 64rem) {
-  .headline {
-    font-size: clamp(4.6rem, 8.5vw, 7.5rem);
-  }
-
-  .heroVisual {
-    aspect-ratio: 10 / 9;
-    max-height: none;
-  }
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  html:has(.headline) {
+  html:has(.landing-headline) {
     scroll-behavior: smooth;
   }
 
-  .headline > span,
-  .heroIntro,
-  .heroVisual {
-    animation: rise-in 680ms var(--ease-out-soft) both;
+  .landing-headline > span,
+  .landing-intro,
+  .landing-hero-visual {
+    animation: landing-rise-in 680ms var(--ease-out-soft) both;
   }
 
-  .headline > span:nth-child(2) {
+  .landing-headline > span:nth-child(2) {
     animation-delay: 70ms;
   }
 
-  .headline > span:nth-child(3) {
+  .landing-headline > span:nth-child(3) {
     animation-delay: 140ms;
   }
 
-  .heroIntro {
+  .landing-intro {
     animation-delay: 190ms;
   }
 
-  .heroVisual {
+  .landing-hero-visual {
     animation-delay: 100ms;
   }
 
-  .heroVisual:is(:hover, :focus-visible) .heroPhoto {
+  .landing-hero-visual:is(:hover, :focus-visible) .landing-hero-photo {
     transform: scale(1.045);
   }
 
-  .heroAction:is(:hover, :focus-visible) svg {
+  .landing-hero-action:is(:hover, :focus-visible) svg {
     transform: translateX(3px);
   }
 
   @supports (animation-timeline: view()) {
-    .clockFrame {
+    .landing-clock {
       view-timeline-name: --solar-clock;
     }
 
-    .clockFrame [data-solar-trace] {
+    .landing-clock [data-solar-trace] {
       stroke-dasharray: 1;
-      animation: trace-curve linear both;
+      animation: landing-trace-curve linear both;
       animation-timeline: --solar-clock;
       animation-range: entry 5% entry 70%;
     }
 
-    .reveal {
-      animation: section-rise linear both;
+    .landing-reveal {
+      animation: landing-section-rise linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 85%;
     }
   }
 }
 
-@keyframes rise-in {
+@keyframes landing-rise-in {
   from {
     opacity: 0;
     transform: translateY(18px);
@@ -166,7 +137,7 @@
   }
 }
 
-@keyframes section-rise {
+@keyframes landing-section-rise {
   from {
     opacity: 0.65;
     transform: translateY(12px);
@@ -177,7 +148,7 @@
   }
 }
 
-@keyframes trace-curve {
+@keyframes landing-trace-curve {
   from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
 }

@@ -1,6 +1,7 @@
 import { ClockSection } from "@/components/landing/clock-section";
 import { PlansSection } from "@/components/landing/plans-section";
 import { Faq, FinalCta, Footer, Hero, HowItWorks, LandingNav } from "@/components/landing/sections";
+import "@/components/landing/landing.css";
 
 export default function HomePage() {
   return (

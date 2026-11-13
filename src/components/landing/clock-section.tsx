@@ -3,7 +3,6 @@ import { useCatalog, usePlantNow } from "@/lib/client/use-catalog";
 import { cumulative, dayFraction, isGenerating, nextSunriseMs, plantPowerKw, sunsetMs } from "@/lib/energy/solar-day";
 import { formatClock, formatHourLabel, formatNumber, formatTime } from "@/lib/format";
 import { SolarClock } from "@/components/solar/solar-clock";
-import styles from "./landing.module.css";
 
 function Readout({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -26,9 +25,9 @@ export function ClockSection() {
 
   return (
     <section id="reloj" aria-labelledby="reloj-titulo" className="mx-auto max-w-[1240px] scroll-mt-24 px-5 sm:px-8">
-      <div className={`${styles.clockFrame} border border-line-strong`}>
+      <div className="landing-clock border border-line-strong">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 px-4 pt-5 sm:px-7 sm:pt-7">
-          <h2 id="reloj-titulo" className={`display ${styles.reveal} text-[clamp(2.25rem,6vw,3.75rem)]`}>
+          <h2 id="reloj-titulo" className="display landing-reveal text-[clamp(2.25rem,6vw,3.75rem)]">
             Reloj solar
           </h2>
           <span className="cap inline-flex items-center gap-2">
