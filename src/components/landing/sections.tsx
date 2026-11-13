@@ -7,12 +7,11 @@ import { SOLAR } from "@/config/solar";
 import { DAYS_PER_MONTH, GRACE_DAYS } from "@/lib/energy/plan-math";
 import { isDemoMode } from "@/lib/env";
 import { formatCop, formatHourLabel, formatNumber } from "@/lib/format";
-import { DEFAULT_MP_LIMITS } from "@/lib/payments/mercadopago-limits";
 import { MIN_WITHDRAWAL_COP } from "@/lib/withdrawal-schema";
 import { AccountLink } from "@/components/auth/account-link";
 import { Logo } from "@/components/ui/logo";
 import { ThemeSelector } from "@/components/ui/theme-selector";
-import { CatalogValue } from "./catalog-value";
+import { CatalogPrice } from "./catalog-price";
 
 export function LandingNav() {
   return (
@@ -61,11 +60,10 @@ export function Hero() {
         </h1>
         <div className="landing-intro mt-6 sm:mt-8">
           <p className="max-w-[47ch] leading-relaxed text-fog sm:text-lg">
-            Como comercializador compras energía a precio de plan, desde{" "}
-            <CatalogValue pick="lowestPrice" /> el kWh. La planta la genera cada
-            día y se vende a <CatalogValue pick="sale" />. La diferencia es tu
-            utilidad, y la ves crecer mientras sale el sol.
+            Compra energía solar como comercializador, paga mes a mes y consulta
+            en tu panel la energía generada y la utilidad de su venta.
           </p>
+          <CatalogPrice />
           <div className="mt-6 flex flex-wrap gap-3 sm:mt-7">
             <a href="#planes" className="btn btn-solid landing-hero-action">
               Ver los planes
@@ -97,24 +95,18 @@ export function Hero() {
   );
 }
 
-const STEPS: { title: string; text: React.ReactNode }[] = [
+const STEPS = [
   {
     title: "Regístrate como comercializador",
-    text: "Entra con tu cuenta de Google y completa tus datos personales: nombre, documento, celular y ciudad de residencia.",
+    text: "Ingresa a tu cuenta y completa tus datos personales. Te pediremos nombre, documento, celular y ciudad de residencia.",
   },
   {
     title: "Elige un plan y paga el primer mes",
-    text: `Por PSE o con tarjeta a través de Mercado Pago (con tarjeta, hasta ${formatCop(DEFAULT_MP_LIMITS.cardMaxCop)} por pago), con USDT o BNB desde tu wallet o, cuando está disponible, por transferencia bancaria. La energía empieza a contar cuando el pago queda confirmado.`,
+    text: "Al iniciar la compra verás los medios de pago habilitados para el monto de tu plan. El primer periodo comienza al confirmar el pago.",
   },
   {
-    title: "Mira tu energía y retira",
-    text: (
-      <>
-        Tu energía se genera cada día con el sol y se vende a{" "}
-        <CatalogValue pick="sale" /> el kWh. El saldo lo retiras a una cuenta
-        bancaria a tu nombre.
-      </>
-    ),
+    title: "Consulta tu energía y tu saldo",
+    text: "Desde tu panel puedes seguir la energía que genera tu plan y solicitar un retiro desde el saldo disponible.",
   },
 ];
 
@@ -150,39 +142,30 @@ const SIZES = PLANS.map((p) => formatNumber(p.totalKwh));
 const SUNRISE = formatHourLabel(SOLAR.startHour);
 const SUNSET = formatHourLabel(SOLAR.endHour);
 
-const FAQ: { q: string; a: React.ReactNode }[] = [
+const FAQ = [
   {
     q: "¿Qué compro como comercializador?",
-    a: `Una cantidad de energía solar para ${PLAN_MONTHS} meses: ${SIZES.slice(0, -1).join(", ")} o ${SIZES.at(-1)} kWh, según el plan. La planta la genera día a día, siguiendo la curva del reloj solar.`,
+    a: `Contratas ${SIZES.slice(0, -1).join(", ")} o ${SIZES.at(-1)} kWh de energía solar, según el plan, durante ${PLAN_MONTHS} meses. La energía de cada periodo se calcula día a día con el reloj solar.`,
   },
   {
     q: "¿De dónde sale la utilidad?",
-    a: (
-      <>
-        Pagas cada kWh al precio de tu plan y esa energía se vende a{" "}
-        <CatalogValue pick="sale" /> el kWh. La diferencia es la utilidad bruta.
-        En el plan de <CatalogValue pick="topKwh" /> kWh, por ejemplo, pagas{" "}
-        <CatalogValue pick="lowestPrice" /> y se vende a{" "}
-        <CatalogValue pick="sale" />: <CatalogValue pick="topProfitPct" /> sobre
-        lo que pagaste.
-      </>
-    ),
+    a: "La utilidad bruta por kWh es la diferencia entre el precio de venta y el precio de compra de tu plan. El porcentaje se calcula sobre el precio de compra, antes de costos e impuestos.",
   },
   {
     q: "¿Cómo se paga?",
-    a: `Mes a mes. Cada pago activa ${DAYS_PER_MONTH} días de energía. Si no pagas el mes siguiente, la energía se pausa; tienes ${GRACE_DAYS} días para ponerte al día antes de que el plan se cierre. Los meses que no pagas no se cobran ni se generan.`,
+    a: `Mes a mes. Cada pago confirmado cubre ${DAYS_PER_MONTH} días de energía. Una mensualidad pagada por adelantado comienza al terminar la anterior. Si queda una mensualidad por pagar al vencer el periodo, la generación se pausa. Puedes pagarla durante los siguientes ${GRACE_DAYS} días, antes de que el plan se cierre.`,
   },
   {
     q: "¿Cuándo puedo retirar?",
-    a: `Cuando quieras, desde ${formatCop(MIN_WITHDRAWAL_COP)}. Cada kWh generado se abona a tu saldo al precio de venta. Nuestro equipo revisa cada retiro y lo paga a una cuenta bancaria a tu nombre, o en USDT a tu wallet.`,
+    a: `Puedes solicitar un retiro desde ${formatCop(MIN_WITHDRAWAL_COP)} si tienes saldo suficiente en tu panel. Nuestro equipo revisa la solicitud y, si la aprueba, envía el retiro a una cuenta bancaria a tu nombre o en USDT a tu wallet.`,
   },
   {
-    q: "¿Qué pasa de noche o con mal tiempo?",
-    a: `La planta genera de ${SUNRISE} a ${SUNSET}, así que de noche el contador se detiene y vuelve a subir al amanecer. La energía de tu plan es una cantidad fija por día: no cambia con el clima.`,
+    q: "¿En qué horario aumenta mi contador?",
+    a: `Durante un periodo pagado, el contador suma energía entre las ${SUNRISE} y las ${SUNSET}, hora de Colombia. La curva distribuye la energía contratada a lo largo de ese horario.`,
   },
   {
-    q: "¿El reloj solar es una medición en vivo?",
-    a: "No. Es la curva de generación de la planta: muestra cómo se reparte la energía a lo largo del día, y con ella se calcula la energía de cada plan.",
+    q: "¿Qué muestra el reloj solar?",
+    a: "La curva muestra la potencia estimada en kW y la energía acumulada estimada en kWh. Puedes explorar el día en intervalos de 15 minutos.",
   },
 ];
 
@@ -231,14 +214,15 @@ export function FinalCta() {
         <div className="landing-finale-orbit" aria-hidden="true" />
         <div className="landing-reveal relative flex flex-col gap-8 px-5 py-12 sm:px-10 sm:py-16 md:flex-row md:items-end md:justify-between">
           <h2 className="display max-w-[14ch] text-[clamp(3rem,7vw,5.5rem)]">
-            El sol sale todos los días.
+            Elige tu plan de energía.
           </h2>
           <div>
             <p className="max-w-[36ch] leading-relaxed text-fog">
-              Elige un plan, paga el primer mes y mira tu energía subir desde el
-              primer amanecer.
+              Revisa el precio por kWh y el pago mensual de cada plan.
             </p>
-            <AccountLink variant="cta" guestLabel="Empezar" className="mt-6" />
+            <a href="#planes" className="btn btn-solid mt-6">
+              Ver planes <ArrowRight aria-hidden="true" size={16} />
+            </a>
           </div>
         </div>
       </div>
@@ -257,8 +241,8 @@ export function Footer() {
             {isDemoMode()
               ? "Página en modo de pruebas: los pagos son de prueba y no se mueve dinero real. "
               : ""}
-            La energía de cada plan se calcula con la curva de generación de la
-            planta.
+            La energía de cada plan se calcula con la curva estimada del
+            reloj solar.
           </p>
         </div>
         <nav className="flex flex-col gap-2 md:items-end" aria-label="Legal">

@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import type { TxDTO } from "@/lib/portfolio";
 import { invalidateJson, refetch } from "@/lib/client/use-json";
 import { CheckoutProgress } from "@/components/plans/checkout-progress";
+import { ConfirmedPlanPayment } from "./confirmed-plan-payment";
 import { ReceiptButton } from "./receipt-button";
 import { SupportContacts } from "@/components/support/support-contacts";
-import { formatCop, formatNumber } from "@/lib/format";
+import { formatCop } from "@/lib/format";
 
 type Outcome = "aprobada" | "fallida" | "pendiente" | "devuelta" | "sin_pago";
 
@@ -158,7 +159,7 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
     view.kind === "orden" &&
     view.outcome === "sin_pago" &&
     !view.gaveUp &&
-    view.order.status === "pendiente";
+    inProgress(view);
   if (view.kind === "cargando" || waitingForPayment) {
     return (
       <>
@@ -216,15 +217,10 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
         <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">
           Pago confirmado
         </h1>
-        <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
-          {o.periodIndex
-            ? `El mes ${o.periodIndex} de tu plan ya está activo`
-            : "Tu plan ya está activo"}
-          {o.kwh
-            ? `: ${formatNumber(o.kwh)} kWh en los próximos 30 días.`
-            : "."}{" "}
-          Tu energía cuenta desde este momento.
-        </p>
+        <ConfirmedPlanPayment
+          order={o}
+          className="mt-5 max-w-[46ch] leading-relaxed text-fog"
+        />
         <Link href="/panel" className="btn btn-solid mt-9">
           Ver mi energía
         </Link>
@@ -235,29 +231,26 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
       </>
     );
   }
-  if (o.status === "pendiente" && view.outcome === "sin_pago" && view.gaveUp) {
+  if (inProgress(view) && view.outcome === "sin_pago" && view.gaveUp) {
     return (
       <>
         <Mark tone="bad">
-          <X size={28} strokeWidth={1.5} />
+          <AlertTriangle size={26} strokeWidth={1.5} />
         </Mark>
         <h1 className="display mt-8 text-[clamp(2.75rem,8vw,4.5rem)]">
-          No completaste el pago
+          Pago aún sin confirmar
         </h1>
         <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
-          Mercado Pago no tiene un pago para esta orden. No se hizo ningún
-          cobro; puedes intentarlo de nuevo cuando quieras.
+          Aún no encontramos un pago asociado a esta referencia en Mercado
+          Pago. Si ya pagaste, vuelve a consultar antes de intentar otro pago.
         </p>
         <div className="mt-9 flex flex-wrap gap-3">
-          <Link href="/panel/planes" className="btn btn-solid">
+          <button type="button" onClick={onRetry} className="btn btn-solid">
+            <RotateCcw size={15} /> Volver a consultar
+          </button>
+          <Link href="/panel/planes" className="btn btn-ghost">
             Volver a los planes
           </Link>
-          <button type="button" onClick={onRetry} className="btn btn-ghost">
-            <RotateCcw size={15} /> Ya pagué, volver a consultar
-          </button>
-        </div>
-        <div className="mt-4">
-          <ReceiptButton id={o.id} />
         </div>
         {ref}
       </>
@@ -271,10 +264,12 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
           Tu pago está en proceso
         </h1>
         <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
-          Algunos pagos, como PSE, tardan unos minutos. Esta página se actualiza
-          sola; también puedes cerrarla: tu plan aparecerá en el panel apenas se
-          confirme.
+          Algunos pagos, como PSE, tardan en confirmarse. Seguiremos consultando
+          el estado. También puedes revisarlo desde tus movimientos.
         </p>
+        <Link href="/panel/billetera" className="btn btn-ghost mt-9">
+          Ver mis movimientos
+        </Link>
         {ref}
       </>
     );
@@ -309,7 +304,7 @@ function Body({ view, onRetry }: { view: View; onRetry(): void }) {
         El pago no se aprobó
       </h1>
       <p className="mt-5 max-w-[46ch] leading-relaxed text-fog">
-        {o.note ?? "Mercado Pago no aprobó el pago. No se hizo ningún cobro."}
+        {o.note ?? "Mercado Pago no aprobó el pago de esta orden."}
       </p>
       <Link href="/panel/planes" className="btn btn-solid mt-9">
         Intentar de nuevo

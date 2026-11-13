@@ -50,7 +50,7 @@ export interface SolarClockProps {
   now: number | null;
   /** Fracción del día solar seleccionada en el explorador de la portada. */
   previewFraction?: number;
-  /** "hero": grande, para el inicio. "panel": compacto, para el panel de la empresa. */
+  /** "hero": grande, para el inicio. "panel": compacto, para el panel del comercializador. */
   size?: "hero" | "panel";
   className?: string;
 }
@@ -74,10 +74,10 @@ export function SolarClock({ solar, now, previewFraction, size = "hero", classNa
     previewing
       ? `Curva solar a la hora consultada. Potencia estimada de ${formatNumber(power)} kW.`
       : now == null
-        ? `Reloj solar: la planta genera de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}, con un máximo de ${formatNumber(solar.peakKw)} kW.`
+        ? `Curva solar estimada de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}, con un máximo de ${formatNumber(solar.peakKw)} kW.`
         : generating
-          ? `Reloj solar: son las ${formatTime(now)} y la curva de la planta va en ${formatNumber(power)} kW, el ${Math.round(s * 100)} % de su máximo de ${formatNumber(solar.peakKw)} kW.`
-          : `Reloj solar: son las ${formatTime(now)}. La planta genera de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}.`;
+          ? `Curva solar a las ${formatTime(now)}. Potencia estimada de ${formatNumber(power)} kW, el ${Math.round(s * 100)} % del máximo.`
+          : `Curva solar a las ${formatTime(now)}, fuera del horario de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}.`;
 
   return (
     <div role="img" aria-label={label} className={`@container relative w-full select-none ${hero ? "aspect-[4/3] sm:aspect-[5/2]" : "aspect-[16/10] sm:aspect-[2/1]"} ${className}`}>

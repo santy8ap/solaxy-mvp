@@ -118,7 +118,7 @@ export function ClockSection() {
           <Readout label={exploring ? "Hora consultada" : "Hora en la planta"}>
             {exploring ? minuteLabel : now == null ? dash : formatClock(now)}
           </Readout>
-          <Readout label={exploring ? "Potencia estimada" : "Potencia de la curva"}>
+          <Readout label="Potencia estimada">
             {power == null ? (
               dash
             ) : (
@@ -133,7 +133,7 @@ export function ClockSection() {
           {exploring ? (
             <Readout label="Del total diario">{progress == null ? dash : `${formatNumber(progress * 100)} %`}</Readout>
           ) : (
-            <Readout label={generating ? "Genera hasta" : "Vuelve a generar"}>
+            <Readout label={generating ? "Fin del horario solar" : "Próximo horario solar"}>
               {now == null ? dash : formatTime(generating ? sunsetMs(solar, now) : nextSunriseMs(solar, now))}
             </Readout>
           )}

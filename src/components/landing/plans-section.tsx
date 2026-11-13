@@ -1,7 +1,9 @@
 "use client";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { PLAN_MONTHS } from "@/config/plans";
 import { useCatalog } from "@/lib/client/use-catalog";
+import { DAYS_PER_MONTH, GRACE_DAYS } from "@/lib/energy/plan-math";
 import { planCheckoutHref } from "@/lib/navigation";
 import { ErrorNote } from "@/components/ui/field";
 import { formatCop, formatNumber, formatPct } from "@/lib/format";
@@ -20,10 +22,9 @@ export function PlansSection() {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[1fr_minmax(0,38ch)] lg:items-end">
         <h2 id="planes-titulo" className="display landing-reveal text-[clamp(3rem,7vw,5.5rem)]">Cuatro planes</h2>
         <p className="leading-relaxed text-fog">
-          Cada plan es una cantidad de energía para 3 meses, que se paga mes a
-          mes. Entre más grande el plan, menos pagas por cada{" "}
-          <span className="whitespace-nowrap">kWh</span>. Toda la energía se
-          vende a {loaded ? formatCop(catalog.saleCopPerKwh) : "…"} el kWh.
+          Contratos de {PLAN_MONTHS} meses con un pago por cada periodo de{" "}
+          {DAYS_PER_MONTH} días.{" "}
+          {loaded && `El precio de venta del catálogo es de ${formatCop(catalog.saleCopPerKwh)} COP por kWh.`}
         </p>
       </div>
       {!loaded ? (
@@ -93,10 +94,9 @@ export function PlansSection() {
         </>
       )}
       <p className="mt-6 max-w-[72ch] text-sm leading-relaxed text-mute">
-        La utilidad es la diferencia entre el precio de venta y el precio del
-        plan, sobre el precio del plan. Cada pago mensual activa 30 días de
-        energía; si un mes no se paga, la energía se pausa hasta el siguiente
-        pago. Los porcentajes con ≈ de la tabla están redondeados al entero más cercano.
+        Si queda una mensualidad por pagar al vencer el periodo, la generación
+        se pausa. Tienes {GRACE_DAYS} días para pagar esa mensualidad antes
+        de que el plan se cierre.
       </p>
     </section>
   );

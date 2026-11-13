@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { BRAND } from "@/config/brand";
 import type { CheckoutRequest } from "@/lib/checkout";
+import { DAYS_PER_MONTH } from "@/lib/energy/plan-math";
 import { formatCop, formatDateTime, formatNumber } from "@/lib/format";
 import type { TxDTO } from "@/lib/portfolio";
 import type { ProfileDTO } from "@/lib/profile";
@@ -13,6 +14,7 @@ import { ProfileForm, useProfile } from "@/components/profile/profile-form";
 import { ErrorNote } from "@/components/ui/field";
 import { Logo } from "@/components/ui/logo";
 import { ThemeSelector } from "@/components/ui/theme-selector";
+import { ConfirmedPlanPayment } from "@/components/payments/confirmed-plan-payment";
 import { ReceiptButton } from "@/components/payments/receipt-button";
 import { SupportContacts } from "@/components/support/support-contacts";
 import { Toaster } from "@/components/ui/toast";
@@ -25,7 +27,7 @@ const TITLES = [
   "Tus datos, tu energía.",
   "Así es tu plan.",
   "Un paso para empezar.",
-  "Tu energía ya cuenta.",
+  "Pago confirmado",
 ];
 
 export function CheckoutFlow({
@@ -105,19 +107,24 @@ function Purchase({
         </div>
       </header>
       <main className="mx-auto max-w-[1240px] px-5 pb-20 pt-8 sm:px-8 sm:pt-12">
-        <p className="cap mb-7">Tu compra de energía · {request.planName}</p>
-        <CheckoutProgress current={step} />
+        <p className="cap mb-7">
+          {request.subscriptionId ? "Mensualidad del plan" : "Tu compra de energía"} · {request.planName}
+        </p>
+        {available && <CheckoutProgress current={step} />}
         {!available ? (
           <section className="py-16">
             <h1 className="display text-5xl">
-              Este plan no está disponible.
+              {request.subscriptionId
+                ? "Mensualidad no disponible"
+                : "Plan sin cupo"}
             </h1>
             <p className="mt-5 max-w-[55ch] leading-relaxed text-fog">
-              El cupo o el período disponible para este pago cambió. Consulta
-              los planes vigentes para continuar.
+              {request.subscriptionId
+                ? "Este plan ya no admite esa mensualidad. Consulta su estado en tus planes."
+                : "Consulta los planes con cupo para continuar."}
             </p>
             <Link href="/panel/planes" className="btn btn-solid mt-8">
-              Ver planes disponibles
+              {request.subscriptionId ? "Ver mis planes" : "Ver planes disponibles"}
             </Link>
           </section>
         ) : (
@@ -212,10 +219,10 @@ function Purchase({
                   />
                   <p className="mt-5 flex items-start gap-3 text-sm leading-relaxed text-fog">
                     <ShieldCheck size={18} className="mt-0.5 shrink-0" />
-                    Cada pago confirmado activa 30 días.{" "}
+                    Cada pago confirmado cubre {DAYS_PER_MONTH} días.{" "}
                     {request.periodIndex > 1
-                      ? "Si aún tienes un mes activo, el nuevo período comienza cuando termine el actual."
-                      : "La energía comienza a contar cuando se confirma el primer pago."}
+                      ? "Si pagas por adelantado, el nuevo periodo comienza al terminar el anterior."
+                      : "El primer periodo comienza al confirmar el pago."}
                   </p>
                   <div className="mt-8 flex flex-wrap justify-between gap-4">
                     <button
@@ -238,7 +245,7 @@ function Purchase({
               {step === 3 && (
                 <>
                   <p className="mt-5 leading-relaxed text-fog">
-                    Elige el medio de pago para activar el mes{" "}
+                    Elige el medio de pago para cubrir el mes{" "}
                     {request.periodIndex} de tu plan.
                   </p>
                   {!complete ? (
@@ -269,14 +276,13 @@ function Purchase({
               )}
               {step === 4 && order && (
                 <>
-                  <div className="mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-void">
+                  <div aria-hidden="true" className="mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-void">
                     <Check size={28} />
                   </div>
-                  <p className="mt-6 text-lg leading-relaxed text-fog">
-                    El pago del mes {order.periodIndex} está confirmado. Puedes
-                    consultar la energía y los movimientos de tu plan desde
-                    tu panel.
-                  </p>
+                  <ConfirmedPlanPayment
+                    order={order}
+                    className="mt-6 text-lg leading-relaxed text-fog"
+                  />
                   {isTest && (
                     <p className="mt-5 border-l-2 border-ink pl-4 text-sm text-fog">
                       Operación de prueba: no se movió dinero real.
@@ -318,7 +324,7 @@ function Purchase({
               <dl className="mt-6 space-y-5 border-y border-line py-6">
                 {[
                   [
-                    "Mes que pagas",
+                    step === 4 ? "Mes pagado" : "Mes que pagas",
                     `${request.periodIndex} de ${request.months}`,
                   ],
                   ["Energía del mes", `${formatNumber(request.kwh)} kWh`],

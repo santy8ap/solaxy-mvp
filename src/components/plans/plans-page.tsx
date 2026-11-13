@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
+import { PLAN_MONTHS } from "@/config/plans";
 import { useCatalog } from "@/lib/client/use-catalog";
+import { DAYS_PER_MONTH } from "@/lib/energy/plan-math";
 import { formatCop, formatNumber } from "@/lib/format";
 import { Topbar } from "@/components/panel/shell";
 import { usePortfolio } from "@/components/panel/use-portfolio";
@@ -28,7 +30,7 @@ export function PlansPage() {
     <>
       <Topbar
         title="Planes"
-        subtitle="Cada plan es energía para 3 meses, que se paga mes a mes. Cada pago activa 30 días."
+        subtitle={`Contratos de ${PLAN_MONTHS} meses con un pago por cada periodo de ${DAYS_PER_MONTH} días.`}
       />
 
       {payable.length > 0 && (
@@ -67,8 +69,9 @@ export function PlansPage() {
             {payable.length ? "Comprar otro plan" : "Elige un plan"}
           </h2>
           <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-mute">
-            Toda la energía se vende a {formatCop(catalog.saleCopPerKwh)} el
-            kWh. La utilidad es la diferencia contra el precio de tu plan.
+            El precio de venta para compras nuevas es de{" "}
+            {formatCop(catalog.saleCopPerKwh)} COP por kWh. Las mensualidades
+            pendientes conservan los precios de compra y venta contratados.
           </p>
           <div className="mt-8">
             <PlansTable
@@ -107,8 +110,8 @@ export function PlansPage() {
               />
             </div>
             <p className="mt-2.5 text-xs text-mute">
-              La planta entrega {formatNumber(catalog.plantDailyKwh)} kWh al
-              día; {formatNumber(catalog.contractedDailyKwh)} ya están
+              Capacidad diaria estimada de {formatNumber(catalog.plantDailyKwh)}{" "}
+              kWh, con {formatNumber(catalog.contractedDailyKwh)} kWh ya
               contratados.
             </p>
           </div>

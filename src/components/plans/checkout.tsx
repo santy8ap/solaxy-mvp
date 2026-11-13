@@ -57,7 +57,7 @@ function methodsFrom(
     list.push({
       id: "transfer",
       label: "Transferencia bancaria",
-      note: "Desde tu banco, sin tope por pago. El mes se activa cuando confirmamos el dinero",
+      note: "Desde tu banco. Registramos la mensualidad al confirmar la transferencia.",
     });
   if (config.crypto.enabled) {
     const net =
@@ -73,7 +73,7 @@ function methodsFrom(
     list.push({
       id: "test",
       label: "Pago de prueba",
-      note: "Activa el mes al instante, sin mover dinero",
+      note: "Confirma una mensualidad de prueba sin mover dinero real.",
     });
   return list;
 }
@@ -145,7 +145,7 @@ export function CheckoutPayment({
   onConfirmed,
   onBusy,
 }: PayProps) {
-  const { config } = useAppConfig();
+  const { config, error, reload } = useAppConfig();
   const methods = methodsFrom(config, request.amountCop);
   // Mercado Pago está configurado pero no recibe un pago tan grande: se dice por qué no aparece.
   const overMercadoPago =
@@ -162,6 +162,19 @@ export function CheckoutPayment({
     },
     [onBusy],
   );
+  if (!config && error)
+    return (
+      <div className="mt-6">
+        <ErrorNote>No pudimos cargar los medios de pago.</ErrorNote>
+        <button
+          type="button"
+          className="btn btn-ghost mt-4"
+          onClick={() => void reload()}
+        >
+          Volver a cargar
+        </button>
+      </div>
+    );
   if (!config)
     return (
       <div

@@ -1,4 +1,5 @@
 "use client";
+import { PLAN_MONTHS } from "@/config/plans";
 import type { CatalogDTO } from "@/lib/client/use-catalog";
 import { formatCop, formatNumber } from "@/lib/format";
 
@@ -6,6 +7,8 @@ type Plan = CatalogDTO["plans"][number];
 
 const pctLabel = (fraction: number) =>
   `${Math.abs(fraction * 100 - Math.round(fraction * 100)) > 1e-6 ? "≈ " : ""}${formatNumber(Math.round(fraction * 100))} %`;
+
+const energyLabel = `Energía en ${PLAN_MONTHS} meses`;
 
 const priceLabel = (label: string) =>
   label.endsWith("kWh") ? (
@@ -44,13 +47,13 @@ export function PlansTable({
       >
         <table className={`w-full border-collapse text-left ${tableOnly ? "min-w-[760px]" : ""}`}>
           <caption className="sr-only">
-            Planes de energía de 3 meses, con pago mensual
+            Planes de energía de {PLAN_MONTHS} meses, con pago mensual
           </caption>
           <thead>
             <tr className="border-b border-line-strong">
               {[
                 "Plan",
-                "Energía en 3 meses",
+                energyLabel,
                 "Cada día",
                 "Compra / kWh",
                 "Venta / kWh",
@@ -149,7 +152,7 @@ export function PlansTable({
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   {[
-                    ["Energía en 3 meses", `${formatNumber(p.totalKwh)} kWh`],
+                    [energyLabel, `${formatNumber(p.totalKwh)} kWh`],
                     ["Cada día", `${formatNumber(p.dailyKwh)} kWh`],
                     ["Compra / kWh", formatCop(p.priceCopPerKwh)],
                     ["Venta / kWh", formatCop(p.saleCopPerKwh)],
@@ -179,6 +182,10 @@ export function PlansTable({
           })}
         </ul>
       )}
+      <p className="mt-4 text-xs leading-relaxed text-mute">
+        Los porcentajes con ≈ están redondeados al entero más cercano. El
+        detalle de compra muestra la utilidad con dos decimales.
+      </p>
     </>
   );
 }

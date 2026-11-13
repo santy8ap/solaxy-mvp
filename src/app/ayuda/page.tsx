@@ -67,13 +67,13 @@ export default function HelpPage({ searchParams }: PageProps<"/ayuda">) {
             ],
             [
               "Necesito mi comprobante",
-              "Cuando una operación está confirmada puedes descargar su PDF desde el historial. Los pagos pendientes todavía no generan un comprobante.",
+              "Puedes descargar el PDF de un pago o retiro confirmado desde el historial de movimientos.",
               "/panel/billetera",
               "Buscar comprobante",
             ],
             [
               "Necesito actualizar mis datos",
-              "Actualiza tu nombre, documento y datos de contacto desde tu perfil de comercializador. No necesitas razón social ni NIT para completar tus datos personales.",
+              "Actualiza tu nombre, documento, celular o ciudad desde tu perfil de comercializador.",
               "/panel/perfil",
               "Revisar mis datos",
             ],

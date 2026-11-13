@@ -23,7 +23,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 /** "1.250.000" → 1250000. Solo dígitos: el retiro es en pesos, sin centavos. */
 const parseAmount = (raw: string) => Number(raw.replace(/\D/g, "")) || 0;
 
-/** Solicitud de retiro: a la cuenta bancaria de la empresa o a una wallet (en USDT). Siempre lo revisa el equipo. */
+/** Solicitud de retiro a la cuenta del titular o a su wallet en USDT. Siempre la revisa el equipo. */
 export function WithdrawDialog({ open, onClose, balanceCop, profile }: { open: boolean; onClose(): void; balanceCop: number; profile: ProfileDTO | null }) {
   const wallet = useWallet();
   const [dest, setDest] = useState<Dest>("banco");

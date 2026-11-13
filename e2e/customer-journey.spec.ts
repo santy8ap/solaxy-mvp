@@ -42,7 +42,10 @@ test("la navegación y el comparador de planes funcionan desde la portada", asyn
   await plans.getByText("Comparar todos los planes", { exact: true }).click();
   const comparison = plans.getByRole("region", { name: "Tabla comparativa de planes" });
   await expect(comparison.getByRole("rowheader")).toHaveCount(4);
-  await expect(comparison.getByRole("row").filter({ hasText: /Plan 180/i })).toContainText("20.880.000");
+  const comparisonRow = comparison.getByRole("row").filter({ hasText: /Plan 180/i });
+  await expect(comparisonRow).toContainText("20.880.000");
+  await expect(comparisonRow).toContainText("≈ 15 %");
+  await expect(plans.getByText(/Los porcentajes con ≈ están redondeados/)).toBeVisible();
   await expect(plans.getByRole("heading", { name: /Cuatro planes/i })).toBeVisible();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
@@ -53,6 +56,62 @@ test("la navegación y el comparador de planes funcionan desde la portada", asyn
   await expect(preview.getByText(/14,94\s*% sobre la compra/)).toBeVisible();
   await nav.getByRole("link", { name: "Ayuda", exact: true }).click();
   await expect(page).toHaveURL(/\/ayuda$/);
+});
+
+test("la portada anuncia el precio de los planes con cupo", async ({ page }) => {
+  let soldOut = false;
+  await page.route("**/api/plans", async (route) => {
+    const response = await route.fetch();
+    const catalog = await response.json();
+    for (const plan of catalog.plans) {
+      plan.available = !soldOut && plan.id !== "p720";
+    }
+    await route.fulfill({ response, json: catalog });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("Desde $ 330 COP por kWh en los planes con cupo.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Elegir Plan 720" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Elegir Plan 540" })).toHaveAttribute("href", "/comprar?plan=p540");
+
+  soldOut = true;
+  await page.reload();
+  await expect(page.getByText("Los planes están sin cupo por ahora.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Elegir Plan/ })).toHaveCount(0);
+});
+
+test("el resultado muestra el comprobante solo cuando se confirma el pago", async ({ page }) => {
+  await page.goto("/ingresar");
+  await page.getByRole("button", { name: /Entrar con la cuenta de pruebas/i }).click();
+  await expect(page).toHaveURL(/\/panel$/);
+
+  const ref = "XGE-12345678";
+  let confirmed = false;
+  await page.route("**/api/payments/mercadopago/sync", (route) =>
+    route.fulfill({
+      json: {
+        order: {
+          id: ref,
+          amountCop: 20_880_000,
+          kwh: 60_000,
+          periodIndex: 2,
+          status: confirmed ? "confirmada" : "pendiente",
+        },
+        outcome: confirmed ? "aprobada" : "sin_pago",
+      },
+    }),
+  );
+
+  await page.goto(`/pagos/resultado?ref=${ref}`);
+  await expect(page.getByRole("heading", { name: "Pago aún sin confirmar" })).toBeVisible();
+  const receipt = page.getByRole("button", { name: "Comprobante PDF" });
+  await expect(receipt).toHaveCount(0);
+
+  confirmed = true;
+  await page.getByRole("button", { name: "Volver a consultar" }).click();
+  await expect(page.getByRole("heading", { name: "Pago confirmado" })).toBeVisible();
+  await expect(page.getByText(/Si pagaste por adelantado, el nuevo periodo empieza al terminar el anterior/)).toBeVisible();
+  await expect(receipt).toBeVisible();
 });
 
 test("plan → ingreso → datos personales → resumen → pago de prueba → PDF e historial", async ({
@@ -111,7 +170,14 @@ test("plan → ingreso → datos personales → resumen → pago de prueba → P
     page.getByRole("region", { name: "Compra, venta y utilidad del plan" })
       .getByText(/14,94\s*% sobre la compra/),
   ).toBeVisible();
+  const configUrl = "**/api/config";
+  await page.route(configUrl, (route) =>
+    route.fulfill({ status: 503, json: { error: "Configuración no disponible." } }),
+  );
   await page.getByRole("button", { name: /Elegir medio de pago/i }).click();
+  await expect(page.getByText("No pudimos cargar los medios de pago.")).toBeVisible();
+  await page.unroute(configUrl);
+  await page.getByRole("button", { name: "Volver a cargar" }).click();
   const paidResponse = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/payments/test") &&
@@ -122,8 +188,9 @@ test("plan → ingreso → datos personales → resumen → pago de prueba → P
   expect(response.ok()).toBe(true);
   const { order } = await response.json();
   await expect(
-    page.getByRole("heading", { name: /Tu energía ya cuenta/i }),
+    page.getByRole("heading", { name: "Pago confirmado" }),
   ).toBeVisible();
+  await expect(page.getByText(/Registramos el pago del mes 1.*60\.000 kWh durante 30 días/)).toBeVisible();
   await expect(page.getByText(order.id, { exact: true })).toBeVisible();
   const pdfDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: /Comprobante PDF/i }).click();
