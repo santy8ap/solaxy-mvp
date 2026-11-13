@@ -6,7 +6,7 @@ import { SolarClock } from "@/components/solar/solar-clock";
 
 function Readout({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 bg-raise px-3.5 py-4 sm:px-5 sm:py-5">
+    <div className="landing-readout min-w-0 bg-raise px-3.5 py-4 sm:px-5 sm:py-5">
       <dt className="cap">{label}</dt>
       <dd className="num mt-2 text-[clamp(1.1rem,4.4vw,1.6rem)] leading-tight">{children}</dd>
     </div>
@@ -30,7 +30,7 @@ export function ClockSection() {
           <h2 id="reloj-titulo" className="display landing-reveal text-[clamp(2.25rem,6vw,3.75rem)]">
             Reloj solar
           </h2>
-          <span className="cap inline-flex items-center gap-2">
+          <span className="cap landing-clock-status inline-flex items-center gap-2.5 border border-line px-2.5 py-1.5">
             <span aria-hidden="true" className={`size-1.5 rounded-full ${generating ? "bg-ink" : "border border-mute"}`} />
             {now == null ? "Sincronizando hora" : generating ? "En generación" : "Fuera de horario"}
           </span>
@@ -38,7 +38,7 @@ export function ClockSection() {
         <div className="px-4 sm:px-7">
           <SolarClock solar={solar} now={now} />
         </div>
-        <dl className="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-4">
+        <dl className="landing-readouts grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-4">
           <Readout label="Hora en la planta">{now == null ? dash : formatClock(now)}</Readout>
           <Readout label="Potencia de la curva">
             {power == null ? (

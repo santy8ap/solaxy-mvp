@@ -27,14 +27,12 @@
 
 @layer base {
   html {
-    --hero-photo-filter: grayscale(1);
     --solar-halo: 255 255 255;
     color-scheme: dark;
     background: var(--color-void);
   }
 
   html[data-theme="light"] {
-    --hero-photo-filter: saturate(0.48);
     --color-void: #f6f5ee;
     --color-disc: #fffdf5;
     --color-raise: #fffdf7;
@@ -51,7 +49,6 @@
   }
 
   html[data-theme="green"] {
-    --hero-photo-filter: saturate(0.88);
     --color-void: #284c35;
     --color-disc: #1b3726;
     --color-raise: #33563b;

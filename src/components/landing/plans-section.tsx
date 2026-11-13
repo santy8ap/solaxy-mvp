@@ -47,7 +47,7 @@ export function PlansSection() {
         </div>
       ) : (
         <>
-          <div className="mt-10 lg:mt-12">
+          <div className="landing-plan-list mt-10 lg:mt-12">
             <PlansTable
               catalog={catalog}
               action={(p) =>

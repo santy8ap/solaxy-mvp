@@ -10,9 +10,12 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   const choices = page.getByRole("group", { name: "Apariencia" });
   const login = page.getByRole("banner").getByRole("link", { name: "Ingresar" });
   const themeColor = page.locator('meta[name="theme-color"]');
+  const clockLink = page.getByRole("link", { name: "Ver reloj solar", exact: true });
+  const photo = clockLink.locator("img");
   await expect(login).toBeVisible();
   await expect(root).toHaveAttribute("data-theme", "dark");
   await expect(root).toHaveCSS("background-color", "rgb(5, 5, 5)");
+  await expect(photo).toHaveCSS("filter", "none");
 
   await trigger.press("Enter");
   await expect(choices.getByRole("button", { name: "Oscuro" })).toHaveAttribute("aria-pressed", "true");
@@ -27,9 +30,8 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("color", "rgb(255, 237, 170)");
   await expect(trigger).toHaveAccessibleName(/Verde seleccionado/);
 
-  const clockLink = page.getByRole("link", { name: "Ver reloj solar", exact: true });
   await expect(clockLink).toHaveCSS("position", "relative");
-  await expect.poll(() => clockLink.locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await clockLink.click();
   await expect(page).toHaveURL(/\/#reloj$/);
   await expect(page.getByRole("heading", { name: /^Reloj solar$/i })).toBeInViewport();
@@ -38,9 +40,15 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   await expect(root).toHaveAttribute("data-theme", "green");
   await expect(themeColor).toHaveCount(1);
   await expect(themeColor).toHaveAttribute("content", "#284c35");
+
+  await trigger.click();
+  await choices.getByRole("button", { name: "Oscuro" }).click();
+  await expect(root).toHaveAttribute("data-theme", "dark");
+  await expect(photo).toHaveCSS("filter", "none");
+
   await login.click();
   await expect(page).toHaveURL(/\/ingresar$/);
-  await expect(trigger).toHaveAccessibleName(/Verde seleccionado/);
+  await expect(trigger).toHaveAccessibleName(/Oscuro seleccionado/);
 
   await trigger.click();
   await choices.getByRole("button", { name: "Claro" }).click();
@@ -60,4 +68,16 @@ test("los tres temas se aplican y la preferencia se conserva", async ({ page }) 
   await expect(root).toHaveAttribute("data-theme", "dark");
   await expect(root).toHaveCSS("background-color", "rgb(5, 5, 5)");
   expect(errors).toEqual([]);
+});
+
+test("la portada respeta la preferencia de movimiento reducido", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  const photo = page.getByRole("link", { name: "Ver reloj solar", exact: true }).locator("img");
+  await expect(photo).not.toHaveCSS("animation-name", "none");
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(photo).toHaveCSS("animation-name", "none");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ver los planes" })).toBeVisible();
 });

@@ -7,8 +7,8 @@ export default function HomePage() {
   return (
     <>
       <LandingNav />
-      <main className="space-y-24 pb-8 sm:space-y-32">
-        <div>
+      <main className="landing-main space-y-24 pb-8 sm:space-y-32">
+        <div className="landing-opening">
           <Hero />
           <ClockSection />
         </div>

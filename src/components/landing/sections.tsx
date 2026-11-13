@@ -16,7 +16,7 @@ import { CatalogValue } from "./catalog-value";
 
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-void/90 backdrop-blur-md">
+    <header className="landing-header sticky top-0 z-40 border-b border-line bg-void/90 backdrop-blur-md">
       <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-8 lg:gap-6">
         <Link href="/" className="inline-flex shrink-0 items-center" aria-label={`${BRAND.name}, inicio`}>
           <Logo size="header" />
@@ -75,22 +75,24 @@ export function Hero() {
           </div>
         </div>
       </div>
-      <a href="#reloj" className="landing-hero-visual relative isolate flex aspect-[3/2] max-h-[440px] items-end overflow-hidden border border-line-strong bg-raise lg:aspect-[10/9] lg:max-h-none">
-        <Image
-          src="/solar-field-sunrise.webp"
-          alt=""
-          fill
-          loading="eager"
-          fetchPriority="high"
-          sizes="(min-width: 1240px) 510px, (min-width: 1024px) 44vw, 100vw"
-          className="landing-hero-photo object-cover object-[60%_center]"
-        />
-        <span className="landing-visual-link">
-          <Sun aria-hidden="true" size={20} strokeWidth={1.5} />
-          Ver reloj solar
-          <ArrowDownRight aria-hidden="true" size={18} className="ml-auto" />
-        </span>
-      </a>
+      <div className="landing-visual-wrap relative min-w-0">
+        <a href="#reloj" className="landing-hero-visual relative isolate flex aspect-[3/2] max-h-[440px] items-end overflow-hidden border border-line-strong bg-raise lg:aspect-[10/9] lg:max-h-none">
+          <Image
+            src="/solar-field-sunrise.webp"
+            alt=""
+            fill
+            loading="eager"
+            fetchPriority="high"
+            sizes="(min-width: 1240px) 510px, (min-width: 1024px) 44vw, calc(100vw - 2.5rem)"
+            className="landing-hero-photo object-cover object-[60%_center]"
+          />
+          <span className="landing-visual-link">
+            <Sun aria-hidden="true" size={20} strokeWidth={1.5} />
+            Ver reloj solar
+            <ArrowDownRight aria-hidden="true" size={18} className="ml-auto" />
+          </span>
+        </a>
+      </div>
     </section>
   );
 }
@@ -127,7 +129,7 @@ export function HowItWorks() {
         {STEPS.map((s, i) => (
           <li
             key={s.title}
-            className="border-b border-line py-8 md:border-b-0 md:border-l md:py-10 md:pl-8 md:pr-8 md:first:border-l-0 md:first:pl-0"
+            className="landing-step landing-reveal border-b border-line py-8 md:border-b-0 md:border-l md:py-10 md:pl-8 md:pr-8 md:first:border-l-0 md:first:pl-0"
           >
             <span
               className="figure block text-[4.5rem] text-dim"
@@ -200,7 +202,7 @@ export function Faq() {
         <h2 className="display landing-reveal text-[clamp(3rem,7vw,5.5rem)]">Preguntas</h2>
         <div className="border-t border-line-strong">
           {items.map((f) => (
-            <details key={f.q} className="group border-b border-line">
+            <details key={f.q} className="landing-faq group border-b border-line">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-lg [&::-webkit-details-marker]:hidden">
                 {f.q}
                 <span
@@ -225,16 +227,19 @@ export function Faq() {
 export function FinalCta() {
   return (
     <section className="mx-auto max-w-[1240px] px-5 sm:px-8">
-      <div className="flex flex-col gap-8 border-y border-line-strong py-14 md:flex-row md:items-end md:justify-between">
-        <h2 className="display landing-reveal max-w-[14ch] text-[clamp(3rem,7vw,5.5rem)]">
-          El sol sale todos los días.
-        </h2>
-        <div>
-          <p className="max-w-[36ch] leading-relaxed text-fog">
-            Elige un plan, paga el primer mes y mira tu energía subir desde el
-            primer amanecer.
-          </p>
-          <AccountLink variant="cta" guestLabel="Empezar" className="mt-6" />
+      <div className="landing-finale relative isolate overflow-clip border border-line-strong">
+        <div className="landing-finale-orbit" aria-hidden="true" />
+        <div className="landing-reveal relative flex flex-col gap-8 px-5 py-12 sm:px-10 sm:py-16 md:flex-row md:items-end md:justify-between">
+          <h2 className="display max-w-[14ch] text-[clamp(3rem,7vw,5.5rem)]">
+            El sol sale todos los días.
+          </h2>
+          <div>
+            <p className="max-w-[36ch] leading-relaxed text-fog">
+              Elige un plan, paga el primer mes y mira tu energía subir desde el
+              primer amanecer.
+            </p>
+            <AccountLink variant="cta" guestLabel="Empezar" className="mt-6" />
+          </div>
         </div>
       </div>
     </section>
