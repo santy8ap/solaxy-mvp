@@ -40,6 +40,9 @@ const SECTIONS: LegalSection[] = [
             <strong>Solicitudes sobre tus datos:</strong> las descargas y las solicitudes de eliminación de la cuenta, con su motivo y nuestra respuesta.
           </li>
           <li>
+            <strong>Avisos por correo:</strong> qué aviso te enviamos, cuándo y si se entregó. No guardamos una copia del mensaje ni el correo de destino.
+          </li>
+          <li>
             <strong>Datos técnicos:</strong> dirección IP, navegador y registros de seguridad. También medimos las visitas y la velocidad de la página sin cookies: qué páginas se visitan, desde qué
             país, con qué tipo de dispositivo y navegador, y cuánto tardan en cargar. Esa medición no identifica a nadie y no incluye la administración.
           </li>
@@ -56,7 +59,9 @@ const SECTIONS: LegalSection[] = [
         <li>Procesar los pagos, calcular la energía y el saldo de cada plan y pagar los retiros.</li>
         <li>Cumplir obligaciones legales, contables y tributarias, y las de prevención de lavado de activos y financiación del terrorismo.</li>
         <li>Prevenir fraudes y proteger la seguridad de la plataforma.</li>
-        <li>Atender peticiones, quejas y reclamos, y enviar información sobre los planes del comercializador, como el vencimiento de un mes o el final de un plan.</li>
+        <li>
+          Atender peticiones, quejas y reclamos, y avisarte en tu panel y por correo de tus pagos, tus retiros, el vencimiento de cada mes y el final de tus planes.
+        </li>
         <li>Avisar por correo a nuestro equipo cuando entra un pago, cuando reportas una transferencia, cuando pides un retiro o cuando algo falla, para atenderlo a tiempo.</li>
         <li>Elaborar estadísticas agregadas que no identifican a nadie y medir las visitas y la velocidad de la página para mejorarla.</li>
       </ul>
@@ -115,8 +120,8 @@ const SECTIONS: LegalSection[] = [
             Vercel y Turso, para alojar la plataforma y su base de datos. Vercel también mide, sin cookies y sin identificar a nadie, las visitas y la velocidad de la página.
           </li>
           <li>
-            Resend, para enviar a nuestro equipo los avisos internos por correo. Esos avisos llevan tu nombre, los montos y las referencias de cada operación (y, si pides eliminar tu cuenta, el
-            motivo que escribas), pero no tu documento ni tus números de cuenta.
+            Resend, para enviarte por correo los avisos de tus pagos, retiros y mensualidades, y para los avisos internos a nuestro equipo. Los avisos a nuestro equipo llevan tu nombre, los
+            montos y las referencias de cada operación (y, si pides eliminar tu cuenta, el motivo que escribas), pero no tu documento ni tus números de cuenta.
           </li>
           <li>Los bancos por donde recibimos transferencias y pagamos retiros, y las redes blockchain por donde se paga con cripto.</li>
         </ul>

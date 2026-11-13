@@ -23,6 +23,7 @@ import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
 import { orderCode, simulatedTxHash } from "@/lib/ids";
 import { fulfillOrder } from "@/lib/orders";
+import { emailWithdrawalDecided } from "@/lib/customer-email";
 import { bankReferenceOwner } from "@/lib/payments/bank-reference";
 import { collectedWhere } from "@/lib/payments/real-money";
 import {
@@ -439,6 +440,7 @@ export async function decideWithdrawal(
       )
       .returning();
     if (!res.length) throw new MarketError("Este retiro ya fue revisado", 409);
+    emailWithdrawalDecided(tx.userId, res[0]);
     await audit(
       actor,
       "aprobar_retiro",
@@ -456,6 +458,7 @@ export async function decideWithdrawal(
     .where(and(eq(ledgerTx.id, txId), eq(ledgerTx.status, "por_aprobar")))
     .returning();
   if (!res.length) throw new MarketError("Este retiro ya fue revisado", 409);
+  emailWithdrawalDecided(tx.userId, res[0]);
   await audit(
     actor,
     "rechazar_retiro",

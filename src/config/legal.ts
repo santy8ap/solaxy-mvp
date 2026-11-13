@@ -6,7 +6,7 @@ import { BRAND } from "./brand";
  * Al cambiar `version`, cada comercializador debe aceptar los textos de nuevo antes de su siguiente compra.
  */
 export const LEGAL = {
-  version: "2026-11-12",
+  version: "2026-11-13",
   /** Pásalo a true cuando el abogado apruebe los textos: desaparece el aviso de borrador. */
   reviewed: false,
   company: BRAND.legalName,

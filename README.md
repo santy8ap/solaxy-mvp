@@ -90,6 +90,7 @@ Consulta [.env.example](.env.example) y **Admin → Configuración → Para cobr
 | `NEXT_PUBLIC_REOWN_PROJECT_ID` | Conexión de wallet por QR |
 | `CRON_SECRET` | Autenticación de verificaciones programadas |
 | `RESEND_API_KEY`, `ALERT_EMAIL`, `ALERT_FROM` | Alertas por correo al administrador (pagos, transferencias, retiros, devoluciones y fallas) |
+| `CUSTOMER_EMAIL_FROM` | Remitente de los correos a los comercializadores; exige un dominio verificado en Resend |
 | `SUPPORT_EMAIL`, `SUPPORT_WHATSAPP` | Contactos oficiales; también se guardan desde el admin |
 | `DEMO_MODE` | `true`: pruebas; `false`: pagos reales y sin cuenta de pruebas |
 
@@ -98,6 +99,18 @@ El webhook de Mercado Pago debe apuntar a `https://tu-dominio/api/webhooks/merca
 Vercel despliega al actualizar `main`. Las migraciones se aplican al iniciar el servicio; las nuevas tablas de soporte, conciliación y trabajos son aditivas. Las vistas previas nunca usan la base de producción: se conectan a la suya (`PREVIEW_TURSO_DATABASE_URL`) y allí aplican sus migraciones; sin ella usan un archivo temporal. `ALLOW_PREVIEW_MIGRATIONS=true` solo corresponde a una vista previa con otra base remota aislada.
 
 Publicar el código no activa cobros reales. Faltan los datos y la revisión del responsable en `src/config/legal.ts`, el contacto oficial, las credenciales reales y la configuración operativa. La lista del admin mantiene esos pendientes visibles y no considera lista la operación mientras permanezca en modo de pruebas o falte la revisión legal.
+
+## Correos a los comercializadores
+
+Con `CUSTOMER_EMAIL_FROM` (un remitente de un dominio verificado en Resend, por ejemplo `X green Energy <avisos@tudominio.co>`) y la misma `RESEND_API_KEY`, cada comercializador recibe por correo:
+
+- pago confirmado (con los días que genera ese mes), pago por devolver y devolución registrada;
+- transferencia no confirmada, con el motivo y el enlace para pagar ese mes;
+- retiro pagado (con la referencia del envío) o rechazado (con el motivo);
+- mensualidad por vencer (5 días antes), plan en pausa y plan por terminar (7 días antes), desde el mantenimiento automático;
+- la respuesta a su solicitud sobre sus datos, y el aviso de que su cuenta se eliminó.
+
+Cada aviso se envía una sola vez (la tabla `customer_email` guarda qué se envió, cuándo y si se entregó, sin el correo de destino) y uno que falla se reintenta hasta 3 veces. Las respuestas van al correo de soporte configurado. Mientras `CUSTOMER_EMAIL_FROM` esté vacío, no se envía nada: los avisos siguen en el panel de cada comercializador. Sin dominio propio, Resend solo entrega al correo del dueño de la cuenta, así que el remitente `resend.dev` no sirve para los clientes.
 
 ## Monitoreo, respaldo y buscadores
 

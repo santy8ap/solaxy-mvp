@@ -25,6 +25,7 @@ export const BACKUP_TABLES = [
   "plan_period",
   "payment_review",
   "data_request",
+  "customer_email",
   "admin_audit",
 ] as const;
 export type BackupTable = (typeof BACKUP_TABLES)[number];

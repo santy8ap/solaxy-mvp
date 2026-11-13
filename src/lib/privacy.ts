@@ -3,10 +3,11 @@ import { and, asc, eq, gte, inArray, isNotNull, isNull, ne, or, sql } from "driz
 import { LEGAL } from "@/config/legal";
 import { audit, type Actor } from "@/lib/admin/service";
 import { alertAdmin } from "@/lib/alerts";
+import { customerMessages, emailCustomer } from "@/lib/customer-email";
 import { db, type DbSession } from "@/lib/db";
 import { deletedEmail } from "@/lib/deleted-account";
 import { writeTransaction } from "@/lib/db/transaction";
-import { account, companyProfile, dataRequest, ledgerTx, paymentReview, session, user, verification, walletLink } from "@/lib/db/schema";
+import { account, companyProfile, customerEmail, dataRequest, ledgerTx, paymentReview, session, user, verification, walletLink } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
 import { formatCop, formatDate } from "@/lib/format";
 import { IN_FLIGHT_MS, closeAbandonedOrders } from "@/lib/jobs/housekeeping";
@@ -55,6 +56,7 @@ export async function exportPersonalData(userId: string, now = Date.now()) {
   const movements = await db.select().from(ledgerTx).where(eq(ledgerTx.userId, userId)).orderBy(asc(ledgerTx.createdAt));
   const [wallet] = await db.select().from(walletLink).where(eq(walletLink.userId, userId));
   const requests = await db.select().from(dataRequest).where(eq(dataRequest.userId, userId)).orderBy(asc(dataRequest.createdAt));
+  const emails = await db.select().from(customerEmail).where(eq(customerEmail.userId, userId)).orderBy(asc(customerEmail.createdAt));
   const iso = (ms: number | null | undefined) => (ms ? new Date(ms).toISOString() : null);
   return {
     generadoEl: iso(now),
@@ -121,6 +123,7 @@ export async function exportPersonalData(userId: string, now = Date.now()) {
       respondidaEl: iso(r.resolvedAt),
       respuesta: r.resolution,
     })),
+    correosQueTeEnviamos: emails.map((e) => ({ aviso: e.kind, asunto: e.subject, estado: e.status, fecha: iso(e.sentAt ?? e.createdAt) })),
   };
 }
 
@@ -247,7 +250,11 @@ export async function deleteAccount(actor: Actor, requestId: string, note?: stri
     .from(ledgerTx)
     .where(and(eq(ledgerTx.userId, userId), ne(ledgerTx.status, "pendiente"), ne(ledgerTx.status, "fallida"), ne(ledgerTx.status, "cancelada")));
   const keepsAccounting = Number(paid?.n ?? 0) > 0;
-  const [before] = await db.select({ email: user.email }).from(user).where(eq(user.id, userId));
+  const [before] = await db
+    .select({ email: user.email, name: user.name, fullName: companyProfile.fullName })
+    .from(user)
+    .leftJoin(companyProfile, eq(companyProfile.userId, user.id))
+    .where(eq(user.id, userId));
   const resolution =
     (note?.trim() ? `${note.trim()} ` : "") +
     (keepsAccounting
@@ -266,7 +273,11 @@ export async function deleteAccount(actor: Actor, requestId: string, note?: stri
     else await tx.delete(companyProfile).where(eq(companyProfile.userId, userId));
     await tx.update(ledgerTx).set({ walletAddress: null }).where(and(eq(ledgerTx.userId, userId), eq(ledgerTx.kind, "plan_mes")));
     await tx.update(dataRequest).set({ status: "atendida", resolvedAt: now, resolution }).where(eq(dataRequest.id, requestId));
+    // La constancia de los correos que se le enviaron ya no sirve para nada.
+    await tx.delete(customerEmail).where(eq(customerEmail.userId, userId));
   });
+  // El último correo: al que tenía la cuenta, que ya se borró de la base.
+  if (before?.email) emailCustomer(userId, () => customerMessages.accountDeleted(requestId, keepsAccounting), { to: before.email, name: before.fullName || before.name });
   await audit(actor, "eliminar_cuenta", `Eliminó la cuenta ${userId} a pedido del titular. ${keepsAccounting ? "Se conservan los datos contables." : "No tenía movimientos."}`, { requestId, keepsAccounting }, userId);
   return { userId, keepsAccounting, resolution };
 }
@@ -276,6 +287,7 @@ export async function answerRequest(actor: Actor, requestId: string, note: strin
   const text = noteField.parse(note);
   const req = await requirePending(requestId);
   await db.update(dataRequest).set({ status: "respondida", resolvedAt: now, resolution: text }).where(eq(dataRequest.id, requestId));
+  emailCustomer(req.userId, () => customerMessages.dataRequestAnswered(requestId, text));
   await audit(actor, "responder_solicitud_datos", `Respondió la solicitud de eliminación de ${req.userId} sin eliminar la cuenta: ${text}`, { requestId }, req.userId);
   return { requestId, resolution: text };
 }

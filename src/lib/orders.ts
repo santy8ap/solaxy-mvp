@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, inArray } from "drizzle-orm";
 import { alertPaymentConfirmed, alertPaymentToRefund } from "@/lib/alerts";
+import { emailPaymentConfirmed, emailPaymentToRefund } from "@/lib/customer-email";
 import { db, type DbSession } from "@/lib/db";
 import { writeTransaction } from "@/lib/db/transaction";
 import { ledgerTx, type PaymentMethod, type TxStatus } from "@/lib/db/schema";
@@ -82,6 +83,11 @@ export async function closeOrder(
       proveedor: row.method,
       providerId: row.providerId,
     });
+  // Llegó dinero que no se puede usar (otro monto, cotización vencida, pago incompleto): hay que devolverlo.
+  if (row && status === "por_reembolsar") {
+    alertPaymentToRefund(row);
+    emailPaymentToRefund(row);
+  }
   return row;
 }
 
@@ -192,8 +198,13 @@ export async function fulfillOrder(
     },
   );
   const { order } = result;
-  if (result.outcome === "confirmada") alertPaymentConfirmed(order);
-  else if (result.outcome === "no_activada" && order.status === "por_reembolsar") alertPaymentToRefund(order);
+  if (result.outcome === "confirmada") {
+    alertPaymentConfirmed(order);
+    emailPaymentConfirmed(order);
+  } else if (result.outcome === "no_activada" && order.status === "por_reembolsar") {
+    alertPaymentToRefund(order);
+    emailPaymentToRefund(order);
+  }
   if (result.outcome === "confirmada")
     payLog("mes_activado", {
       orderId,

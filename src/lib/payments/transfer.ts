@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { audit, type Actor } from "@/lib/admin/service";
 import { alertTransferReported } from "@/lib/alerts";
+import { emailTransferRejected } from "@/lib/customer-email";
 import { db, type DbSession } from "@/lib/db";
 import { writeTransaction } from "@/lib/db/transaction";
 import { ensureReady } from "@/lib/db/init";
@@ -221,6 +222,7 @@ export async function rejectTransfer(actor: Actor, orderId: string, reason: stri
   const order = await requireTransfer(orderId);
   const row = await closeOrder(orderId, "fallida", { note: `Transferencia no confirmada: ${why}`, providerStatus: "no confirmada por el administrador" }, ["pendiente", "verificando"]);
   if (!row) throw new MarketError("Esta transferencia ya fue revisada.", 409);
+  emailTransferRejected(row, why);
   await audit(actor, "rechazar_transferencia", `Rechazó la transferencia de ${formatCop(order.amountCop)} (${orderId}): ${why}`, { orderId, reason: why }, order.userId);
   return toTxDTO(row);
 }

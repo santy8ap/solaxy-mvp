@@ -336,6 +336,31 @@ export const dataRequest = sqliteTable(
   (t) => [index("data_request_user_idx").on(t.userId), index("data_request_status_idx").on(t.status)],
 );
 
+export const CUSTOMER_EMAIL_STATUSES = ["enviando", "enviado", "fallido"] as const;
+
+/**
+ * Los correos que se le envían a cada comercializador (pago confirmado, retiro pagado, mensualidad por vencer…).
+ * La clave identifica el aviso (p. ej. «mensualidad:PLN-…:2»): el mismo aviso nunca se envía dos veces, y uno
+ * que falló se reintenta hasta 3 veces. No guarda el correo de destino: se toma de la cuenta al enviar.
+ */
+export const customerEmail = sqliteTable(
+  "customer_email",
+  {
+    key: text("key").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    subject: text("subject").notNull(),
+    status: text("status", { enum: CUSTOMER_EMAIL_STATUSES }).notNull(),
+    attempts: integer("attempts").notNull().default(1),
+    error: text("error"),
+    createdAt: integer("created_at").notNull(),
+    sentAt: integer("sent_at"),
+  },
+  (t) => [index("customer_email_user_idx").on(t.userId, t.createdAt)],
+);
+
 export const walletLink = sqliteTable("wallet_link", {
   userId: text("user_id")
     .primaryKey()

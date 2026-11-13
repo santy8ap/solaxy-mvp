@@ -10,6 +10,7 @@ import {
   type PaymentMethod,
   type TxStatus,
 } from "@/lib/db/schema";
+import { emailRefunded } from "@/lib/customer-email";
 import { resolvePaymentReview } from "@/lib/payments/reversals";
 import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
@@ -292,6 +293,7 @@ export async function markRefunded(
     .where(and(eq(ledgerTx.id, orderId), eq(ledgerTx.status, "por_reembolsar")))
     .returning();
   if (!row) throw new MarketError("Este pago no está por reembolsar", 409);
+  emailRefunded(row, ref);
   await audit(
     actor,
     "marcar_reembolso",

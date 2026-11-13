@@ -1,5 +1,6 @@
 import "server-only";
-import { alertFailure } from "@/lib/alerts";
+import { alertFailure, alertPaymentToRefund } from "@/lib/alerts";
+import { emailPaymentToRefund } from "@/lib/customer-email";
 import { and, eq } from "drizzle-orm";
 import { BRAND } from "@/config/brand";
 import { db } from "@/lib/db";
@@ -224,7 +225,7 @@ async function recordDuplicatePayment(order: OrderRow, payment: MpPayment) {
   if (exists) return;
   const now = Date.now();
   try {
-    await db.insert(ledgerTx).values({
+    const [dup] = await db.insert(ledgerTx).values({
       id: newId("dup-"),
       userId: order.userId,
       kind: order.kind,
@@ -242,7 +243,10 @@ async function recordDuplicatePayment(order: OrderRow, payment: MpPayment) {
       providerId: String(payment.id),
       providerStatus: payment.status,
       expectedAmount: order.expectedAmount,
-    });
+    }).returning();
+    // El dinero entró dos veces: el admin debe devolverlo y el comercializador saberlo.
+    alertPaymentToRefund(dup);
+    emailPaymentToRefund(dup);
     payLog("pago_duplicado", {
       proveedor: "mercadopago",
       orderId: order.id,

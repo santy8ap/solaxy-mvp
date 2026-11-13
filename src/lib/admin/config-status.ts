@@ -2,6 +2,7 @@ import "server-only";
 import { LEGAL } from "@/config/legal";
 import { databaseTarget } from "@/lib/db/target";
 import { alertConfig } from "@/lib/alerts";
+import { customerEmailConfig } from "@/lib/customer-email";
 import { getTransferAccount } from "@/lib/payments/transfer";
 import { adminEmails, baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
 import { rpcChainReader } from "@/lib/payments/chain";
@@ -26,7 +27,8 @@ export interface ConfigCheck {
     | "Datos"
     | "Soporte"
     | "Transferencia"
-    | "Alertas";
+    | "Alertas"
+    | "Correos";
   title: string;
   state: CheckState;
   detail: string;
@@ -282,6 +284,19 @@ export async function configStatus({
         ? "Falta a quién enviarlas: agrega tu correo a ALERT_EMAIL o a ADMIN_EMAILS."
         : "Crea una clave en resend.com y guárdala en Vercel como RESEND_API_KEY (Production, Sensitive). Sin ella no se envían correos.",
     vars: ["RESEND_API_KEY", "ALERT_EMAIL"],
+    required: false,
+  });
+
+  const customer = customerEmailConfig();
+  add({
+    id: "correos-clientes",
+    group: "Correos",
+    title: "Correos a los comercializadores",
+    state: customer.enabled ? "ok" : "aviso",
+    detail: customer.enabled
+      ? `Se envían desde ${customer.from}: pago confirmado, retiro pagado, mensualidad por vencer, plan en pausa y más.`
+      : `${customer.reason} Sin esto, los comercializadores solo ven los avisos dentro de su panel.`,
+    vars: ["CUSTOMER_EMAIL_FROM", "RESEND_API_KEY"],
     required: false,
   });
 

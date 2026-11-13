@@ -7,6 +7,7 @@ import { ledgerTx, session, verification } from "@/lib/db/schema";
 import { payLog } from "@/lib/payments/log";
 import { DAY_MS, HOUR_MS } from "@/lib/time";
 import { claimInterval } from "./claim";
+import { sendPlanReminders } from "./reminders";
 
 /**
  * Mantenimiento: cierra lo que quedó abierto y ya nadie va a completar, y borra lo vencido que no sirve.
@@ -68,7 +69,9 @@ export async function purgeExpired({ now = Date.now() }: { now?: number } = {}) 
 export async function runHousekeeping({ now = Date.now() }: { now?: number } = {}) {
   const orders = await closeAbandonedOrders({ now });
   const expired = await purgeExpired({ now });
-  return { orders, expired };
+  // Recordatorios por correo de mensualidades y planes (solo si los correos a los clientes están activos).
+  const reminders = await sendPlanReminders({ now });
+  return { orders, expired, reminders };
 }
 
 /**
