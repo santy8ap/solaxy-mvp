@@ -1,7 +1,7 @@
 "use client";
 import { useId } from "react";
 import type { SolarDay } from "@/config/solar";
-import { dayFraction, plantPowerKw, shape, solarHours } from "@/lib/energy/solar-day";
+import { dayFraction, shape, solarHours } from "@/lib/energy/solar-day";
 import { formatNumber, formatTime } from "@/lib/format";
 
 /**
@@ -48,28 +48,36 @@ export interface SolarClockProps {
   solar: SolarDay;
   /** Hora actual sincronizada con el servidor; null antes de hidratar (se dibuja la curva sin el sol). */
   now: number | null;
+  /** Fracción del día solar seleccionada en el explorador de la portada. */
+  previewFraction?: number;
   /** "hero": grande, para el inicio. "panel": compacto, para el panel de la empresa. */
   size?: "hero" | "panel";
   className?: string;
 }
 
-export function SolarClock({ solar, now, size = "hero", className = "" }: SolarClockProps) {
+export function SolarClock({ solar, now, previewFraction, size = "hero", className = "" }: SolarClockProps) {
   const fillId = useId();
   const hero = size === "hero";
   const hours = solarHours(solar);
   const marks = Array.from({ length: hours + 1 }, (_, i) => solar.startHour + i);
-  const f = now == null ? null : dayFraction(solar, now);
+  const previewing = previewFraction != null;
+  const f = previewFraction ?? (now == null ? null : dayFraction(solar, now));
   const s = f == null ? 0 : shape(f);
   const generating = f != null && f > 0 && f < 1;
-  const power = now == null ? 0 : plantPowerKw(solar, now);
+  const power = solar.peakKw * s;
   const elapsedCurve = f != null && f > 0 ? (f === 1 ? FULL_CURVE : curvePath(f)) : null;
+  const glow = previewing ? "var(--landing-sunlight, var(--solar-halo))" : "var(--solar-halo)";
+  const markerSize = previewing ? "size-5" : hero ? "size-7 @min-[560px]:size-[54px]" : "size-[38px]";
+  const markerMotion = previewing ? "" : "motion-safe:transition-[left,top] motion-safe:duration-1000 motion-safe:ease-linear";
 
   const label =
-    now == null
-      ? `Reloj solar: la planta genera de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}, con un máximo de ${formatNumber(solar.peakKw)} kW.`
-      : generating
-        ? `Reloj solar: son las ${formatTime(now)} y la curva de la planta va en ${formatNumber(power)} kW, el ${Math.round(s * 100)} % de su máximo de ${formatNumber(solar.peakKw)} kW.`
-        : `Reloj solar: son las ${formatTime(now)}. La planta genera de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}.`;
+    previewing
+      ? `Curva solar a la hora consultada. Potencia estimada de ${formatNumber(power)} kW.`
+      : now == null
+        ? `Reloj solar: la planta genera de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}, con un máximo de ${formatNumber(solar.peakKw)} kW.`
+        : generating
+          ? `Reloj solar: son las ${formatTime(now)} y la curva de la planta va en ${formatNumber(power)} kW, el ${Math.round(s * 100)} % de su máximo de ${formatNumber(solar.peakKw)} kW.`
+          : `Reloj solar: son las ${formatTime(now)}. La planta genera de ${hourLabel(solar.startHour, true)} a ${hourLabel(solar.endHour, true)}.`;
 
   return (
     <div role="img" aria-label={label} className={`@container relative w-full select-none ${hero ? "aspect-[4/3] sm:aspect-[5/2]" : "aspect-[16/10] sm:aspect-[2/1]"} ${className}`}>
@@ -77,8 +85,8 @@ export function SolarClock({ solar, now, size = "hero", className = "" }: SolarC
         {hero && (
           <defs>
             <linearGradient id={fillId} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="rgb(var(--solar-halo))" stopOpacity="0.21" />
-              <stop offset="100%" stopColor="rgb(var(--solar-halo))" stopOpacity="0.015" />
+              <stop offset="0%" stopColor={`rgb(${glow})`} stopOpacity="0.21" />
+              <stop offset="100%" stopColor={`rgb(${glow})`} stopOpacity="0.015" />
             </linearGradient>
           </defs>
         )}
@@ -105,15 +113,15 @@ export function SolarClock({ solar, now, size = "hero", className = "" }: SolarC
           <path
             d={elapsedCurve}
             fill="none"
-            stroke={hero ? "rgb(var(--solar-halo))" : "currentColor"}
+            stroke={hero ? `rgb(${glow})` : "currentColor"}
             strokeWidth={hero ? "2.2" : "1.8"}
             pathLength={hero ? 1 : undefined}
-            data-solar-trace={hero ? "" : undefined}
+            data-solar-trace={hero && !previewing ? "" : undefined}
             vectorEffect="non-scaling-stroke"
           />
         )}
         {hero && generating && (
-          <line x1={xOf(f)} x2={xOf(f)} y1={yOf(s)} y2={BASE} stroke="rgb(var(--solar-halo))" strokeOpacity="0.55" strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
+          <line x1={xOf(f)} x2={xOf(f)} y1={yOf(s)} y2={BASE} stroke={`rgb(${glow})`} strokeOpacity="0.55" strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
         )}
         {/* El horizonte */}
         <line x1={0} x2={W} y1={BASE} y2={BASE} stroke="currentColor" strokeOpacity="0.7" vectorEffect="non-scaling-stroke" />
@@ -152,16 +160,18 @@ export function SolarClock({ solar, now, size = "hero", className = "" }: SolarC
       {/* El sol: el eclipse de la marca. Su halo crece con la potencia. */}
       {f != null && (
         <span
-          className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-disc motion-safe:transition-[left,top] motion-safe:duration-1000 motion-safe:ease-linear ${hero ? "size-7 @min-[560px]:size-[54px]" : "size-[38px]"}`}
+          className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-disc ${markerSize} ${markerMotion}`}
           style={{
             left: pct(xOf(f), W),
             top: pct(yOf(s), H),
-            boxShadow: generating
+            boxShadow: previewing
+              ? `0 0 0 2px rgb(${glow}), 0 0 16px 3px rgb(${glow} / 0.35)`
+              : generating
               ? `0 0 0 1.5px rgb(var(--solar-halo) / 0.96), 0 0 ${10 + 10 * s}px ${1 + 2 * s}px rgb(var(--solar-halo) / ${0.3 + 0.35 * s}), 0 0 ${40 + 40 * s}px ${8 + 14 * s}px rgb(var(--solar-halo) / ${0.06 + 0.14 * s}), 0 0 ${120 + 80 * s}px ${30 + 40 * s}px rgb(var(--solar-halo) / ${0.02 + 0.05 * s})`
               : "0 0 0 1.5px rgb(var(--solar-halo) / 0.4)",
           }}
         >
-          {hero && generating && (
+          {hero && generating && !previewing && (
             <span className="pointer-events-none absolute -inset-2 rounded-full border border-ink/30 motion-safe:animate-[solar-halo-in_950ms_var(--ease-out-soft)_both]" />
           )}
         </span>

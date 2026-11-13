@@ -145,6 +145,33 @@ html:has(#preguntas:target) .landing-nav a[href="#preguntas"]::after {
   background: rgb(var(--landing-sunlight) / 0.05);
 }
 
+.landing-clock[data-exploring="true"] .landing-clock-status {
+  border-color: rgb(var(--landing-sunlight) / 0.45);
+  color: rgb(var(--landing-sunlight));
+}
+
+.landing-clock-controls {
+  background: color-mix(in srgb, var(--color-void) 55%, var(--color-raise));
+}
+
+.landing-clock-range {
+  accent-color: rgb(var(--landing-sunlight));
+}
+
+.landing-clock-moment {
+  transition: background-color 160ms, border-color 160ms;
+}
+
+.landing-clock-moment:hover {
+  background: rgb(var(--landing-sunlight) / 0.07);
+}
+
+.landing-clock-moment[aria-pressed="true"] {
+  border-color: rgb(var(--landing-sunlight) / 0.65);
+  background: rgb(var(--landing-sunlight) / 0.12);
+  color: rgb(var(--landing-sunlight));
+}
+
 .landing-plan-comparison tbody tr,
 .landing-step,
 .landing-faq {
