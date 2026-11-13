@@ -57,9 +57,17 @@ Mientras exista una devolución pendiente de conciliación, se bloquean nuevos r
 
 Los retiros son manuales: el administrador verifica al titular, realiza el envío y registra su referencia. Los datos bancarios completos solo se muestran al administrador autorizado.
 
-## Verificación cripto en segundo plano
+## Tareas en segundo plano
 
-`GET /api/cron/payments` procesa órdenes cripto con hash y estado `verificando`. Requiere `Authorization: Bearer CRON_SECRET`, con una clave aleatoria de al menos 32 caracteres. Sin esa configuración rechaza la solicitud. Un arrendamiento en la base evita ejecuciones superpuestas y un cursor durable evita que un error deje siempre bloqueada la primera orden. Cada lote tiene un presupuesto de tiempo y de operaciones.
+`GET /api/cron/payments` hace la pasada diaria. Requiere `Authorization: Bearer CRON_SECRET`, con una clave aleatoria de al menos 32 caracteres; sin esa configuración rechaza la solicitud. Hace tres cosas:
+
+- **Pagos cripto**: verifica en la cadena las órdenes con hash y estado `verificando`. Un arrendamiento en la base evita ejecuciones superpuestas.
+- **Mercado Pago**: consulta las órdenes cuyo aviso pudo perderse. Las que nadie ha pagado, durante 2 días; las que Mercado Pago tiene en proceso (por ejemplo, un PSE), hasta 30 días; y los pagos confirmados de los últimos 180 días, para detectar devoluciones.
+- **Mantenimiento**: cierra como canceladas las órdenes que nadie pagó (Mercado Pago a los 2 días, una cotización cripto un día después de vencer, un retiro a wallet sin firmar al día) y borra las sesiones vencidas. Cerrar no pierde dinero: si el pago llega después, la orden se reabre y se activa (o queda por reembolsar), y a una cotización cripto cancelada todavía se le puede registrar el hash.
+
+Cada tarea recorre las órdenes por tandas con un cursor guardado en la base: con más órdenes de las que caben en una pasada, las revisa todas por turnos y un error no deja bloqueada siempre la primera. Cada pasada tiene un presupuesto de tiempo.
+
+Además del cron, las mismas tareas corren con las visitas (después de responder, sin demorar a nadie): los pagos como máximo cada 2 minutos y el mantenimiento como máximo una vez por hora en todo el sitio.
 
 `vercel.json` incluye una ejecución diaria a las 10:00 UTC como recuperación independiente de las visitas. La consulta inmediata y el seguimiento del pago siguen funcionando. Para operación comercial, configura y supervisa una frecuencia adecuada: Vercel Pro permite cron por minuto; Hobby limita el cron a una vez al día. También puede usarse un programador externo autenticado contra la misma ruta. No se ha contratado ningún servicio adicional ni configurado claves de producción desde el repositorio.
 

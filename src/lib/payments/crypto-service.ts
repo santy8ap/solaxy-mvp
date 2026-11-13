@@ -330,7 +330,10 @@ export async function submitCryptoPayment(
   if (!order || order.userId !== input.userId || order.method !== "crypto")
     throw new MarketError("Orden no encontrada", 404);
   if (order.providerId === hash) return verifyCryptoOrder(order.id, deps);
-  if (order.status !== "pendiente" && order.status !== "verificando")
+  // Una cotización que se canceló por vencida todavía admite su hash: si el pago salió a tiempo se activa el
+  // mes, y si salió tarde queda por reembolsar. En ambos casos el dinero que llegó no se pierde de vista.
+  const expired = order.status === "cancelada" && !order.providerId;
+  if (!expired && order.status !== "pendiente" && order.status !== "verificando")
     throw new MarketError("Esta orden ya está cerrada", 409);
   if (order.providerId)
     throw new MarketError(
@@ -339,12 +342,17 @@ export async function submitCryptoPayment(
     );
 
   const claim = () =>
-    markProviderStatus(order.id, {
-      providerId: hash,
-      txHash: hash,
-      status: "verificando",
-      providerStatus: "enviada",
-    });
+    markProviderStatus(
+      order.id,
+      {
+        providerId: hash,
+        txHash: hash,
+        status: "verificando",
+        providerStatus: "enviada",
+        ...(expired && { note: null }),
+      },
+      expired ? ["cancelada"] : undefined,
+    );
   try {
     await claim();
   } catch (err) {

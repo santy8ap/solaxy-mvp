@@ -230,4 +230,38 @@ describe("verificación en la cadena", () => {
     await svc.retryUserCryptoOrders("inv-060", deps);
     expect((await orderRow(q.orderId)).status).toBe("confirmada");
   });
+
+  describe("cotización cancelada por vencida (nadie registró el pago a tiempo)", () => {
+    /** El mantenimiento cierra las cotizaciones de esa cuenta que vencieron hace más de una hora. */
+    async function expire(userId: string, orderId: string) {
+      const { closeAbandonedOrders } = await import("@/lib/jobs/housekeeping");
+      await closeAbandonedOrders({ userId, now: Date.now() + 2 * 3_600_000 });
+      expect(await orderRow(orderId)).toMatchObject({ status: "cancelada", note: "La cotización venció sin que se registrara un pago." });
+    }
+
+    it("si el pago sí salió a tiempo, registrar el hash después activa el mes", async () => {
+      const q = await quote("inv-058", 58, { planId: "p180", asset: "BNB", walletName: "MetaMask" });
+      // Pagó desde su wallet, pero cerró la pestaña antes de que la página guardara el hash.
+      const hash = mine({ from: wallet(58), asset: "BNB", amount: BigInt(q.amountBaseUnits), block: chain.latest - 10n });
+      await expire("inv-058", q.orderId);
+      const r = await svc.submitCryptoPayment({ userId: "inv-058", orderId: q.orderId, txHash: hash }, deps);
+      expect(r.state).toBe("confirmada");
+      expect(await orderRow(q.orderId)).toMatchObject({ status: "confirmada", providerId: hash, note: null });
+      expect(await entriesOf(q.orderId)).toHaveLength(1);
+    });
+
+    it("si el pago salió cuando la cotización ya había vencido, queda por reembolsar", async () => {
+      const q = await quote("inv-057", 57, { planId: "p180", asset: "BNB", walletName: "MetaMask" });
+      await expire("inv-057", q.orderId);
+      const block = chain.latest - 7n;
+      const hash = mine({ from: wallet(57), asset: "BNB", amount: BigInt(q.amountBaseUnits), block });
+      chain.times.set(block, Math.floor((Date.now() + 2 * 86_400_000) / 1000));
+      const r = await svc.submitCryptoPayment({ userId: "inv-057", orderId: q.orderId, txHash: hash }, deps);
+      expect(r.state).toBe("por_reembolsar");
+      expect(r.order.note).toMatch(/después de que venciera/);
+      expect(await entriesOf(q.orderId)).toHaveLength(0);
+      // Ya cerrada con su pago, no admite otro hash.
+      await expect(svc.submitCryptoPayment({ userId: "inv-057", orderId: q.orderId, txHash: newHash() }, deps)).rejects.toMatchObject({ status: 409 });
+    });
+  });
 });

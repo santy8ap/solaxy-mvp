@@ -223,6 +223,7 @@ export async function reverifyPayment(
         "pendiente",
         "verificando",
         "fallida",
+        "cancelada",
         "confirmada",
         "reembolsada",
       ].includes(order.status)

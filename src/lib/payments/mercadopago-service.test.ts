@@ -152,7 +152,7 @@ beforeAll(async () => {
   dbMod = await import("@/lib/db");
   schema = await import("@/lib/db/schema");
   drizzle = await import("drizzle-orm");
-  for (let i = 1; i <= 16; i++) await createUser(`u${i}`);
+  for (let i = 1; i <= 19; i++) await createUser(`u${i}`);
   await createUser("sin-datos", { profile: false });
 }, 120_000);
 
@@ -580,6 +580,53 @@ describe("meses siguientes y cupo de la planta", () => {
     await expect(
       order("u14", { subscriptionId: sub.id }),
     ).rejects.toMatchObject({ status: 404 });
+  });
+
+  describe("órdenes canceladas por abandono (nadie pagó a tiempo)", () => {
+    /** El mantenimiento cierra lo que lleva más de una hora sin pagarse en esa cuenta. */
+    async function abandon(userId: string, orderId: string) {
+      const { closeAbandonedOrders } = await import("@/lib/jobs/housekeeping");
+      await closeAbandonedOrders({ userId, now: Date.now() + 2 * 3_600_000 });
+      expect(await orderRow(orderId)).toMatchObject({ status: "cancelada", note: "No se completó el pago en Mercado Pago." });
+    }
+
+    it("si el pago llega aprobado después, el mes se activa", async () => {
+      const o = await order("u17");
+      await abandon("u17", o.orderId);
+      const approved = pay(o.orderId, MONTH_180, "approved");
+      await svc.handleMercadoPagoNotification(notification(approved.id), deps);
+      const row = await orderRow(o.orderId);
+      expect(row).toMatchObject({ status: "confirmada", providerId: String(approved.id), note: null });
+      expect(await periodsOf(row.subscriptionId)).toHaveLength(1);
+    });
+
+    it("si aparece un pago en proceso, la orden vuelve a quedar abierta para seguirla consultando", async () => {
+      const o = await order("u18");
+      await abandon("u18", o.orderId);
+      const pending = pay(o.orderId, MONTH_180, "in_process");
+      await svc.syncMercadoPagoOrder({ orderId: o.orderId }, deps);
+      expect(await orderRow(o.orderId)).toMatchObject({ status: "pendiente", providerId: String(pending.id), providerStatus: "in_process", note: null });
+      // Y cuando el banco aprueba, se activa como cualquier otra.
+      mp.payments.set(String(pending.id), { ...pending, status: "approved" });
+      await svc.handleMercadoPagoNotification(notification(pending.id), deps);
+      expect((await orderRow(o.orderId)).status).toBe("confirmada");
+    });
+
+    it("si llega aprobado por otro monto, queda por reembolsar: el dinero entró y hay que devolverlo", async () => {
+      const o = await order("u19");
+      await abandon("u19", o.orderId);
+      pay(o.orderId, 1000, "approved");
+      expect((await svc.syncMercadoPagoOrder({ orderId: o.orderId }, deps))?.order.status).toBe("por_reembolsar");
+      expect(await plans.listSubscriptions("u19")).toHaveLength(0);
+    });
+
+    it("un intento rechazado no la reabre", async () => {
+      const o = await order("u19");
+      await abandon("u19", o.orderId);
+      const rejected = pay(o.orderId, MONTH_180, "rejected");
+      await svc.handleMercadoPagoNotification(notification(rejected.id), deps);
+      expect((await orderRow(o.orderId)).status).toBe("cancelada");
+    });
   });
 
   it("si la planta se queda sin cupo entre la orden y el pago, el pago queda por reembolsar", async () => {

@@ -10,6 +10,7 @@ import { formatCop } from "@/lib/format";
 import { newId, orderCode } from "@/lib/ids";
 import {
   ORDER_TTL_MS,
+  REOPENABLE,
   closeOrder,
   fulfillOrder,
   getOrder,
@@ -121,7 +122,7 @@ export async function createMercadoPagoOrder(
   const mpFor = mercadoPagoFor(p.amountCop, limits);
   if (!mpFor.available) {
     throw new MarketError(
-      `Mercado Pago recibe hasta ${formatCop(limits.pseMaxCop)} por pago y este mes cuesta ${formatCop(p.amountCop)}. Págalo con USDT o BNB, o escríbenos para pagarlo por transferencia bancaria.`,
+      `Mercado Pago recibe hasta ${formatCop(limits.pseMaxCop)} por pago y este mes cuesta ${formatCop(p.amountCop)}. Págalo por transferencia bancaria o con USDT o BNB; si no ves esas opciones, escríbenos.`,
       409,
     );
   }
@@ -280,7 +281,7 @@ async function applyPayment(order: OrderRow, payment: MpPayment) {
           ...proof,
           note: "Fue un pago de prueba de Mercado Pago: no se cobró dinero y no activa el plan.",
         },
-        ["pendiente", "verificando", "fallida"],
+        ["pendiente", "verificando", ...REOPENABLE],
       );
     } else if (!amountOk) {
       await closeOrder(
@@ -290,11 +291,12 @@ async function applyPayment(order: OrderRow, payment: MpPayment) {
           ...proof,
           note: `Mercado Pago aprobó ${payment.transaction_amount} ${payment.currency_id}, que no coincide con la orden. Hay que devolver el pago.`,
         },
-        ["pendiente", "verificando", "fallida"],
+        ["pendiente", "verificando", ...REOPENABLE],
       );
     } else {
-      // Un intento rechazado seguido de uno aprobado: el aprobado manda.
-      await fulfillOrder(order.id, proof, { reopen: ["fallida"] });
+      // Un intento rechazado seguido de uno aprobado, o un pago que llegó después de cancelar la orden por
+      // abandono: el aprobado manda.
+      await fulfillOrder(order.id, proof, { reopen: REOPENABLE });
     }
   } else if (outcome === "fallida") {
     await closeOrder(order.id, "fallida", {
@@ -309,6 +311,10 @@ async function applyPayment(order: OrderRow, payment: MpPayment) {
       providerId: String(payment.id),
       status: payment.status,
     });
+  } else if (REOPENABLE.includes(order.status)) {
+    // Hay un pago en proceso para una orden que estaba cerrada: vuelve a quedar abierta, así la conciliación
+    // la sigue consultando aunque el aviso de Mercado Pago se pierda.
+    await markProviderStatus(order.id, { ...proof, status: "pendiente", note: null }, REOPENABLE);
   } else {
     await markProviderStatus(order.id, proof);
   }

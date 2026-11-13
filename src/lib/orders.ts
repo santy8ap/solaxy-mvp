@@ -20,6 +20,12 @@ export type OrderRow = typeof ledgerTx.$inferSelect;
 /** Estados desde los que una orden todavía puede confirmarse. */
 const OPEN: TxStatus[] = ["pendiente", "verificando"];
 
+/**
+ * Estados cerrados que un pago real todavía puede reabrir: un intento rechazado seguido de uno aprobado, o una
+ * orden que se canceló por abandono y cuyo pago llegó después.
+ */
+export const REOPENABLE: TxStatus[] = ["fallida", "cancelada"];
+
 /** Pasarelas con dinero real (el pago de prueba no cuenta). */
 export const REAL_PAYMENT_METHODS: readonly PaymentMethod[] = [
   "mercadopago",
@@ -79,15 +85,24 @@ export async function closeOrder(
   return row;
 }
 
-/** Guarda lo último que dijo el proveedor (y opcionalmente cambia a "verificando") sin cerrar la orden. */
+/**
+ * Guarda lo último que dijo el proveedor (y opcionalmente cambia el estado) sin cerrar la orden.
+ * `from`: desde qué estados; por defecto, solo órdenes abiertas. Con `note: null` se borra la nota anterior
+ * (por ejemplo, al reabrir una orden cancelada).
+ */
 export async function markProviderStatus(
   orderId: string,
-  data: PaymentProof & { status?: TxStatus },
+  data: PaymentProof & { status?: TxStatus; note?: string | null },
+  from: TxStatus[] = OPEN,
 ) {
   const [row] = await db
     .update(ledgerTx)
-    .set({ ...proofFields(data), ...(data.status && { status: data.status }) })
-    .where(and(eq(ledgerTx.id, orderId), inArray(ledgerTx.status, OPEN)))
+    .set({
+      ...proofFields(data),
+      ...(data.status && { status: data.status }),
+      ...(data.note !== undefined && { note: data.note }),
+    })
+    .where(and(eq(ledgerTx.id, orderId), inArray(ledgerTx.status, from)))
     .returning();
   return row;
 }

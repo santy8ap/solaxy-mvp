@@ -71,19 +71,27 @@ describe("seguridad del ingreso (contra la API real de Better Auth)", () => {
     const { ensureDemoAccount } = await import("@/lib/db/seed");
     const { env } = await import("@/lib/env");
     await ensureDemoAccount(db);
-    const statuses: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const res = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: `equivocada-${i}` }, "198.51.100.23"));
-      statuses.push(res.status);
+    // El límite cuenta por minutos de reloj: la prueba se ancla a la mitad de un minuto para que los seis
+    // intentos caigan en el mismo, sin importar a qué segundo corra.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Math.floor(Date.now() / 60_000) * 60_000 + 20_000);
+    try {
+      const statuses: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        const res = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: `equivocada-${i}` }, "198.51.100.23"));
+        statuses.push(res.status);
+      }
+      expect(statuses.slice(0, 5).every((s) => s === 401)).toBe(true);
+      expect(statuses[5]).toBe(429);
+      // Aunque ahora acierte, sigue bloqueado hasta que pase el minuto.
+      const ok = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: env.demoPassword }, "198.51.100.23"));
+      expect(ok.status).toBe(429);
+      // Otra IP no queda bloqueada.
+      const other = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: env.demoPassword }, "198.51.100.99"));
+      expect(other.status).toBe(200);
+    } finally {
+      vi.useRealTimers();
     }
-    expect(statuses.slice(0, 5).every((s) => s === 401)).toBe(true);
-    expect(statuses[5]).toBe(429);
-    // Aunque ahora acierte, sigue bloqueado hasta que pase el minuto.
-    const ok = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: env.demoPassword }, "198.51.100.23"));
-    expect(ok.status).toBe(429);
-    // Otra IP no queda bloqueada.
-    const other = await auth.handler(post("/sign-in/email", { email: env.demoEmail, password: env.demoPassword }, "198.51.100.99"));
-    expect(other.status).toBe(200);
   });
 
   it("con sesión, nadie puede cambiar su nombre, su foto ni su cuenta por fuera de la página; la sesión sigue funcionando", async () => {

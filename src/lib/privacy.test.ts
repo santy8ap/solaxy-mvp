@@ -127,4 +127,36 @@ describe("atenderla desde el admin", () => {
     expect(await dbMod.db.select().from(schema.ledgerTx).where(eq(schema.ledgerTx.userId, "d3"))).toHaveLength(1);
     await expect(privacy.deleteAccount(admin, request.id)).rejects.toMatchObject({ status: 409 });
   });
+
+  it("un pago que se abandonó sin pagar no impide eliminar la cuenta, y queda cancelado; uno en curso sí la detiene", async () => {
+    await createUser("d4", { name: "Abandonó el Pago S.A.S." });
+    const now = Date.now();
+    const order = { userId: "d4", kind: "plan_mes" as const, status: "pendiente" as const, amountCop: 20_880_000, method: "mercadopago" as const };
+    await dbMod.db.insert(schema.ledgerTx).values([
+      // Abrió el checkout ayer y nunca pagó.
+      { ...order, id: "XGE-ABANDONADA", createdAt: now - 86_400_000 },
+      // Abrió el checkout hace 5 minutos: puede estar pagando ahora mismo.
+      { ...order, id: "XGE-PAGANDO", createdAt: now - 300_000 },
+    ]);
+    const { request } = await privacy.requestDeletion("d4");
+    expect(await privacy.deletionBlockers("d4")).toEqual(["Tiene pagos, retiros o reembolsos en curso."]);
+    await expect(privacy.deleteAccount(admin, request.id)).rejects.toMatchObject({ status: 409 });
+
+    // Una hora después, lo que nadie pagó ya no está en curso.
+    const later = now + 2 * 3_600_000;
+    expect(await privacy.deletionBlockers("d4", later)).toEqual([]);
+    const r = await privacy.deleteAccount(admin, request.id, undefined, later);
+    expect(r.keepsAccounting).toBe(false);
+    const { eq } = drizzle;
+    const rows = await dbMod.db.select().from(schema.ledgerTx).where(eq(schema.ledgerTx.userId, "d4"));
+    expect(rows.map((t) => t.status)).toEqual(["cancelada", "cancelada"]);
+  });
+
+  it("un pago que Mercado Pago tiene en proceso sí detiene la eliminación, por viejo que sea", async () => {
+    await createUser("d5", { name: "PSE en Proceso S.A.S." });
+    const now = Date.now();
+    await dbMod.db.insert(schema.ledgerTx).values({ id: "XGE-ENPROCESO", userId: "d5", kind: "plan_mes", status: "pendiente", amountCop: 20_880_000, method: "mercadopago", providerId: "mp-999", createdAt: now - 5 * 86_400_000 });
+    await privacy.requestDeletion("d5");
+    expect(await privacy.deletionBlockers("d5")).toEqual(["Tiene pagos, retiros o reembolsos en curso."]);
+  });
 });

@@ -93,12 +93,14 @@ function PaymentActions({
         "pendiente",
         "verificando",
         "fallida",
+        "cancelada",
         "confirmada",
         "reembolsada",
       ].includes(p.status)) ||
     (p.method === "crypto" && p.status === "verificando");
+  // También a una cotización que se canceló por vencida: si el comercializador sí pagó, el hash lo demuestra.
   const canAttach =
-    p.method === "crypto" && p.status === "pendiente" && !p.providerId;
+    p.method === "crypto" && (p.status === "pendiente" || p.status === "cancelada") && !p.providerId;
   const canRefund = p.status === "por_reembolsar";
   // Transferencia que reportó el comercializador: el admin la busca en el banco y la confirma o la rechaza.
   const canReviewTransfer =

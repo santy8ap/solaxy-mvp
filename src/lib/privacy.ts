@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { LEGAL } from "@/config/legal";
 import { audit, type Actor } from "@/lib/admin/service";
 import { alertAdmin } from "@/lib/alerts";
@@ -9,6 +9,7 @@ import { writeTransaction } from "@/lib/db/transaction";
 import { account, companyProfile, dataRequest, ledgerTx, paymentReview, session, user, verification, walletLink } from "@/lib/db/schema";
 import { MarketError } from "@/lib/errors";
 import { formatCop, formatDate } from "@/lib/format";
+import { IN_FLIGHT_MS, closeAbandonedOrders } from "@/lib/jobs/housekeeping";
 import { newId } from "@/lib/ids";
 import { listSubscriptions } from "@/lib/plans/service";
 import { getBalance, toSubscriptionDTO } from "@/lib/portfolio";
@@ -197,10 +198,20 @@ export async function deletionBlockers(userId: string, now = Date.now()): Promis
   const blockers: string[] = [];
   const live = plans.filter((p) => p.state === "activa" || p.state === "en_pausa" || p.state === "en_revision");
   if (live.length) blockers.push(`Tiene ${live.length === 1 ? "un plan vigente" : `${live.length} planes vigentes`} (${live.map((p) => p.planName).join(", ")}). Ciérralo antes, si así lo acordaron.`);
+  // En curso: lo que se está verificando o espera al admin, un pago que el proveedor tiene en proceso, y lo que
+  // se abrió hace menos de una hora (puede estar pagándose). Un checkout abandonado no detiene la eliminación.
   const [open] = await db
     .select({ n: sql<number>`count(*)` })
     .from(ledgerTx)
-    .where(and(eq(ledgerTx.userId, userId), inArray(ledgerTx.status, ["pendiente", "verificando", "por_aprobar", "por_reembolsar"])));
+    .where(
+      and(
+        eq(ledgerTx.userId, userId),
+        or(
+          inArray(ledgerTx.status, ["verificando", "por_aprobar", "por_reembolsar"]),
+          and(eq(ledgerTx.status, "pendiente"), or(isNotNull(ledgerTx.providerId), gte(ledgerTx.createdAt, now - IN_FLIGHT_MS))),
+        ),
+      ),
+    );
   if (Number(open?.n ?? 0) > 0) blockers.push("Tiene pagos, retiros o reembolsos en curso.");
   const [review] = await db
     .select({ n: sql<number>`count(*)` })
@@ -229,6 +240,8 @@ export async function deleteAccount(actor: Actor, requestId: string, note?: stri
   const userId = req.userId;
   const blockers = await deletionBlockers(userId, now);
   if (blockers.length) throw new MarketError(`Todavía no se puede eliminar: ${blockers.join(" ")}`, 409, { blockers });
+  // Lo que quedó sin pagar (un checkout abandonado, un retiro sin firmar) se cierra: una cuenta eliminada no deja nada abierto.
+  await closeAbandonedOrders({ now, userId });
   const [paid] = await db
     .select({ n: sql<number>`count(*)` })
     .from(ledgerTx)
