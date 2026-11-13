@@ -107,7 +107,10 @@ test("plan → ingreso → datos personales → resumen → pago de prueba → P
   await expect(
     page.getByRole("complementary", { name: "Resumen del plan" }),
   ).toContainText("20.880.000");
-  await expect(page.getByText(/14,94/)).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Compra, venta y utilidad del plan" })
+      .getByText(/14,94\s*% sobre la compra/),
+  ).toBeVisible();
   await page.getByRole("button", { name: /Elegir medio de pago/i }).click();
   const paidResponse = page.waitForResponse(
     (response) =>
