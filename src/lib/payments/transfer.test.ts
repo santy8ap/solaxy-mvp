@@ -119,6 +119,24 @@ describe("el admin confirma o rechaza", () => {
     expect(await periodsOf(order.id)).toHaveLength(0);
   });
 
+  it("una referencia del banco que ya se registró a mano tampoco sirve para confirmar una transferencia, y al revés", async () => {
+    const { registerManualPayment } = await import("@/lib/admin/service");
+    await createUser("t4");
+    await createUser("t5");
+    // El admin registró a mano un pago con esa referencia...
+    await registerManualPayment(admin, { userId: "t4", planId: "p180", reference: "BCO-CRUCE-1" });
+    // ...y luego intenta confirmar con la misma (escrita distinto) una transferencia reportada: es el mismo movimiento.
+    const { order } = await transfer.reportTransfer({ userId: "t5", planId: "p180", receipt: "COMP-CRUCE" });
+    await expect(transfer.confirmTransfer(admin, order.id, " bco-cruce-1 ")).rejects.toMatchObject({ status: 409 });
+    expect(await periodsOf(order.id)).toHaveLength(0);
+    // Al revés: una referencia ya usada para confirmar una transferencia no se puede registrar a mano.
+    await transfer.confirmTransfer(admin, order.id, "BCO-CRUCE-2");
+    await createUser("t6");
+    await expect(registerManualPayment(admin, { userId: "t6", planId: "p180", reference: "bco-cruce-2" })).rejects.toMatchObject({ status: 409 });
+    const { eq } = drizzle;
+    expect(await dbMod.db.select().from(schema.ledgerTx).where(eq(schema.ledgerTx.userId, "t6"))).toHaveLength(0);
+  });
+
   it("rechazar cierra la orden con el motivo y no activa nada", async () => {
     const { order } = await transfer.reportTransfer({ userId: "t2", planId: "p360", receipt: "COMP-5001" });
     const closed = await transfer.rejectTransfer(admin, order.id, "No llegó a la cuenta");

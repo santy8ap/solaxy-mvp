@@ -370,6 +370,7 @@ export const ADMIN_ACTIONS = [
   "responder_solicitud_datos",
   // Lo hace el propio titular: cambió su nombre o su documento teniendo ya pagos o retiros.
   "cambio_titular",
+  "descargar_respaldo",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

@@ -105,6 +105,7 @@ const ACTION_LABEL: Record<AdminAction, string> = {
   eliminar_cuenta: "Cuenta eliminada",
   responder_solicitud_datos: "Solicitud de datos respondida",
   cambio_titular: "Cambio de titular",
+  descargar_respaldo: "Respaldo descargado",
 };
 
 /** Acciones del modelo anterior que siguen en la bitácora. */

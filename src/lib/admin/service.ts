@@ -23,6 +23,7 @@ import { MarketError } from "@/lib/errors";
 import { formatCop } from "@/lib/format";
 import { orderCode, simulatedTxHash } from "@/lib/ids";
 import { fulfillOrder } from "@/lib/orders";
+import { bankReferenceOwner } from "@/lib/payments/bank-reference";
 import { collectedWhere } from "@/lib/payments/real-money";
 import {
   noPaymentReviewSql,
@@ -248,6 +249,9 @@ export async function registerManualPayment(
       412,
     );
   });
+  // La misma referencia no puede acreditar dos pagos: ni otro registrado a mano ni una transferencia confirmada.
+  if (await bankReferenceOwner(reference))
+    throw new MarketError("Esa referencia ya se registró para otro pago.", 409);
   const now = Date.now();
   const p = await resolvePlanPayment(
     input.userId,

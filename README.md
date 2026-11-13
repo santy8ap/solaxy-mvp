@@ -99,6 +99,22 @@ Vercel despliega al actualizar `main`. Las migraciones se aplican al iniciar el 
 
 Publicar el código no activa cobros reales. Faltan los datos y la revisión del responsable en `src/config/legal.ts`, el contacto oficial, las credenciales reales y la configuración operativa. La lista del admin mantiene esos pendientes visibles y no considera lista la operación mientras permanezca en modo de pruebas o falte la revisión legal.
 
+## Monitoreo, respaldo y buscadores
+
+**Salud del servicio.** `GET /api/health` responde 200 cuando la página y su base de datos contestan, y 503 si la base no responde. Solo devuelve eso y la versión publicada. Configura un monitor externo gratuito (UptimeRobot, Better Stack…) que la consulte cada pocos minutos y te avise si cae.
+
+**Respaldo.** En **Admin → Configuración → Respaldo de los datos** se descarga un JSON con todas las tablas del negocio: comercializadores y sus datos personales, planes, pagos, retiros, solicitudes y la bitácora. No incluye sesiones ni los accesos de Google. Cada descarga queda en la bitácora. Descarga uno cada semana y antes de cambios grandes, y guárdalo cifrado. Revisa también en Turso las copias automáticas de tu plan.
+
+Para restaurarlo, crea una base **nueva** en Turso y ejecuta:
+
+```bash
+RESTORE_DATABASE_URL=libsql://tu-base-nueva.turso.io RESTORE_AUTH_TOKEN=tu-token npx tsx scripts/restore-backup.ts respaldo.json
+```
+
+El script crea las tablas, copia los datos en una sola transacción (o queda todo, o no queda nada) y se niega a escribir en una base que ya tenga datos. Después apunta `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` a la base nueva en Vercel y vuelve a desplegar. Los comercializadores vuelven a entrar con Google.
+
+**Buscadores.** `robots.txt` deja recorrer las páginas públicas y cierra el panel, el admin, los pagos y la API; `sitemap.xml` lista la portada, la ayuda y los textos legales. En las vistas previas de Vercel, `robots.txt` cierra todo.
+
 ## Pruebas automáticas
 
 `npm test` cubre contratos, curva y rendimientos, importes, propiedad de comprobantes e historial, concurrencia de pagos/retiros, fallos transaccionales, devoluciones, conciliación, autenticación y trabajos programados. Los proveedores se sustituyen por adaptadores controlados en estas pruebas; no se realizan transacciones reales.

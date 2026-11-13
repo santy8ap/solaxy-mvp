@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { BRAND } from "@/config/brand";
+import { baseUrl } from "@/lib/env";
 import { VercelAnalytics } from "@/components/analytics/vercel";
 import { ThemeProvider } from "@/context/theme-context";
 import { DEFAULT_THEME, themeBootScript } from "@/lib/theme";
@@ -22,9 +23,19 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Con la URL pública, los enlaces compartidos (WhatsApp, redes) y los buscadores resuelven las rutas completas.
+  metadataBase: new URL(baseUrl()),
   title: { default: `${BRAND.name} · ${BRAND.tagline}`, template: `%s · ${BRAND.name}` },
   description: BRAND.description,
   applicationName: BRAND.name,
+  openGraph: {
+    type: "website",
+    locale: "es_CO",
+    siteName: BRAND.name,
+    title: `${BRAND.name} · ${BRAND.tagline}`,
+    description: BRAND.description,
+  },
+  twitter: { card: "summary", title: `${BRAND.name} · ${BRAND.tagline}`, description: BRAND.description },
 };
 
 export const viewport: Viewport = {

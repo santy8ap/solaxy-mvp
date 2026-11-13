@@ -1,11 +1,12 @@
 "use client";
 import { AlertSettings } from "./alert-settings";
+import { BackupSection } from "./backup-section";
 import { ConfigChecklist } from "./config-checklist";
 import { AdminTopbar } from "./shell";
 import { SupportSettingsForm } from "./support-settings";
 import { TransferSettingsForm } from "./transfer-settings";
 
-/** Todo lo que se configura una vez: lo que falta para cobrar, la cuenta bancaria, el soporte y las alertas. */
+/** Todo lo que se configura una vez: lo que falta para cobrar, la cuenta bancaria, el soporte, las alertas y el respaldo. */
 export function AdminSettings() {
   return (
     <>
@@ -14,6 +15,7 @@ export function AdminSettings() {
       <TransferSettingsForm />
       <SupportSettingsForm />
       <AlertSettings />
+      <BackupSection />
     </>
   );
 }

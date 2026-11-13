@@ -21,6 +21,13 @@ const check = (cond, msg) => {
   const adminHead = await fetch(`${base}/admin`, { redirect: "manual" });
   check((adminHead.headers.get("x-robots-tag") ?? "").includes("noindex"), "las páginas de administración no se indexan");
 
+  // Salud del servicio: responde sin sesión y no dice nada de la configuración.
+  const health = await fetch(`${base}/api/health`);
+  const healthBody = await health.json().catch(() => ({}));
+  check(health.status === 200 && healthBody.ok === true && Object.keys(healthBody).sort().join(",") === "database,latencyMs,ok,version", `la salud del servicio responde sin revelar la configuración (${health.status}: ${Object.keys(healthBody).join(", ")})`);
+  const robots = await (await fetch(`${base}/robots.txt`)).text();
+  check(/Disallow: \/admin/.test(robots) && /Disallow: \/panel/.test(robots) && /Sitemap: /.test(robots), "robots.txt cierra el admin y el panel, y apunta al sitemap");
+
   // 2. Registro cerrado
   const signUp = await fetch(`${base}/api/auth/sign-up/email`, {
     method: "POST",
@@ -68,6 +75,7 @@ const check = (cond, msg) => {
     ["PUT", "/api/admin/transfer-settings"],
     ["POST", "/api/admin/payments/XGE-0000000000"],
     ["POST", "/api/admin/data-requests/dat-0000"],
+    ["GET", "/api/admin/backup"],
   ];
   for (const [method, path] of [...PRIVATE_ROUTES, ...ADMIN_ROUTES]) {
     const r = await fetch(`${base}${path}`, { method, headers: { "content-type": "application/json", origin: base }, body: method === "POST" ? "{}" : undefined });

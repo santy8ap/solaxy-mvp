@@ -18,6 +18,7 @@ import { safeText } from "@/lib/security/text";
 import { transferReference } from "@/lib/transfer-reference";
 import { BANKS } from "@/lib/withdrawal-schema";
 import { payLog } from "./log";
+import { bankReferenceOwner } from "./bank-reference";
 import { assertExpectedPayment, type ExpectedPayment } from "./plan-target";
 
 /**
@@ -195,6 +196,7 @@ const isUniqueViolation = (err: unknown) => /UNIQUE/i.test(`${String((err as Err
 export async function confirmTransfer(actor: Actor, orderId: string, reference: string) {
   const ref = bankReferenceField.parse(reference);
   const order = await requireTransfer(orderId);
+  if (await bankReferenceOwner(ref, orderId)) throw new MarketError("Esa referencia del banco ya se usó para confirmar otro pago.", 409);
   let r: Awaited<ReturnType<typeof fulfillOrder>>;
   try {
     r = await fulfillOrder(orderId, { providerId: ref, providerStatus: "confirmada por el administrador" });
