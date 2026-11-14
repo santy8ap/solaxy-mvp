@@ -41,7 +41,7 @@ export function Sidebar() {
   const user = useUser();
   const [pending, start] = useTransition();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-r border-line py-7 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-r border-line py-7 lg:flex" aria-label="Menú del panel">
       <Link href="/" className="px-6" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
@@ -62,9 +62,10 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col border-t border-line pt-4">
-        <Link href="/panel/perfil" className="mb-2 flex items-center gap-3 px-6 py-2 hover:opacity-80" aria-label={`Mis datos, ${user.name}`}>
+        <Link href="/panel/perfil" className="mb-2 flex items-center gap-3 px-6 py-2 hover:opacity-80">
           <Avatar name={user.name} image={user.image} size={32} />
           <span className="min-w-0">
+            <span className="sr-only">Mis datos: </span>
             <span className="block truncate text-sm text-ink">{user.name}</span>
             <span className="block truncate text-xs text-mute">{user.email}</span>
           </span>
@@ -127,13 +128,14 @@ export function MobileBar() {
   const user = useUser();
   const [pending, start] = useTransition();
   return (
-    <div className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
+    <header className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
       <Link href="/" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
       <div className="flex items-center gap-2 text-sm text-mute sm:gap-4">
-        <Link href="/panel/perfil" aria-label={`Mis datos, ${user.name}`} className="hover:opacity-80">
+        <Link href="/panel/perfil" className="hover:opacity-80">
           <Avatar name={user.name} image={user.image} size={26} />
+          <span className="sr-only">Mis datos, {user.name}</span>
         </Link>
         <NotificationsLink />
         {user.canAdmin && (
@@ -151,7 +153,7 @@ export function MobileBar() {
         </button>
         <ThemeSelector />
       </div>
-    </div>
+    </header>
   );
 }
 
@@ -160,9 +162,9 @@ export function TestModeBar() {
   const { config } = useAppConfig();
   if (!config?.demoMode) return null;
   return (
-    <p className="border-b border-line bg-ink px-4 py-1.5 text-center text-xs font-medium text-void">
-      Pago de prueba habilitado. Consulta el medio de cada pago en Movimientos.
-    </p>
+    <section aria-label="Modo de pruebas" className="border-b border-line bg-ink px-4 py-1.5 text-center text-xs font-medium text-void">
+      <p>Pago de prueba habilitado. Consulta el medio de cada pago en Movimientos.</p>
+    </section>
   );
 }
 

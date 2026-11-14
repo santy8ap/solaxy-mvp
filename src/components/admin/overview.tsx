@@ -9,14 +9,22 @@ import { AdminTopbar } from "./shell";
 import type { OverviewDTO } from "./types";
 
 function Stat({ label, value, note, href, alert = false }: { label: string; value: string; note?: string; href?: string; alert?: boolean }) {
-  const body = (
-    <>
-      <dt className="cap">{label}</dt>
+  // El enlace va en el nombre de la cifra y su ::after cubre todo el cuadro: sigue siendo clic en cualquier parte.
+  return (
+    <div className={`relative border-b border-line py-5 pr-6 ${href ? "hover:opacity-80" : ""}`}>
+      <dt className="cap">
+        {href ? (
+          <Link href={href} className="after:absolute after:inset-0">
+            {label}
+          </Link>
+        ) : (
+          label
+        )}
+      </dt>
       <dd className={`num mt-2 text-[1.5rem] leading-tight ${alert ? "inline-block bg-ink px-2 text-void" : ""}`}>{value}</dd>
       {note && <dd className="mt-1.5 text-xs leading-relaxed text-mute">{note}</dd>}
-    </>
+    </div>
   );
-  return <div className="border-b border-line py-5 pr-6">{href ? <Link href={href} className="block hover:opacity-80">{body}</Link> : body}</div>;
 }
 
 interface Pending {

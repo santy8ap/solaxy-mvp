@@ -68,7 +68,7 @@ export function AdminTeam() {
             </section>
           </div>
 
-          <aside className="min-w-0">{data.canManage ? <AddMemberForm /> : <ReadOnlyNote />}</aside>
+          <aside className="min-w-0" aria-label={data.canManage ? "Dar acceso" : "Quién cambia el equipo"}>{data.canManage ? <AddMemberForm /> : <ReadOnlyNote />}</aside>
         </div>
       )}
       <RemoveDialog member={removing} onClose={() => setRemoving(null)} />

@@ -20,17 +20,22 @@ export const instant = false;
 /** El marco del admin: menú lateral (o barra inferior en celular) y el contenido. Solo para administradores. */
 function AdminFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-dvh">
-      <AdminSidebar />
-      <div className="min-w-0 flex-1">
-        <TestModeBar />
-        <AdminMobileBar />
-        <div className="px-4 pb-28 pt-8 sm:px-10 lg:pb-16 lg:pt-10">
-          <div className="mx-auto max-w-[1200px]">{children}</div>
+    <>
+      <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-void">
+        Saltar al contenido
+      </a>
+      <div className="flex min-h-dvh">
+        <AdminSidebar />
+        <div className="min-w-0 flex-1">
+          <TestModeBar />
+          <AdminMobileBar />
+          <main id="contenido" tabIndex={-1} className="px-4 pb-28 pt-8 outline-none sm:px-10 lg:pb-16 lg:pt-10">
+            <div className="mx-auto max-w-[1200px]">{children}</div>
+          </main>
         </div>
+        <AdminBottomNav />
       </div>
-      <AdminBottomNav />
-    </div>
+    </>
   );
 }
 
@@ -45,9 +50,9 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-dvh">
         <TestModeBar />
-        <div className="px-4 pb-16 sm:px-10">
+        <main className="px-4 pb-16 sm:px-10">
           <AdminNotAuthorized email={ctx.user.email} />
-        </div>
+        </main>
       </div>
     );
   return (

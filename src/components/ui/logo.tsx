@@ -25,7 +25,7 @@ export function Logo({ className = "", size = "compact" }: { className?: string;
           <>
             <span className="block">
               {first} {rest.slice(0, -1).join(" ")}
-            </span>
+            </span>{" "}
             <span className={header ? "block text-[0.85em] tracking-[0.27em]" : "block"}>{rest.at(-1)}</span>
           </>
         ) : (

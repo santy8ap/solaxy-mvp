@@ -53,7 +53,7 @@ export function AdminSidebar() {
   const user = useUser();
   const [out, startOut] = useTransition();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-r border-line py-7 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-r border-line py-7 lg:flex" aria-label="Menú de administración">
       <Link href="/" className="px-6" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
@@ -162,7 +162,7 @@ export function AdminBottomNav() {
                 <Link href={href} aria-current={active ? "page" : undefined} className={cell(active)}>
                   <Icon size={19} strokeWidth={1.5} />
                   {label}
-                  {dot && <span className="absolute right-[24%] top-2 h-1.5 w-1.5 bg-ink" aria-label="Hay pendientes" />}
+                  {dot && <span role="img" className="absolute right-[24%] top-2 h-1.5 w-1.5 bg-ink" aria-label="Hay pendientes" />}
                 </Link>
               </li>
             );
@@ -183,7 +183,7 @@ export function AdminBottomNav() {
 export function AdminMobileBar() {
   const [out, startOut] = useTransition();
   return (
-    <div className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
+    <header className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
       <Link href="/" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
@@ -196,7 +196,7 @@ export function AdminMobileBar() {
         </button>
         <ThemeSelector />
       </div>
-    </div>
+    </header>
   );
 }
 

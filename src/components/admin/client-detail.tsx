@@ -159,7 +159,7 @@ export function AdminClientDetail({ id }: { id: string }) {
           </Block>
         </div>
 
-        <aside className="min-w-0 space-y-12">
+        <aside className="min-w-0 space-y-12" aria-label="Acciones y datos del cliente">
           <section className="border border-line-strong p-6" aria-label="Acciones">
             <h2 className="cap">Acciones</h2>
             <div className="mt-4 flex flex-col items-start gap-3">

@@ -12,7 +12,8 @@
   --color-ink: #f2f2f0;
   --color-fog: #b9b9b5;
   --color-mute: #8b8b87;
-  --color-dim: #5d5d5a;
+  /* 4,5:1 o más sobre void, disc y raise (WCAG AA para texto pequeño), como en los temas claro y verde. */
+  --color-dim: #7c7c78;
   --color-line: rgb(242 242 240 / 0.14);
   --color-line-strong: rgb(242 242 240 / 0.36);
   --color-action: #f2f2f0;

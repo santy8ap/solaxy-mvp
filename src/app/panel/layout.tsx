@@ -18,14 +18,17 @@ async function SessionGate({ children }: { children: React.ReactNode }) {
   return (
     <UserProvider user={{ ...user, canAdmin: (await adminRoleOf(user.email)) !== null }}>
       <WalletProvider>
+        <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-void">
+          Saltar al contenido
+        </a>
         <div className="flex min-h-dvh">
           <Sidebar />
           <div className="min-w-0 flex-1">
             <TestModeBar />
             <MobileBar />
-            <div className="px-4 pb-28 pt-8 sm:px-10 lg:pb-16 lg:pt-10">
+            <main id="contenido" tabIndex={-1} className="px-4 pb-28 pt-8 outline-none sm:px-10 lg:pb-16 lg:pt-10">
               <div className="mx-auto max-w-[1160px]">{children}</div>
-            </div>
+            </main>
           </div>
         </div>
         <BottomNav />

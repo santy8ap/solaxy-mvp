@@ -62,6 +62,7 @@ export function NotificationsPage() {
             <li key={item.id} className="border-b border-line py-7">
               <div className="flex items-start gap-4">
                 <span
+                  role="img"
                   className={`mt-2 h-1.5 w-1.5 shrink-0 ${seen.has(item.id) ? "bg-line-strong" : "bg-ink"}`}
                   aria-label={seen.has(item.id) ? "Leído" : "Sin leer"}
                 />

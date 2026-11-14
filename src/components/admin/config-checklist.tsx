@@ -157,28 +157,30 @@ export function ConfigChecklist({ className = "mt-14" }: { className?: string })
       aria-labelledby="cfg-title"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-5">
-        <button
-          type="button"
-          onClick={() => setOpen(!expanded)}
-          aria-expanded={expanded}
-          aria-controls="cfg-list"
-          className="flex min-w-0 flex-1 items-start gap-3 text-left"
-        >
-          <ChevronDown
-            size={18}
-            strokeWidth={1.5}
-            className={`mt-1.5 shrink-0 text-mute transition-transform ${expanded ? "" : "-rotate-90"}`}
-            aria-hidden="true"
-          />
-          <span>
-            <span id="cfg-title" className="block text-xl font-medium">
-              Para cobrar de verdad
+        <h2 className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => setOpen(!expanded)}
+            aria-expanded={expanded}
+            aria-controls="cfg-list"
+            className="flex w-full items-start gap-3 text-left"
+          >
+            <ChevronDown
+              size={18}
+              strokeWidth={1.5}
+              className={`mt-1.5 shrink-0 text-mute transition-transform ${expanded ? "" : "-rotate-90"}`}
+              aria-hidden="true"
+            />
+            <span>
+              <span id="cfg-title" className="block text-xl font-medium">
+                Para cobrar de verdad
+              </span>
+              <span className="mt-1 block text-sm leading-relaxed text-mute">
+                {headline}
+              </span>
             </span>
-            <span className="mt-1 block text-sm leading-relaxed text-mute">
-              {headline}
-            </span>
-          </span>
-        </button>
+          </button>
+        </h2>
         <button
           type="button"
           className="btn btn-ghost"
