@@ -140,5 +140,18 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
     "statements": [
       "CREATE TABLE IF NOT EXISTS `admin_member` (\n\t`email` text PRIMARY KEY NOT NULL,\n\t`added_by` text NOT NULL,\n\t`added_at` integer NOT NULL,\n\t`note` text\n);"
     ]
+  },
+  {
+    "id": "0010_indices_admin",
+    "statements": [
+      "CREATE INDEX IF NOT EXISTS `audit_target_idx` ON `admin_audit` (`target_user_id`,`created_at`);",
+      "CREATE INDEX IF NOT EXISTS `tx_kind_created_idx` ON `ledger_tx` (`kind`,`created_at`);"
+    ]
+  },
+  {
+    "id": "0011_correo_cuenta_pruebas",
+    "statements": [
+      "-- La cuenta de pruebas pasa al dominio de la marca actual. Conserva su id, su contraseña y sus datos;\n-- no hace nada si ya existe una cuenta con el correo nuevo.\nUPDATE `user` SET `email` = 'pruebas@xgreenenergy.local'\nWHERE `email` = 'pruebas@inworldenergy.local'\n  AND NOT EXISTS (SELECT 1 FROM `user` WHERE `email` = 'pruebas@xgreenenergy.local');"
+    ]
   }
 ];

@@ -16,7 +16,7 @@ test("datos personales: el comercializador los descarga y pide eliminar su cuent
   await section.getByRole("link", { name: /Descargar mis datos/ }).click();
   const file = await (await download).path();
   const json = JSON.parse(await readFile(file!, "utf8"));
-  expect(json.cuenta.correo).toBe("pruebas@inworldenergy.local");
+  expect(json.cuenta.correo).toBe("pruebas@xgreenenergy.local");
   expect(JSON.stringify(json)).not.toMatch(/accessToken|refreshToken/);
 
   // 2. Pedir la eliminación (o ver la que ya está pendiente).

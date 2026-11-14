@@ -247,6 +247,8 @@ export const ledgerTx = sqliteTable(
     index("tx_user_idx").on(t.userId, t.createdAt),
     index("tx_method_status_idx").on(t.method, t.status),
     index("tx_subscription_idx").on(t.subscriptionId),
+    // Pagos del admin, su resumen y el análisis: por tipo de movimiento, del más reciente al más antiguo.
+    index("tx_kind_created_idx").on(t.kind, t.createdAt),
     // Un mismo pago (de Mercado Pago, hash on-chain o referencia manual) no puede acreditarse dos veces.
     uniqueIndex("tx_provider_uq").on(t.method, t.providerId),
   ],
@@ -429,5 +431,6 @@ export const adminAudit = sqliteTable(
     detail: text("detail"),
     createdAt: integer("created_at").notNull(),
   },
-  (t) => [index("audit_created_idx").on(t.createdAt)],
+  // La ficha de cada cliente lee su bitácora (target_user_id) de la más reciente a la más antigua.
+  (t) => [index("audit_created_idx").on(t.createdAt), index("audit_target_idx").on(t.targetUserId, t.createdAt)],
 );

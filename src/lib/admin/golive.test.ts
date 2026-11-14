@@ -211,7 +211,7 @@ describe("borrar los datos de prueba", () => {
       .values({
         id: "demo-1",
         name: "Empresa de Pruebas",
-        email: "pruebas@inworldenergy.local",
+        email: "pruebas@xgreenenergy.local",
         emailVerified: true,
         createdAt: now,
         updatedAt: now,

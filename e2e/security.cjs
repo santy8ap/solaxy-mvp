@@ -42,7 +42,7 @@ const check = (cond, msg) => {
     const r = await fetch(`${base}/api/auth/sign-in/email`, {
       method: "POST",
       headers: { "content-type": "application/json", origin: base, "x-forwarded-for": "203.0.113.60" },
-      body: JSON.stringify({ email: "pruebas@inworldenergy.local", password: `equivocada-${i}` }),
+      body: JSON.stringify({ email: "pruebas@xgreenenergy.local", password: `equivocada-${i}` }),
     });
     statuses.push(r.status);
   }
@@ -138,7 +138,7 @@ const check = (cond, msg) => {
   const adminNav = await page.getByRole("navigation", { name: "Administración" }).count();
   check(blocked === 1 && adminNav === 0, "una cuenta sin acceso ve «Sin acceso» en /admin, sin el menú ni los datos del admin");
   check((await asUser("/api/admin/team")).status === 403, "una cuenta sin acceso no ve el equipo de administración (403)");
-  const selfAdd = await asUser("/api/admin/team", { method: "POST", body: JSON.stringify({ action: "agregar", email: "pruebas@inworldenergy.local" }) });
+  const selfAdd = await asUser("/api/admin/team", { method: "POST", body: JSON.stringify({ action: "agregar", email: "pruebas@xgreenenergy.local" }) });
   check(selfAdd.status === 403, `nadie se agrega a sí mismo al equipo (${selfAdd.status})`);
   const legacyPin = await asUser("/api/admin/activar");
   check(legacyPin.status === 404, `la antigua entrada con PIN ya no existe (${legacyPin.status})`);

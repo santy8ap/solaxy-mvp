@@ -5,7 +5,7 @@ export const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   /** Cuenta de pruebas: solo existe en modo de pruebas (DEMO_MODE distinto de false). */
-  demoEmail: "pruebas@inworldenergy.local",
+  demoEmail: "pruebas@xgreenenergy.local",
   demoPassword: process.env.DEMO_PASSWORD || "iwe-pruebas-2026",
   demoName: "Empresa de Pruebas",
 };

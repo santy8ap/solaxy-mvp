@@ -71,6 +71,20 @@
       "when": 1794675685334,
       "tag": "0009_equipo_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794678490388,
+      "tag": "0010_indices_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1794678734541,
+      "tag": "0011_correo_cuenta_pruebas",
+      "breakpoints": true
     }
   ]
 }

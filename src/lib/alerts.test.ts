@@ -36,7 +36,7 @@ function fakeResend(reply: (to: string) => Response = () => new Response(JSON.st
 
 function configure(env: Record<string, string> = {}) {
   vi.stubEnv("RESEND_API_KEY", "re_clave_de_prueba");
-  vi.stubEnv("ADMIN_EMAILS", "admin@empresa.co, pruebas@inworldenergy.local");
+  vi.stubEnv("ADMIN_EMAILS", "admin@empresa.co, pruebas@xgreenenergy.local");
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
 }
 
@@ -60,7 +60,7 @@ describe("a quién y desde dónde se envían", () => {
   });
 
   it("sin destinatarios válidos queda apagada aunque haya clave", () => {
-    configure({ ADMIN_EMAILS: "pruebas@inworldenergy.local" });
+    configure({ ADMIN_EMAILS: "pruebas@xgreenenergy.local" });
     expect(alerts.alertConfig().enabled).toBe(false);
   });
 });

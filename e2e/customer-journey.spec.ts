@@ -128,7 +128,7 @@ test("plan → ingreso → datos personales → resumen → pago de prueba → P
   try {
     // Solo el perfil ficticio de esta base temporal: cada viewport recorre el formulario completo.
     await db.execute(
-      "DELETE FROM company_profile WHERE user_id IN (SELECT id FROM user WHERE email = 'pruebas@inworldenergy.local')",
+      "DELETE FROM company_profile WHERE user_id IN (SELECT id FROM user WHERE email = 'pruebas@xgreenenergy.local')",
     );
   } finally {
     db.close();

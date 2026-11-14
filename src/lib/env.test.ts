@@ -77,9 +77,9 @@ describe("propietarios de la administración", () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co");
     const { adminEmailAllowed } = await import("@/lib/env");
-    expect(adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
-    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co, pruebas@inworldenergy.local");
-    expect(adminEmailAllowed("Pruebas@InWorldEnergy.local")).toBe(true);
+    expect(adminEmailAllowed("pruebas@xgreenenergy.local")).toBe(false);
+    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co, pruebas@xgreenenergy.local");
+    expect(adminEmailAllowed("Pruebas@XGreenEnergy.local")).toBe(true);
   });
 
   it("sin ADMIN_EMAILS no hay propietarios", async () => {
@@ -87,13 +87,13 @@ describe("propietarios de la administración", () => {
     vi.stubEnv("ADMIN_EMAILS", "");
     const { adminEmailAllowed } = await import("@/lib/env");
     expect(adminEmailAllowed("cualquiera@gmail.com")).toBe(false);
-    expect(adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
+    expect(adminEmailAllowed("pruebas@xgreenenergy.local")).toBe(false);
   });
 
   it("con dinero real, la cuenta de pruebas no puede administrar aunque esté en la lista", async () => {
     vi.stubEnv("DEMO_MODE", "false");
-    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co, pruebas@inworldenergy.local");
-    expect((await import("@/lib/env")).adminEmailAllowed("pruebas@inworldenergy.local")).toBe(false);
+    vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co, pruebas@xgreenenergy.local");
+    expect((await import("@/lib/env")).adminEmailAllowed("pruebas@xgreenenergy.local")).toBe(false);
   });
 });
 

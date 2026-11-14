@@ -97,7 +97,7 @@ describe("quién administra (sin PIN)", () => {
   it("reglas del equipo: correo válido, sin repetir, sin propietarios ni la cuenta de pruebas, y los propietarios no se quitan desde aquí", async () => {
     await expect(team.addAdmin(owner, { email: "no es un correo" })).rejects.toMatchObject({ status: 400 });
     await expect(team.addAdmin(owner, { email: "socia@empresa.co" })).rejects.toMatchObject({ status: 409 });
-    await expect(team.addAdmin(owner, { email: "pruebas@inworldenergy.local" })).rejects.toMatchObject({ status: 400 });
+    await expect(team.addAdmin(owner, { email: "pruebas@xgreenenergy.local" })).rejects.toMatchObject({ status: 400 });
     await expect(team.addAdmin(owner, { email: "nuevo@empresa.co", note: "<b>jefe</b>" })).rejects.toThrow(/< ni >/);
     await team.addAdmin(owner, { email: "operaciones@empresa.co" });
     await expect(team.addAdmin(owner, { email: "OPERACIONES@empresa.co" })).rejects.toMatchObject({ status: 409 });
@@ -106,11 +106,11 @@ describe("quién administra (sin PIN)", () => {
   });
 
   it("la cuenta de pruebas solo administra como propietaria y solo en modo de pruebas", async () => {
-    vi.stubEnv("ADMIN_EMAILS", `${OWNERS}, pruebas@inworldenergy.local`);
-    expect(await team.adminRoleOf("pruebas@inworldenergy.local")).toBe("propietario");
+    vi.stubEnv("ADMIN_EMAILS", `${OWNERS}, pruebas@xgreenenergy.local`);
+    expect(await team.adminRoleOf("pruebas@xgreenenergy.local")).toBe("propietario");
     vi.stubEnv("DEMO_MODE", "false");
-    expect(await team.adminRoleOf("pruebas@inworldenergy.local")).toBeNull();
-    expect(team.ownerEmails()).not.toContain("pruebas@inworldenergy.local");
+    expect(await team.adminRoleOf("pruebas@xgreenenergy.local")).toBeNull();
+    expect(team.ownerEmails()).not.toContain("pruebas@xgreenenergy.local");
   });
 
   it("el equipo: primero los propietarios, con su nombre y su último ingreso, y luego quienes agregaron, con quién les dio acceso", async () => {
