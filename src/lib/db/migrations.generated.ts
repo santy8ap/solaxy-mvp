@@ -134,5 +134,11 @@ export const MIGRATIONS: { id: string; statements: string[] }[] = [
       "CREATE TABLE IF NOT EXISTS `customer_email` (\n\t`key` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`kind` text NOT NULL,\n\t`subject` text NOT NULL,\n\t`status` text NOT NULL,\n\t`attempts` integer DEFAULT 1 NOT NULL,\n\t`error` text,\n\t`created_at` integer NOT NULL,\n\t`sent_at` integer,\n\tFOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade\n);",
       "CREATE INDEX IF NOT EXISTS `customer_email_user_idx` ON `customer_email` (`user_id`,`created_at`);"
     ]
+  },
+  {
+    "id": "0009_equipo_admin",
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS `admin_member` (\n\t`email` text PRIMARY KEY NOT NULL,\n\t`added_by` text NOT NULL,\n\t`added_at` integer NOT NULL,\n\t`note` text\n);"
+    ]
   }
 ];

@@ -1,8 +1,8 @@
-// Recorrido de seguridad contra un servidor local (modo de pruebas, ADMIN_EMAILS con la cuenta de pruebas).
-// Uso: BASE_URL=http://localhost:3100 ADMIN_PIN=246810 [CHROMIUM_PATH=/ruta/a/chromium] node e2e/security.cjs
+// Recorrido de seguridad contra un servidor local en modo de pruebas. La cuenta de pruebas NO debe estar en
+// ADMIN_EMAILS: aquí hace de empresa sin acceso a la administración.
+// Uso: BASE_URL=http://localhost:3100 [CHROMIUM_PATH=/ruta/a/chromium] node e2e/security.cjs
 const { chromium } = require("playwright");
 const base = process.env.BASE_URL ?? "http://localhost:3100";
-const PIN = process.env.ADMIN_PIN ?? "246810";
 let failed = 0;
 const check = (cond, msg) => {
   console.log(`${cond ? "✓" : "✗"} ${msg}`);
@@ -76,6 +76,8 @@ const check = (cond, msg) => {
     ["POST", "/api/admin/payments/XGE-0000000000"],
     ["POST", "/api/admin/data-requests/dat-0000"],
     ["GET", "/api/admin/backup"],
+    ["GET", "/api/admin/team"],
+    ["POST", "/api/admin/team"],
   ];
   for (const [method, path] of [...PRIVATE_ROUTES, ...ADMIN_ROUTES]) {
     const r = await fetch(`${base}${path}`, { method, headers: { "content-type": "application/json", origin: base }, body: method === "POST" ? "{}" : undefined });
@@ -127,34 +129,17 @@ const check = (cond, msg) => {
   const cspErrors = errors.filter((e) => /Content Security Policy|Refused to/i.test(e));
   check(cspErrors.length === 0, `las páginas funcionan con la política de contenido${cspErrors.length ? `: ${cspErrors.slice(0, 3).join(" | ")}` : ""}`);
 
-  // 6. Administración con PIN, y 5 intentos por minuto
-  await page.goto(`${base}/ingresar?rol=admin`, { waitUntil: "load" });
-  const pin = page.getByLabel("PIN de administrador");
-  const submit = page.getByRole("button", { name: "Entrar como administrador de pruebas" });
-  const alertText = async () => (await page.getByRole("alert").first().innerText().catch(() => "")).trim();
-  for (let i = 0; i < 5; i++) {
-    await pin.fill("000000");
-    await submit.click();
-    await page.getByRole("alert").first().waitFor({ timeout: 15000 });
-    await page.waitForTimeout(300);
-  }
-  check(/no es correcto/i.test(await alertText()), "un PIN equivocado se rechaza");
-  await pin.fill(PIN);
-  await submit.click();
-  await page.waitForTimeout(1500);
-  check(/Demasiados intentos/i.test(await alertText()) && !page.url().includes("/admin"), "al sexto intento, ni el PIN correcto entra: hay que esperar un minuto");
-  console.log("  (esperando el minuto de bloqueo…)");
-  await page.waitForTimeout(61_000);
-  await pin.fill(PIN);
-  await submit.click();
-  await page.waitForURL(/\/admin/, { timeout: 60000 }).catch(() => {});
-  check(page.url().includes("/admin"), "pasado el minuto, el PIN correcto entra a la administración");
-  for (const p of ["/admin", "/admin/clientes", "/admin/pagos", "/admin/retiros", "/admin/planta", "/admin/analisis", "/admin/actividad", "/admin/configuracion"]) {
-    await page.goto(`${base}${p}`, { waitUntil: "load" });
-    await page.waitForTimeout(600);
-  }
-  const cspAdmin = errors.filter((e) => /Content Security Policy|Refused to/i.test(e));
-  check(cspAdmin.length === 0, "la administración funciona con la política de contenido");
+  // 6. Administración sin PIN: una cuenta que no es propietaria ni del equipo no entra.
+  await page.goto(`${base}/admin`, { waitUntil: "load" });
+  await page.getByRole("heading", { name: "Sin acceso" }).waitFor({ timeout: 15000 }).catch(() => {});
+  const blocked = await page.getByRole("heading", { name: "Sin acceso" }).count();
+  const adminNav = await page.getByRole("navigation", { name: "Administración" }).count();
+  check(blocked === 1 && adminNav === 0, "una cuenta sin acceso ve «Sin acceso» en /admin, sin el menú ni los datos del admin");
+  check((await asUser("/api/admin/team")).status === 403, "una cuenta sin acceso no ve el equipo de administración (403)");
+  const selfAdd = await asUser("/api/admin/team", { method: "POST", body: JSON.stringify({ action: "agregar", email: "pruebas@inworldenergy.local" }) });
+  check(selfAdd.status === 403, `nadie se agrega a sí mismo al equipo (${selfAdd.status})`);
+  const legacyPin = await asUser("/api/admin/activar");
+  check(legacyPin.status === 404, `la antigua entrada con PIN ya no existe (${legacyPin.status})`);
 
   await browser.close();
   console.log(failed ? `\n${failed} comprobaciones fallaron` : "\nTodas las comprobaciones pasaron");

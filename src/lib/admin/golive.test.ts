@@ -51,7 +51,6 @@ afterEach(() => {
     "CRYPTO_NETWORK",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
-    "ADMIN_PIN",
     "ADMIN_EMAILS",
     "TURSO_DATABASE_URL",
     "VERCEL",

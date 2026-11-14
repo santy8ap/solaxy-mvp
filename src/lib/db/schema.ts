@@ -376,6 +376,20 @@ export const appMeta = sqliteTable("app_meta", {
   value: text("value").notNull(),
 });
 
+/**
+ * El equipo de administración que eligen los propietarios desde el panel (Admin › Equipo). Los propietarios no
+ * están aquí: son los correos de ADMIN_EMAILS en Vercel. Se entra con la cuenta de Google de ese correo.
+ */
+export const adminMember = sqliteTable("admin_member", {
+  /** Correo de la cuenta de Google, en minúsculas */
+  email: text("email").primaryKey(),
+  /** Quién le dio acceso: nombre y correo */
+  addedBy: text("added_by").notNull(),
+  addedAt: integer("added_at").notNull(),
+  /** Para qué tiene acceso (p. ej. «Contabilidad»), opcional */
+  note: text("note"),
+});
+
 export const ADMIN_ACTIONS = [
   "config_planta",
   "pago_manual",
@@ -396,6 +410,8 @@ export const ADMIN_ACTIONS = [
   // Lo hace el propio titular: cambió su nombre o su documento teniendo ya pagos o retiros.
   "cambio_titular",
   "descargar_respaldo",
+  "agregar_admin",
+  "quitar_admin",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

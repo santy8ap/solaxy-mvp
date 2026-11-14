@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { BRAND } from "@/config/brand";
 import { getAuthContext } from "@/lib/admin/access";
-import { adminEmailAllowed } from "@/lib/env";
-import { AdminBottomNav, AdminMobileBar, AdminPinWall, AdminSidebar } from "@/components/admin/shell";
+import { AdminBottomNav, AdminMobileBar, AdminNotAuthorized, AdminSidebar } from "@/components/admin/shell";
 import { TestModeBar } from "@/components/panel/shell";
 import { UserProvider } from "@/components/panel/user-context";
 import { Toaster } from "@/components/ui/toast";
@@ -15,7 +14,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Depende de la sesión y del PIN: puede esperar al servidor al navegar.
+// Depende de la sesión y del rol: puede esperar al servidor al navegar.
 export const instant = false;
 
 /** El marco del admin: menú lateral (o barra inferior en celular) y el contenido. Solo para administradores. */
@@ -36,8 +35,8 @@ function AdminFrame({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Sin sesión va a ingresar; con sesión pero sin el PIN, solo ve el muro del PIN (sin el menú del admin,
- * que pediría datos que todavía no puede ver); con el PIN, el admin completo.
+ * Sin sesión va a ingresar; con una cuenta sin acceso, solo ve el aviso (sin el menú del admin, que pediría
+ * datos que no puede ver); con una cuenta de propietario o del equipo, el admin completo. Sin PIN.
  */
 async function AdminGate({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
@@ -47,12 +46,12 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
       <div className="min-h-dvh">
         <TestModeBar />
         <div className="px-4 pb-16 sm:px-10">
-          <AdminPinWall name={ctx.user.name} email={ctx.user.email} allowed={adminEmailAllowed(ctx.user.email)} />
+          <AdminNotAuthorized email={ctx.user.email} />
         </div>
       </div>
     );
   return (
-    <UserProvider user={{ ...ctx.user, canAdmin: true }}>
+    <UserProvider user={{ ...ctx.user, canAdmin: true, adminRole: ctx.role }}>
       <AdminFrame>{children}</AdminFrame>
     </UserProvider>
   );

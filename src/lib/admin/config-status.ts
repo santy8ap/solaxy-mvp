@@ -4,7 +4,8 @@ import { databaseTarget } from "@/lib/db/target";
 import { alertConfig } from "@/lib/alerts";
 import { customerEmailConfig } from "@/lib/customer-email";
 import { getTransferAccount } from "@/lib/payments/transfer";
-import { adminEmails, baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
+import { baseUrl, googleEnabled, isDemoMode } from "@/lib/env";
+import { ownerEmails } from "./team";
 import { rpcChainReader } from "@/lib/payments/chain";
 import { cryptoConfig, mercadoPagoConfig } from "@/lib/payments/config";
 import { isMercadoPagoTest } from "@/lib/payments/mercadopago-account";
@@ -154,26 +155,15 @@ export async function configStatus({
     vars: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
     required: true,
   });
-  add({
-    id: "admin-pin",
-    group: "Acceso",
-    title: "PIN de administrador",
-    state: has("ADMIN_PIN") ? "ok" : "falta",
-    detail: has("ADMIN_PIN")
-      ? "Configurado."
-      : "Sin ADMIN_PIN, en producción nadie puede entrar al admin.",
-    vars: ["ADMIN_PIN"],
-    required: true,
-  });
-  const admins = adminEmails();
+  const owners = ownerEmails();
   add({
     id: "admin-correos",
     group: "Acceso",
-    title: "Correos de administradores",
-    state: admins.length ? "ok" : "falta",
-    detail: admins.length
-      ? admins.join(", ")
-      : "Con dinero real, solo estos correos (además del PIN) pueden entrar al admin.",
+    title: "Propietarios de la administración",
+    state: owners.length ? "ok" : "falta",
+    detail: owners.length
+      ? `${owners.join(", ")}. Entran con su cuenta de Google y eligen al resto del equipo en Administración › Equipo.`
+      : "Sin propietarios nadie puede entrar al admin. Pon en ADMIN_EMAILS los correos de Google de los dueños.",
     vars: ["ADMIN_EMAILS"],
     required: true,
   });

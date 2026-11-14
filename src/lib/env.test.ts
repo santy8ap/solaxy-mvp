@@ -61,27 +61,8 @@ describe("clave secreta", () => {
   });
 });
 
-describe("PIN de administrador", () => {
-  it("sin ADMIN_PIN no hay acceso de administrador, ni siquiera en local: no existe un PIN por defecto", async () => {
-    vi.stubEnv("VERCEL", "");
-    vi.stubEnv("DEMO_MODE", "");
-    vi.stubEnv("ADMIN_PIN", "");
-    expect((await import("@/lib/env")).adminPin()).toBeNull();
-  });
-
-  it("en Vercel o fuera del modo demo, sin ADMIN_PIN no hay acceso de administrador", async () => {
-    vi.stubEnv("VERCEL", "1");
-    vi.stubEnv("ADMIN_PIN", "");
-    expect((await import("@/lib/env")).adminPin()).toBeNull();
-    vi.resetModules();
-    vi.stubEnv("VERCEL", "");
-    vi.stubEnv("DEMO_MODE", "false");
-    expect((await import("@/lib/env")).adminPin()).toBeNull();
-    vi.stubEnv("ADMIN_PIN", "481516");
-    expect((await import("@/lib/env")).adminPin()).toBe("481516");
-  });
-
-  it("con dinero real solo pueden ser administradores los correos de ADMIN_EMAILS", async () => {
+describe("propietarios de la administración", () => {
+  it("con dinero real solo son propietarios los correos de ADMIN_EMAILS", async () => {
     vi.stubEnv("DEMO_MODE", "false");
     vi.stubEnv("ADMIN_EMAILS", " Socio@InWorldEnergy.co ,ops@inworldenergy.co");
     const { adminEmailAllowed } = await import("@/lib/env");
@@ -92,7 +73,7 @@ describe("PIN de administrador", () => {
     expect(adminEmailAllowed("socio@inworldenergy.co")).toBe(false);
   });
 
-  it("la cuenta de pruebas solo administra si su correo está en ADMIN_EMAILS", async () => {
+  it("la cuenta de pruebas solo es propietaria si su correo está en ADMIN_EMAILS", async () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "socio@inworldenergy.co");
     const { adminEmailAllowed } = await import("@/lib/env");
@@ -101,7 +82,7 @@ describe("PIN de administrador", () => {
     expect(adminEmailAllowed("Pruebas@InWorldEnergy.local")).toBe(true);
   });
 
-  it("sin ADMIN_EMAILS, nadie administra", async () => {
+  it("sin ADMIN_EMAILS no hay propietarios", async () => {
     vi.stubEnv("DEMO_MODE", "");
     vi.stubEnv("ADMIN_EMAILS", "");
     const { adminEmailAllowed } = await import("@/lib/env");

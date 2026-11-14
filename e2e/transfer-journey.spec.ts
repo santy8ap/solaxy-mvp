@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import { createClient } from "@libsql/client";
 import { expect, test, type Page } from "@playwright/test";
 
-const ADMIN_PIN = "123456";
 // Una referencia del banco confirma un solo pago: cada recorrido (escritorio, celular) usa la suya.
 const bankReference = () => `BCO-REF-${Date.now()}`;
 
@@ -53,10 +52,7 @@ test("transferencia: el admin publica la cuenta, el comercializador reporta el p
   await expect(page).toHaveURL(/\/panel/);
 
   // 1. El admin publica la cuenta de la empresa.
-  await page.goto("/admin/configuracion");
-  await page.getByLabel("PIN de administrador").fill(ADMIN_PIN);
-  await page.getByRole("button", { name: /Entrar a la administración/i }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  // Sin PIN: la cuenta de pruebas es propietaria en este ambiente (ADMIN_EMAILS).
   await page.goto("/admin/configuracion");
   const settings = page.getByRole("region", { name: "Cuenta para transferencias" });
   await settings.getByLabel("Banco").selectOption("Bancolombia");

@@ -31,8 +31,7 @@ const child = spawn(
       DATABASE_AUTH_TOKEN: "",
       BETTER_AUTH_URL: "http://127.0.0.1:4173",
       BETTER_AUTH_SECRET: "xge-e2e-session-key-for-isolated-tests-only-123456",
-      ADMIN_PIN: "123456",
-      // La cuenta de pruebas puede entrar al admin (con el PIN) solo en esta base temporal.
+      // La cuenta de pruebas es propietaria del admin solo en esta base temporal (sin PIN, como cualquier propietario).
       ADMIN_EMAILS: "pruebas@inworldenergy.local",
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",

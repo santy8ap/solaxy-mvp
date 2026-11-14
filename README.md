@@ -37,13 +37,18 @@ npm start
 
 ## Administración
 
-`/admin` exige una cuenta de `ADMIN_EMAILS` y el `ADMIN_PIN` (5 intentos por minuto). Secciones:
+Se entra con Google, sin PIN: el correo de la cuenta decide. Hay dos roles:
+
+- **Propietarios**: los correos de `ADMIN_EMAILS` en Vercel. Administran todo y eligen al resto del equipo.
+- **Administradores**: los que un propietario agrega en **Admin → Equipo**. Administran todo menos el equipo.
+
+El rol se consulta en cada petición, así que quitarle el acceso a alguien vale de inmediato aunque tenga la sesión abierta. Cada cambio del equipo queda en **Actividad** y les llega por correo a los propietarios. Como la protección es la cuenta de Google de cada persona, todos deberían tener activa la verificación en dos pasos. Secciones:
 
 - **Resumen**: lo que hay que atender (transferencias por confirmar, retiros por pagar, pagos por devolver, devoluciones por conciliar, planes en pausa y mensualidades que vencen esta semana), el cupo de la planta y los totales.
 - **Análisis**: recaudo por mes y por medio de pago, embudo de clientes, mensualidades que vienen y cupo, con tabla de datos. Las visitas y la velocidad de la página se ven en Vercel (Web Analytics y Speed Insights), que no miden el admin ni envían los parámetros de las direcciones.
 - **Clientes**: búsqueda, grupos (generando, en pausa, transferencia por confirmar, solicitudes de eliminación de datos, sin pagar, sin datos), registro de pagos a mano, cierre de planes, atención de solicitudes sobre datos personales y exportación CSV.
 - **Pagos**: filtros por estado y medio, búsqueda por cliente, NIT, orden o referencia, acciones de verificación, transferencias y reembolsos, y exportación CSV para la contabilidad.
-- **Retiros**, **Planta** (potencia y precios), **Configuración** (lista para cobrar dinero real, cuenta para transferencias, soporte y alertas por correo) y **Actividad** (bitácora con filtros).
+- **Retiros**, **Planta** (potencia y precios), **Equipo** (quién entra a la administración), **Configuración** (lista para cobrar dinero real, cuenta para transferencias, soporte, alertas por correo y respaldo) y **Actividad** (bitácora con filtros).
 - `/ayuda` es pública. El contacto oficial se guarda desde **Admin → Configuración** o con `SUPPORT_EMAIL` / `SUPPORT_WHATSAPP`. No se publica un contacto ficticio si faltan esos datos.
 - `/planes`, `/planta` y las rutas anteriores del panel redirigen a sus vistas actuales.
 
@@ -81,7 +86,7 @@ Consulta [.env.example](.env.example) y **Admin → Configuración → Para cobr
 | --- | --- |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | Sesiones y URL pública |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Ingreso de cuentas reales |
-| `ADMIN_PIN`, `ADMIN_EMAILS` | Acceso administrativo |
+| `ADMIN_EMAILS` | Propietarios de la administración (correos de Google); el resto del equipo se elige en Admin → Equipo |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Persistencia en Vercel |
 | `PREVIEW_TURSO_DATABASE_URL`, `PREVIEW_TURSO_AUTH_TOKEN` | Base propia de las vistas previas (Preview), separada de producción |
 | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Checkout y notificaciones firmadas |

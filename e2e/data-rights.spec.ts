@@ -29,10 +29,8 @@ test("datos personales: el comercializador los descarga y pide eliminar su cuent
   await expect(section.getByText(/Pediste eliminar tu cuenta el/)).toBeVisible();
 
   // 3. El admin la ve con su plazo y responde sin eliminar.
-  await page.goto("/admin/clientes?estado=solicitudes");
-  await page.getByLabel("PIN de administrador").fill("123456");
-  await page.getByRole("button", { name: /Entrar a la administración/i }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  // Sin PIN: la cuenta de pruebas es propietaria en este ambiente (ADMIN_EMAILS).
+  await page.goto("/admin");
   await expect(page.getByText(/Solicitud(es)? de eliminación de datos/)).toBeVisible();
   await page.goto("/admin/clientes?estado=solicitudes");
   const card = page.getByRole("listitem").filter({ hasText: "Pidió eliminar su cuenta el" });

@@ -64,6 +64,13 @@
       "when": 1794612401302,
       "tag": "0008_correos_clientes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794675685334,
+      "tag": "0009_equipo_admin",
+      "breakpoints": true
     }
   ]
 }

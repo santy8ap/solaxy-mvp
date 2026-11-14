@@ -2,7 +2,7 @@
 import { useActionState, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { planCheckoutHref, safeReturnTo } from "@/lib/navigation";
-import { prepareGoogleLogin, signInDemo } from "./actions";
+import { signInDemo } from "./actions";
 
 function GoogleG() {
   return (
@@ -23,7 +23,7 @@ const ROLES: { id: Role; title: string; note: string }[] = [
     title: "Comercializador",
     note: "Tus planes, tu energía y tus retiros",
   },
-  { id: "admin", title: "Administrador", note: "Clientes, pagos y retiros" },
+  { id: "admin", title: "Administrador", note: "Solo cuentas de Google autorizadas" },
 ];
 
 export function LoginOptions({
@@ -43,7 +43,6 @@ export function LoginOptions({
   returnTo?: string;
 }) {
   const [role, setRole] = useState<Role>(defaultRole);
-  const [pin, setPin] = useState("");
   const [state, formAction, pending] = useActionState(signInDemo, undefined);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -58,23 +57,14 @@ export function LoginOptions({
       );
       return;
     }
-    if (role === "admin" && !pin.trim()) {
-      setNotice("Escribe el PIN de administrador.");
-      return;
-    }
     setGoogleLoading(true);
     try {
-      const prep = await prepareGoogleLogin(role, pin);
-      if (prep?.error) {
-        setNotice(prep.error);
-        setGoogleLoading(false);
-        return;
-      }
+      // Sin PIN: el correo de la cuenta de Google decide si administra. «Administrador» solo lleva directo al admin.
       const { error } = await authClient.signIn.social({
         provider: "google",
         callbackURL:
           role === "admin"
-            ? "/api/admin/activar"
+            ? "/admin"
             : (safeReturnTo(returnTo) ??
               (planId ? planCheckoutHref(planId) : "/panel")),
       });
@@ -127,21 +117,9 @@ export function LoginOptions({
       </fieldset>
 
       {role === "admin" && (
-        <div>
-          <label htmlFor="admin-pin" className="cap">
-            PIN de administrador
-          </label>
-          <input
-            id="admin-pin"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            placeholder="••••••"
-            className="field num mt-1 tracking-[0.4em]"
-          />
-        </div>
+        <p className="text-sm leading-relaxed text-fog">
+          Entra con la cuenta de Google a la que un propietario le dio acceso. No necesitas PIN.
+        </p>
       )}
 
       <div className="space-y-3">
@@ -157,7 +135,6 @@ export function LoginOptions({
         {demoMode && (role !== "admin" || testAdmin) && (
           <form action={formAction}>
             <input type="hidden" name="role" value={role} />
-            <input type="hidden" name="pin" value={pin} />
             <input type="hidden" name="plan" value={planId ?? ""} />
             <input
               type="hidden"

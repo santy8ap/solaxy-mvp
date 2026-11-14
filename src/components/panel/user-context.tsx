@@ -1,5 +1,6 @@
 "use client";
 import { createContext, use, type ReactNode } from "react";
+import type { AdminRole } from "@/lib/admin/roles";
 
 export interface PanelUser {
   id: string;
@@ -8,6 +9,8 @@ export interface PanelUser {
   image: string | null;
   /** Su correo está autorizado como administrador: se le muestra el acceso al admin. */
   canAdmin: boolean;
+  /** Dentro del admin: propietario (elige el equipo) o administrador */
+  adminRole?: AdminRole | null;
 }
 
 const Ctx = createContext<PanelUser | null>(null);

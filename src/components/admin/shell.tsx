@@ -1,14 +1,14 @@
 "use client";
-import { ArrowLeftCircle, Banknote, Building2, ChartColumn, CreditCard, Ellipsis, History, LayoutGrid, LogOut, Settings2, ShieldCheck, SunMedium } from "lucide-react";
+import { ArrowLeftCircle, Banknote, Building2, ChartColumn, CreditCard, Ellipsis, History, LayoutGrid, LogOut, Settings2, ShieldCheck, SunMedium, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { becomeAdmin, leaveAdmin, signOut } from "@/app/ingresar/actions";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { signOut } from "@/app/ingresar/actions";
 import { BRAND } from "@/config/brand";
+import { ADMIN_ROLE_LABEL } from "@/lib/admin/roles";
 import { useJson } from "@/lib/client/use-json";
 import { usePlantNow } from "@/lib/client/use-catalog";
 import { formatClock } from "@/lib/format";
-import { ErrorNote } from "@/components/ui/field";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import { ThemeSelector } from "@/components/ui/theme-selector";
@@ -21,6 +21,7 @@ export const ADMIN_NAV = [
   { href: "/admin/pagos", label: "Pagos", icon: CreditCard },
   { href: "/admin/retiros", label: "Retiros", icon: Banknote },
   { href: "/admin/planta", label: "Planta", icon: SunMedium },
+  { href: "/admin/equipo", label: "Equipo", icon: UsersRound },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings2 },
   { href: "/admin/actividad", label: "Actividad", icon: History },
 ] as const;
@@ -50,7 +51,6 @@ export function AdminSidebar() {
   const path = usePathname();
   const pending = usePending();
   const user = useUser();
-  const [leaving, startLeave] = useTransition();
   const [out, startOut] = useTransition();
   return (
     <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-r border-line py-7 lg:flex">
@@ -79,16 +79,13 @@ export function AdminSidebar() {
           <span className="min-w-0">
             <span className="block truncate text-sm text-ink">{user.name}</span>
             <span className="block truncate text-xs text-mute">{user.email}</span>
+            {user.adminRole && <span className="cap mt-0.5 block !text-[0.62rem]">{ADMIN_ROLE_LABEL[user.adminRole]}</span>}
           </span>
         </div>
         <Link href="/panel" className={itemClass(false)}>
           <ArrowLeftCircle size={17} strokeWidth={1.5} />
           Ver como comercializador
         </Link>
-        <button type="button" disabled={leaving} onClick={() => startLeave(() => leaveAdmin())} className={`${itemClass(false)} text-left`}>
-          <ShieldCheck size={17} strokeWidth={1.5} />
-          {leaving ? "Saliendo…" : "Salir del modo admin"}
-        </button>
         <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className={`${itemClass(false)} text-left`}>
           <LogOut size={17} strokeWidth={1.5} />
           {out ? "Cerrando sesión…" : "Cerrar sesión"}
@@ -106,7 +103,6 @@ export function AdminBottomNav() {
   const more = openAt === path;
   const setMore = (open: boolean | ((v: boolean) => boolean)) => setOpenAt((typeof open === "function" ? open(more) : open) ? path : null);
   const sheet = useRef<HTMLDivElement>(null);
-  const [leaving, startLeave] = useTransition();
   const [out, startOut] = useTransition();
   const main = ADMIN_NAV.filter((n) => MOBILE_MAIN.has(n.href));
   const rest = ADMIN_NAV.filter((n) => !MOBILE_MAIN.has(n.href));
@@ -142,10 +138,10 @@ export function AdminBottomNav() {
               </li>
             ))}
             <li className="border-t border-line">
-              <button type="button" disabled={leaving} onClick={() => startLeave(() => leaveAdmin())} className={`${itemClass(false)} w-full text-left`}>
-                <ShieldCheck size={17} strokeWidth={1.5} />
-                {leaving ? "Saliendo…" : "Salir del modo admin"}
-              </button>
+              <Link href="/panel" className={itemClass(false)}>
+                <ArrowLeftCircle size={17} strokeWidth={1.5} />
+                Ver como comercializador
+              </Link>
             </li>
             <li>
               <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className={`${itemClass(false)} w-full text-left`}>
@@ -226,34 +222,27 @@ export function AdminTopbar({ title, subtitle, action }: { title: string; subtit
   );
 }
 
-/** Se muestra si alguien con sesión abre /admin sin haber ingresado el PIN. */
-export function AdminPinWall({ name, email, allowed }: { name: string; email: string; allowed: boolean }) {
-  const [state, action, pending] = useActionState(becomeAdmin, undefined);
+/** Se muestra si alguien con sesión, pero sin acceso, abre /admin. */
+export function AdminNotAuthorized({ email }: { email: string }) {
+  const [out, startOut] = useTransition();
   return (
-    <div className="mx-auto mt-10 max-w-[460px] sm:mt-20">
-      <h1 className="display text-[clamp(2.75rem,8vw,4rem)]">{allowed ? "Entrar como administrador" : "Cuenta no autorizada"}</h1>
-      {allowed ? (
-        <>
-          <p className="mt-5 leading-relaxed text-fog">Hola, {name.split(" ")[0]}. Escribe el PIN de administrador para continuar.</p>
-          <form action={action} className="mt-8 space-y-6">
-            <div>
-              <label htmlFor="pin" className="cap">
-                PIN de administrador
-              </label>
-              <input id="pin" name="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus placeholder="••••••" className="field num mt-1 tracking-[0.4em]" />
-            </div>
-            <button type="submit" disabled={pending} className="btn btn-solid w-full">
-              {pending ? "Verificando…" : "Entrar a la administración"}
-            </button>
-            {state?.error && <ErrorNote>{state.error}</ErrorNote>}
-          </form>
-        </>
-      ) : (
-        <p className="mt-5 leading-relaxed text-fog">{email} no está en la lista de administradores. Si debes tener acceso, pide que agreguen tu correo a la variable ADMIN_EMAILS.</p>
-      )}
-      <Link href="/panel" className="link mt-8 inline-block text-sm text-fog">
-        Volver a mi panel de comercializador
-      </Link>
+    <div className="mx-auto mt-10 max-w-[480px] sm:mt-20">
+      <p className="cap flex items-center gap-2">
+        <ShieldCheck size={13} strokeWidth={1.5} /> Administración
+      </p>
+      <h1 className="display mt-4 text-[clamp(2.75rem,8vw,4rem)]">Sin acceso</h1>
+      <p className="mt-5 leading-relaxed text-fog">
+        Entraste con <strong className="font-medium text-ink">{email}</strong>, y ese correo no tiene acceso a la administración. Si debes tenerlo, pídele a un propietario que lo agregue en
+        Administración › Equipo.
+      </p>
+      <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <Link href="/panel" className="btn btn-solid">
+          Ir a mi panel
+        </Link>
+        <button type="button" disabled={out} onClick={() => startOut(() => signOut())} className="link text-sm text-fog">
+          {out ? "Cerrando sesión…" : "Entrar con otra cuenta"}
+        </button>
+      </div>
     </div>
   );
 }

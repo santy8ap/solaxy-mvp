@@ -46,14 +46,7 @@ export function authSecret() {
   return g.__iweDevSecret;
 }
 
-/** PIN de administrador. null = acceso de administrador desactivado (falta ADMIN_PIN en producción). */
-export function adminPin(): string | null {
-  const pin = process.env.ADMIN_PIN?.trim();
-  // Sin ADMIN_PIN nadie entra al admin: no hay un PIN por defecto (npm run setup genera uno).
-  return pin || null;
-}
-
-/** Correos autorizados para el modo administrador (ADMIN_EMAILS, separados por comas). */
+/** Los propietarios de la administración (ADMIN_EMAILS, separados por comas). El resto del equipo se elige en Admin › Equipo. */
 export function adminEmails() {
   return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -62,9 +55,8 @@ export function adminEmails() {
 }
 
 /**
- * Quién puede entrar al modo administrador, además de saber el PIN: solo los correos de ADMIN_EMAILS.
- * La cuenta de pruebas no es la excepción: administra solo si su correo está en la lista, y solo
- * mientras el modo de pruebas esté activo. Sin ADMIN_EMAILS, nadie administra.
+ * ¿Este correo es propietario? Solo los de ADMIN_EMAILS. La cuenta de pruebas no es la excepción: es propietaria
+ * solo si su correo está en la lista, y solo mientras el modo de pruebas esté activo.
  */
 export function adminEmailAllowed(email: string) {
   const normalized = email.trim().toLowerCase();

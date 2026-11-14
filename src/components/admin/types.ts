@@ -106,6 +106,8 @@ const ACTION_LABEL: Record<AdminAction, string> = {
   responder_solicitud_datos: "Solicitud de datos respondida",
   cambio_titular: "Cambio de titular",
   descargar_respaldo: "Respaldo descargado",
+  agregar_admin: "Administrador agregado",
+  quitar_admin: "Administrador quitado",
 };
 
 /** Acciones del modelo anterior que siguen en la bitácora. */

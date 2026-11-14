@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { adminEmailAllowed } from "@/lib/env";
+import { adminRoleOf } from "@/lib/admin/team";
 import { getSessionUser } from "@/lib/session";
 import { WalletProvider } from "@/lib/wallet/context";
 import { CryptoRecovery } from "@/components/panel/crypto-recovery";
@@ -16,7 +16,7 @@ async function SessionGate({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect("/ingresar");
   return (
-    <UserProvider user={{ ...user, canAdmin: adminEmailAllowed(user.email) }}>
+    <UserProvider user={{ ...user, canAdmin: (await adminRoleOf(user.email)) !== null }}>
       <WalletProvider>
         <div className="flex min-h-dvh">
           <Sidebar />
