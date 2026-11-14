@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/client/use-app-config";
@@ -162,7 +163,11 @@ function ReviewedWithdrawal({ w }: { w: AdminWithdrawal }) {
     <li className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[12.5rem_minmax(0,1fr)_auto] sm:items-baseline">
       <p className="num whitespace-nowrap text-sm text-mute">{formatDateTime(w.confirmedAt ?? w.createdAt)}</p>
       <div className="min-w-0">
-        <p className="font-medium">{ownerOf(w)}</p>
+        <p className="font-medium">
+          <Link href={`/admin/clientes/${encodeURIComponent(w.userId)}`} className="hover:underline">
+            {ownerOf(w)}
+          </Link>
+        </p>
         <p className="mt-1 break-words text-sm leading-relaxed text-mute">
           {w.bankName ? `${w.bankName}, ${accountTypeLabel(w.bankAccountType).toLowerCase()} ${w.bankAccountNumber ?? ""}` : `${w.walletName ?? "Wallet"} ${w.walletAddress ?? ""}`}
         </p>

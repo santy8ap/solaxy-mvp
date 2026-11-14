@@ -336,7 +336,11 @@ function PaymentRow({ p, listUrl }: { p: AdminPaymentRow; listUrl: string }) {
     <li className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-2 border-b border-line py-5 lg:grid-cols-[12.5rem_minmax(0,1fr)_auto] lg:items-baseline">
       <p className="num whitespace-nowrap text-sm text-mute">{formatDateTime(p.createdAt)}</p>
       <div className="min-w-0">
-        <p className="font-medium">{p.companyName || p.userName}</p>
+        <p className="font-medium">
+          <Link href={`/admin/clientes/${encodeURIComponent(p.userId)}`} className="hover:underline">
+            {p.companyName || p.userName}
+          </Link>
+        </p>
         <p className="mt-1 break-words text-sm leading-relaxed text-mute">
           {what ? `${what}. ` : ""}
           {p.method === "manual" ? adminMethodLabel(p.method) : paymentMethodLabel(p)}

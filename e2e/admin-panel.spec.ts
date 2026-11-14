@@ -22,6 +22,14 @@ test("administración sin PIN: el propietario entra con su cuenta, recorre todo 
     await expect(page.locator("h1").first()).toBeVisible();
     await page.waitForLoadState("networkidle");
   }
+
+  // La ficha de un cliente se abre desde la lista de Clientes y trae todo lo de esa cuenta.
+  await page.goto("/admin/clientes");
+  await page.locator('a[href^="/admin/clientes/"]').first().click();
+  await expect(page).toHaveURL(/\/admin\/clientes\/[^/]+$/);
+  await expect(page.getByRole("heading", { name: "Planes" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Datos personales" })).toBeVisible();
+  await page.waitForLoadState("networkidle");
   expect(errors.filter((e) => !/status of 404/.test(e))).toEqual([]);
 
   // Equipo: da acceso a alguien con su correo de Google, lo ve en la lista y en Actividad, y se lo quita.

@@ -219,3 +219,38 @@ describe("cerrar un plan en revisión", () => {
     }
   });
 });
+
+describe("ficha de un cliente", () => {
+  it("reúne sus pagos, lo que hizo el equipo en su cuenta y su último ingreso, sin mezclar otras cuentas", async () => {
+    const { clientDetail } = await import("@/lib/admin/client-detail");
+    const { db } = await import("@/lib/db");
+    const { session } = await import("@/lib/db/schema");
+    await db.insert(session).values([
+      { id: "s-vieja", token: "t-vieja", userId: "a1", expiresAt: new Date(T0 - DAY_MS), createdAt: new Date(T0 - 3 * DAY_MS), updatedAt: new Date(T0 - 3 * DAY_MS) },
+      { id: "s-nueva", token: "t-nueva", userId: "a1", expiresAt: new Date(T0 + DAY_MS), createdAt: new Date(T0 - 3_600_000), updatedAt: new Date(T0 - 3_600_000) },
+      { id: "s-otra", token: "t-otra", userId: "a2", expiresAt: new Date(T0 + DAY_MS), createdAt: new Date(T0 - 60_000), updatedAt: new Date(T0 - 60_000) },
+    ]);
+
+    const d = await clientDetail("a1", T0);
+    expect(d.client).toMatchObject({ id: "a1", name: "Textiles del Valle S.A.S." });
+    // Último ingreso: la sesión más reciente; activas: solo las que no han vencido.
+    expect(d.lastLoginAt).toBe(T0 - 3_600_000);
+    expect(d.activeSessions).toBe(1);
+    // Sus transferencias registradas, con la referencia del comprobante.
+    expect(d.movements.filter((m) => m.method === "manual").map((m) => m.providerId)).toEqual(expect.arrayContaining(["TRANSF-0001", "TRANSF-0002"]));
+    // La bitácora de su cuenta, de la más reciente a la más antigua, y nada de las otras empresas.
+    const own = (await admin.listAudit(500)).filter((a) => a.targetUserId === "a1");
+    expect(own.length).toBeGreaterThan(0);
+    expect(d.activity.map((a) => a.id)).toEqual(own.slice(0, 60).map((a) => a.id));
+    expect(d.requests).toEqual([]);
+
+    const other = await clientDetail("a2", T0);
+    expect(other.movements.some((m) => m.providerId === "TRANSF-0001")).toBe(false);
+    expect(other.activity.every((a) => !own.some((o) => o.id === a.id))).toBe(true);
+  });
+
+  it("una cuenta que no existe da 404", async () => {
+    const { clientDetail } = await import("@/lib/admin/client-detail");
+    await expect(clientDetail("no-existe", T0)).rejects.toMatchObject({ status: 404 });
+  });
+});

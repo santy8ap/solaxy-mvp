@@ -22,7 +22,7 @@ const reloadAdmin = (url: string) => {
 };
 
 /** Registrar un pago que llegó por transferencia: el primer mes de un plan nuevo o el mes siguiente de uno que ya tiene. */
-function ManualPaymentDialog({ client, onClose, listUrl }: { client: AdminClient | null; onClose(): void; listUrl: string }) {
+export function ManualPaymentDialog({ client, onClose, listUrl }: { client: AdminClient | null; onClose(): void; listUrl: string }) {
   const { catalog } = useCatalog();
   const [target, setTarget] = useState("");
   const [reference, setReference] = useState("");
@@ -96,7 +96,7 @@ function ManualPaymentDialog({ client, onClose, listUrl }: { client: AdminClient
   );
 }
 
-function ClosePlanDialog({ plan, onClose, listUrl }: { plan: SubscriptionDTO | null; onClose(): void; listUrl: string }) {
+export function ClosePlanDialog({ plan, onClose, listUrl }: { plan: SubscriptionDTO | null; onClose(): void; listUrl: string }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +139,7 @@ function ClosePlanDialog({ plan, onClose, listUrl }: { plan: SubscriptionDTO | n
 }
 
 /** Atender una solicitud de eliminación de datos: eliminar la cuenta o responder por qué todavía no. */
-function DataRequestDialog({ target, onClose, listUrl }: { target: { client: AdminClient; action: "eliminar" | "responder" } | null; onClose(): void; listUrl: string }) {
+export function DataRequestDialog({ target, onClose, listUrl }: { target: { client: AdminClient; action: "eliminar" | "responder" } | null; onClose(): void; listUrl: string }) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -316,7 +316,11 @@ export function AdminClients() {
           <li key={c.id} className="border-b border-line py-7">
             <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-start">
               <div className="min-w-0">
-                <h2 className="text-xl font-medium">{nameOf(c)}</h2>
+                <h2 className="text-xl font-medium">
+                  <Link href={`/admin/clientes/${encodeURIComponent(c.id)}`} className="hover:underline">
+                    {nameOf(c)}
+                  </Link>
+                </h2>
                 <p className="mt-1 break-words text-sm text-mute">
                   {c.profile?.nit ? `NIT ${c.profile.nit}, ` : ""}
                   {c.email}
@@ -383,6 +387,9 @@ export function AdminClients() {
                 <button type="button" className="btn btn-ghost" onClick={() => setPaying(c)} disabled={!c.profile?.termsCurrent} title={c.profile?.termsCurrent ? undefined : "El comercializador debe completar sus datos personales primero"}>
                   Registrar un pago
                 </button>
+                <Link href={`/admin/clientes/${encodeURIComponent(c.id)}`} className="link text-sm">
+                  Ver la ficha completa
+                </Link>
                 {(c.lastPaymentAt || c.openTransfers > 0 || c.plans.length > 0) && (
                   <Link href={`/admin/pagos?cliente=${encodeURIComponent(c.id)}`} className="link text-sm">
                     Ver sus pagos

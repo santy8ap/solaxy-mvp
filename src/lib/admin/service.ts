@@ -46,7 +46,7 @@ import { invalidateSettings, readConfig, readSettings } from "@/lib/settings";
 export { audit, type Actor };
 
 /** La bitácora, de lo más reciente a lo más antiguo; `action` deja un tipo y `query` busca en el texto y en quién lo hizo. */
-export async function listAudit(limit = 50, { action, query = "" }: { action?: string; query?: string } = {}) {
+export async function listAudit(limit = 50, { action, query = "", targetUserId }: { action?: string; query?: string; targetUserId?: string } = {}) {
   await readSettings();
   const q = query.trim().slice(0, 80);
   // rowid desempata las acciones registradas en el mismo milisegundo: siempre la más reciente primero.
@@ -57,6 +57,7 @@ export async function listAudit(limit = 50, { action, query = "" }: { action?: s
       and(
         action ? eq(adminAudit.action, action as AdminAction) : undefined,
         q ? or(like(adminAudit.summary, `%${q}%`), like(adminAudit.actorName, `%${q}%`)) : undefined,
+        targetUserId ? eq(adminAudit.targetUserId, targetUserId) : undefined,
       ),
     )
     .orderBy(desc(adminAudit.createdAt), desc(sql`rowid`))
@@ -112,8 +113,8 @@ function soldByUser(subs: readonly { userId: string }[], plans: readonly Subscri
   return new Map([...byUser].map(([userId, list]) => [userId, Math.floor(summarize(list, solar, now).soldCop)]));
 }
 
-/** Los comercializadores registrados, con sus planes, su energía y su saldo. */
-export async function listClients({ query = "" }: { query?: string } = {}) {
+/** Los comercializadores registrados, con sus planes, su energía y su saldo. Con `userId`, solo esa cuenta. */
+export async function listClients({ query = "", userId }: { query?: string; userId?: string } = {}) {
   const { solar } = await readConfig();
   const now = Date.now();
   const q = query.trim();
@@ -142,9 +143,10 @@ export async function listClients({ query = "" }: { query?: string } = {}) {
     })
     .from(user)
     .where(
-      matching
-        ? inArray(user.id, matching.length ? matching.map((m) => m.id) : [""])
-        : undefined,
+      and(
+        matching ? inArray(user.id, matching.length ? matching.map((m) => m.id) : [""]) : undefined,
+        userId ? eq(user.id, userId) : undefined,
+      ),
     )
     .orderBy(desc(user.createdAt));
   if (!rows.length) return [];
