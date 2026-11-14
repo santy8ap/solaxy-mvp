@@ -2,7 +2,7 @@
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { invalidateJson, refetch } from "@/lib/client/use-json";
+import { goToLoginIfSignedOut, invalidateJson, refetch, SESSION_CLOSED } from "@/lib/client/use-json";
 import { formatCop, formatNumber, shortAddress } from "@/lib/format";
 import type { ProfileDTO } from "@/lib/profile";
 import { useWallet } from "@/lib/wallet/context";
@@ -15,6 +15,7 @@ type Dest = "banco" | "wallet";
 
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (goToLoginIfSignedOut(res)) throw new Error(SESSION_CLOSED);
   const json = (await res.json().catch(() => ({}))) as T & { error?: string; fields?: Partial<Record<BankField, string>> };
   if (!res.ok) throw Object.assign(new Error(json.error ?? `Error ${res.status}`), { fields: json.fields });
   return json;
@@ -140,7 +141,7 @@ export function WithdrawDialog({ open, onClose, balanceCop, profile }: { open: b
                 <label key={id} className={`flex cursor-pointer flex-col gap-0.5 p-3.5 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${i ? "border-l border-line-strong" : ""} ${dest === id ? "bg-ink text-void" : "hover:bg-ink/5"}`}>
                   <input type="radio" name="dest" value={id} checked={dest === id} onChange={() => setDest(id)} className="sr-only" />
                   <span className="font-medium">{title}</span>
-                  <span className={`text-xs ${dest === id ? "text-void/70" : "text-mute"}`}>{note}</span>
+                  <span className={`text-xs ${dest === id ? "text-void/80" : "text-mute"}`}>{note}</span>
                 </label>
               ))}
             </div>

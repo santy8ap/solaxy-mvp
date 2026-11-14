@@ -59,14 +59,17 @@ export function LoginOptions({
     }
     setGoogleLoading(true);
     try {
-      // Sin PIN: el correo de la cuenta de Google decide si administra. «Administrador» solo lleva directo al admin.
+      // Sin PIN: el correo de la cuenta de Google decide si administra. «Administrador» solo lleva directo al admin
+      // (a la página del admin donde estaba, si venía de una).
+      const back = safeReturnTo(returnTo);
       const { error } = await authClient.signIn.social({
         provider: "google",
         callbackURL:
           role === "admin"
-            ? "/admin"
-            : (safeReturnTo(returnTo) ??
-              (planId ? planCheckoutHref(planId) : "/panel")),
+            ? back?.startsWith("/admin")
+              ? back
+              : "/admin"
+            : (back ?? (planId ? planCheckoutHref(planId) : "/panel")),
       });
       if (error) {
         setGoogleLoading(false);
@@ -106,7 +109,7 @@ export function LoginOptions({
                 />
                 <span className="break-words font-medium">{title}</span>
                 <span
-                  className={`text-xs leading-snug ${active ? "text-void/70" : "text-mute"}`}
+                  className={`text-xs leading-snug ${active ? "text-void/80" : "text-mute"}`}
                 >
                   {note}
                 </span>

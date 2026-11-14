@@ -1,4 +1,7 @@
-/** Destinos internos permitidos después del ingreso. Nunca acepta una URL externa. */
+/**
+ * Destinos internos permitidos después del ingreso: la compra, el panel y el admin (el admin revisa el rol en cada
+ * página). Nunca acepta una URL externa ni la API.
+ */
 export function safeReturnTo(value: unknown): string | null {
   if (
     typeof value !== "string" ||
@@ -11,7 +14,7 @@ export function safeReturnTo(value: unknown): string | null {
     const url = new URL(value, "https://internal.invalid");
     if (
       url.origin !== "https://internal.invalid" ||
-      !(url.pathname === "/comprar" || /^\/panel(?:\/|$)/.test(url.pathname))
+      !(url.pathname === "/comprar" || /^\/(?:panel|admin)(?:\/|$)/.test(url.pathname))
     )
       return null;
     return `${url.pathname}${url.search}${url.hash}`;
@@ -25,6 +28,8 @@ export const planCheckoutHref = (planId: string) =>
 export const renewalCheckoutHref = (subscriptionId: string) =>
   `/comprar?suscripcion=${encodeURIComponent(subscriptionId)}`;
 
+/** El ingreso con regreso a `returnTo`; si es una página del admin, abre directo la opción «Administrador». */
 export function loginHref(returnTo: string) {
-  return `/ingresar?${new URLSearchParams({ next: safeReturnTo(returnTo) ?? "/panel" })}`;
+  const next = safeReturnTo(returnTo) ?? "/panel";
+  return `/ingresar?${new URLSearchParams(next.startsWith("/admin") ? { rol: "admin", next } : { next })}`;
 }

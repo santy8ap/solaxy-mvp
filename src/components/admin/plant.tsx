@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PLANS } from "@/config/plans";
-import { refetch, useJson } from "@/lib/client/use-json";
+import { goToLoginIfSignedOut, refetch, SESSION_CLOSED, useJson } from "@/lib/client/use-json";
 import { usePlantNow } from "@/lib/client/use-catalog";
 import { plantDailyKwh } from "@/lib/energy/solar-day";
 import {
@@ -35,6 +35,7 @@ async function saveSettings(next: Omit<PlantSettings, "updatedAt">) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(next),
   });
+  if (goToLoginIfSignedOut(res)) throw new Error(SESSION_CLOSED);
   const json = await res.json().catch(() => ({}));
   if (!res.ok)
     throw new Error(

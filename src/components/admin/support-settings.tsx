@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { refetch, useJson } from "@/lib/client/use-json";
+import { goToLoginIfSignedOut, refetch, SESSION_CLOSED, useJson } from "@/lib/client/use-json";
 import { SupportInput, type SupportSettings } from "@/lib/support-schema";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
@@ -51,6 +51,7 @@ function ContactForm({ initial }: { initial: SupportSettings }) {
             headers: { "content-type": "application/json" },
             body: JSON.stringify(parsed.data),
           });
+          if (goToLoginIfSignedOut(response)) throw new Error(SESSION_CLOSED);
           const json = await response.json();
           if (!response.ok)
             throw new Error(json.error ?? "No se pudo guardar.");

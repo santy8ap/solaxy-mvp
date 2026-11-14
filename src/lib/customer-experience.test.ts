@@ -19,15 +19,22 @@ describe("continuidad segura de la compra", () => {
       "/panel/billetera?desde=2026-11-10",
     );
   });
+  it("vuelve a la página del admin donde estaba, con la opción «Administrador» ya elegida", () => {
+    expect(safeReturnTo("/admin/pagos?estado=en_proceso")).toBe("/admin/pagos?estado=en_proceso");
+    const login = new URL(loginHref("/admin/pagos?estado=en_proceso"), "https://app.invalid");
+    expect(login.searchParams.get("rol")).toBe("admin");
+    expect(login.searchParams.get("next")).toBe("/admin/pagos?estado=en_proceso");
+    expect(new URL(loginHref("/panel/planes"), "https://app.invalid").searchParams.get("rol")).toBeNull();
+  });
   it("rechaza redirecciones externas, barras invertidas y destinos arbitrarios", () => {
     for (const destination of [
       "https://evil.invalid",
       "//evil.invalid",
       "/\\evil.invalid",
-      "/admin",
+      "/administrar",
       "/api/admin/activar",
       "/comprar\n",
-      "/panel/../../admin",
+      "/panel/../../api/admin/team",
     ])
       expect(safeReturnTo(destination)).toBeNull();
   });

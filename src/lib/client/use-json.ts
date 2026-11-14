@@ -145,12 +145,25 @@ export function useJson<T>(
   };
 }
 
+/**
+ * Si la sesión se cerró (401), lleva a ingresar y, después, de vuelta a esta misma página. Devuelve true para que
+ * quien llamó no siga como si fuera un error común. Las lecturas con useJson ya lo hacen solas.
+ */
+export function goToLoginIfSignedOut(res: Response) {
+  if (res.status !== 401) return false;
+  window.location.replace(loginHref(`${window.location.pathname}${window.location.search}`));
+  return true;
+}
+
+export const SESSION_CLOSED = "Tu sesión se cerró. Te llevamos a ingresar de nuevo.";
+
 export async function postJson<T>(url: string, body: unknown = {}): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  if (goToLoginIfSignedOut(res)) throw new Error(SESSION_CLOSED);
   const json = await res.json().catch(() => ({}));
   if (!res.ok)
     throw new Error(

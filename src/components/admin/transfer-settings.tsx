@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { refetch, useJson } from "@/lib/client/use-json";
+import { goToLoginIfSignedOut, refetch, SESSION_CLOSED, useJson } from "@/lib/client/use-json";
 import { BANKS, BANK_ACCOUNT_TYPES } from "@/lib/withdrawal-schema";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
@@ -55,6 +55,7 @@ function AccountForm({ initial }: { initial: TransferAccount | null }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ bank, accountType, accountNumber, holder: holder.trim(), holderId: holderId.trim() }),
       });
+      if (goToLoginIfSignedOut(res)) throw new Error(SESSION_CLOSED);
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "No se pudo guardar.");
       toast("Cuenta para transferencias guardada.");

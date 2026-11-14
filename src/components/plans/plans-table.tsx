@@ -141,7 +141,7 @@ export function PlansTable({
                   <h3 className="display text-[2.75rem]">{p.name}</h3>
                   <p className="text-right">
                     <span
-                      className={`cap block ${selected ? "text-void/70" : ""}`}
+                      className={`cap block ${selected ? "text-void/80" : ""}`}
                     >
                       Utilidad bruta
                     </span>
@@ -158,14 +158,14 @@ export function PlansTable({
                     ["Venta / kWh", formatCop(p.saleCopPerKwh)],
                   ].map(([k, v]) => (
                     <div key={k}>
-                      <dt className={`cap ${selected ? "text-void/70" : ""}`}>
+                      <dt className={`cap ${selected ? "text-void/80" : ""}`}>
                         {priceLabel(k)}
                       </dt>
                       <dd className="num mt-1 text-base">{v}</dd>
                     </div>
                   ))}
                   <div className="col-span-2">
-                    <dt className={`cap ${selected ? "text-void/70" : ""}`}>
+                    <dt className={`cap ${selected ? "text-void/80" : ""}`}>
                       Pago mensual
                     </dt>
                     <dd className="num mt-1 text-xl">
