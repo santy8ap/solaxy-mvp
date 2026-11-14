@@ -369,18 +369,18 @@ export function AdminClients() {
                   </div>
                 )}
               </div>
-              <dl className="grid grid-cols-3 gap-4 text-sm">
+              <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                 <div>
                   <dt className="cap">Energía</dt>
-                  <dd className="num mt-1">{formatNumber(c.generatedKwh)} kWh</dd>
+                  <dd className="num mt-1 whitespace-nowrap">{formatNumber(c.generatedKwh)} kWh</dd>
                 </div>
                 <div>
                   <dt className="cap">Saldo</dt>
-                  <dd className="num mt-1">{formatCop(c.balanceCop)}</dd>
+                  <dd className="num mt-1 whitespace-nowrap">{formatCop(c.balanceCop)}</dd>
                 </div>
                 <div>
                   <dt className="cap">Retirado</dt>
-                  <dd className="num mt-1">{formatCop(c.withdrawnCop)}</dd>
+                  <dd className="num mt-1 whitespace-nowrap">{formatCop(c.withdrawnCop)}</dd>
                 </div>
               </dl>
               <div className="flex flex-col items-start gap-3 lg:items-end">

@@ -61,7 +61,7 @@ export function WalletPage() {
             </p>
           )}
         </div>
-        <dl className="grid grid-cols-3 gap-6 border-t border-line pt-5 lg:border-t-0 lg:pt-0">
+        <dl className="grid grid-cols-2 gap-6 border-t border-line pt-5 sm:grid-cols-3 lg:border-t-0 lg:pt-0">
           {[
             ["Venta acumulada", Math.floor(totals.soldCop)],
             ["En revisión", data.reservedCop],
@@ -69,7 +69,7 @@ export function WalletPage() {
           ].map(([label, value]) => (
             <div key={label}>
               <dt className="cap">{label}</dt>
-              <dd className="num mt-2 text-lg">{formatCop(value as number)}</dd>
+              <dd className="num mt-2 whitespace-nowrap text-lg">{formatCop(value as number)}</dd>
             </div>
           ))}
         </dl>

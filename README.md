@@ -101,6 +101,8 @@ Consulta [.env.example](.env.example) y **Admin → Configuración → Para cobr
 
 El webhook de Mercado Pago debe apuntar a `https://tu-dominio/api/webhooks/mercadopago`, con el evento Pagos. Google usa `https://tu-dominio/api/auth/callback/google` como URI de redirección.
 
+**Antes de abrir al público, publica la app de Google.** En Google Cloud → Google Auth Platform → Público (pantalla de consentimiento), si el estado es «Prueba», solo pueden entrar los usuarios de prueba de esa lista y nadie más. Pulsa **Publicar app** para pasarla a «En producción». Como la página solo pide el correo, el nombre y la foto, Google no exige una verificación adicional. Si cambias de dominio, agrega el nuevo origen y la nueva URI de redirección en el cliente OAuth.
+
 Vercel despliega al actualizar `main`. Las migraciones se aplican al iniciar el servicio; las nuevas tablas de soporte, conciliación y trabajos son aditivas. Las vistas previas nunca usan la base de producción: se conectan a la suya (`PREVIEW_TURSO_DATABASE_URL`) y allí aplican sus migraciones; sin ella usan un archivo temporal. `ALLOW_PREVIEW_MIGRATIONS=true` solo corresponde a una vista previa con otra base remota aislada.
 
 Publicar el código no activa cobros reales. Faltan los datos y la revisión del responsable en `src/config/legal.ts`, el contacto oficial, las credenciales reales y la configuración operativa. La lista del admin mantiene esos pendientes visibles y no considera lista la operación mientras permanezca en modo de pruebas o falte la revisión legal.
