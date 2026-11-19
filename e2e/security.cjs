@@ -82,6 +82,7 @@ const check = (cond, msg) => {
     ["GET", "/api/admin/system"],
     ["GET", "/api/admin/integrity"],
     ["GET", "/api/admin/withdrawals/export"],
+    ["POST", "/api/admin/clients/cualquiera/sessions"],
   ];
   for (const [method, path] of [...PRIVATE_ROUTES, ...ADMIN_ROUTES]) {
     const r = await fetch(`${base}${path}`, { method, headers: { "content-type": "application/json", origin: base }, body: method === "POST" ? "{}" : undefined });

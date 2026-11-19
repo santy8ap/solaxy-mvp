@@ -108,6 +108,7 @@ const ACTION_LABEL: Record<AdminAction, string> = {
   descargar_respaldo: "Respaldo descargado",
   agregar_admin: "Administrador agregado",
   quitar_admin: "Administrador quitado",
+  cerrar_sesiones: "Sesiones cerradas",
 };
 
 /** Acciones del modelo anterior que siguen en la bitácora. */

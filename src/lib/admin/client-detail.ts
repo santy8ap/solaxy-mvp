@@ -1,7 +1,8 @@
 import "server-only";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { customerEmail, dataRequest, ledgerTx, session, walletLink } from "@/lib/db/schema";
+import { customerEmail, dataRequest, ledgerTx, session, user, walletLink } from "@/lib/db/schema";
+import { audit, type Actor } from "./audit";
 import { MarketError } from "@/lib/errors";
 import { deletionBlockers } from "@/lib/privacy";
 import { toTxDTO } from "@/lib/portfolio";
@@ -43,3 +44,27 @@ export async function clientDetail(userId: string, now = Date.now()) {
 }
 
 export type ClientDetail = Awaited<ReturnType<typeof clientDetail>>;
+
+/**
+ * Cierra todas las sesiones abiertas de un cliente (perdió el celular, o cree que alguien entró a su cuenta): tendrá
+ * que volver a ingresar con Google. Vale de inmediato, porque cada petición revisa que su sesión siga en la base.
+ */
+export async function closeClientSessions(actor: Actor, userId: string) {
+  if (userId === actor.id) throw new MarketError("Para cerrar tu propia sesión, usa «Cerrar sesión».", 409);
+  const [who] = await db.select({ name: user.name }).from(user).where(eq(user.id, userId));
+  if (!who) throw new MarketError("Cliente no encontrado", 404);
+  const now = Date.now();
+  // Se borran todas (también las vencidas); se cuentan las que seguían abiertas.
+  const rows = await db.delete(session).where(eq(session.userId, userId)).returning({ expiresAt: session.expiresAt });
+  const closed = rows.filter((r) => r.expiresAt.getTime() > now).length;
+  await audit(
+    actor,
+    "cerrar_sesiones",
+    closed
+      ? `Cerró ${closed === 1 ? "la sesión abierta" : `las ${closed} sesiones abiertas`} de ${who.name}: tendrá que volver a ingresar`
+      : `Revisó las sesiones de ${who.name}: no tenía ninguna abierta`,
+    { sessions: closed },
+    userId,
+  );
+  return { closed };
+}

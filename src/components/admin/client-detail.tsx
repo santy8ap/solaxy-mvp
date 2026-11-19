@@ -2,12 +2,13 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { useJson } from "@/lib/client/use-json";
+import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { formatCop, formatDate, formatDateTime, formatNumber, shortAddress } from "@/lib/format";
 import { adminMethodLabel } from "@/lib/labels";
 import type { SubscriptionDTO, TxDTO } from "@/lib/portfolio";
 import { explorerTxUrl } from "@/components/panel/tx-meta";
 import { ErrorNote } from "@/components/ui/field";
+import { toast } from "@/components/ui/toast";
 import { PLAN_STATE, Status, TX_STATUS } from "@/components/ui/status";
 import { ClosePlanDialog, DataRequestDialog, ManualPaymentDialog } from "./clients";
 import { AdminTopbar } from "./shell";
@@ -220,6 +221,7 @@ export function AdminClientDetail({ id }: { id: string }) {
               <Row label="Sesiones abiertas">{String(data.activeSessions)}</Row>
               <Row label="Wallet vinculada">{data.wallet ? `${data.wallet.walletName} ${shortAddress(data.wallet.address)}` : "Ninguna"}</Row>
             </dl>
+            <CloseSessions clientId={c.id} sessions={data.activeSessions} url={url} />
           </Block>
 
           <Block title="Correos que le enviamos" count={data.emails.length}>
@@ -338,5 +340,49 @@ function Movements({ rows, empty }: { rows: Detail["movements"]; empty: string }
         );
       })}
     </ul>
+  );
+}
+
+/** Cerrar todas sus sesiones: para cuando perdió el celular o cree que alguien entró a su cuenta. */
+function CloseSessions({ clientId, sessions, url }: { clientId: string; sessions: number; url: string }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!sessions) return null;
+  const close = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { closed } = await postJson<{ closed: number }>(`/api/admin/clients/${encodeURIComponent(clientId)}/sessions`);
+      toast(closed === 1 ? "Se cerró su sesión. Tendrá que volver a ingresar." : `Se cerraron sus ${closed} sesiones. Tendrá que volver a ingresar.`);
+      setAsking(false);
+      await refetch(url);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4">
+      {asking ? (
+        <div className="border-l-2 border-ink pl-4 text-sm">
+          <p className="leading-relaxed text-fog">Tendrá que volver a ingresar con Google en todos sus dispositivos. Úsalo si perdió el celular o cree que alguien entró a su cuenta.</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button type="button" className="btn btn-solid" disabled={busy} onClick={() => void close()}>
+              {busy ? "Cerrando…" : "Sí, cerrar sus sesiones"}
+            </button>
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setAsking(false)}>
+              Cancelar
+            </button>
+          </div>
+          {error && <ErrorNote className="mt-3">{error}</ErrorNote>}
+        </div>
+      ) : (
+        <button type="button" className="link text-sm" onClick={() => setAsking(true)}>
+          Cerrar sus sesiones
+        </button>
+      )}
+    </div>
   );
 }

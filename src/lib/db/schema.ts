@@ -414,6 +414,7 @@ export const ADMIN_ACTIONS = [
   "descargar_respaldo",
   "agregar_admin",
   "quitar_admin",
+  "cerrar_sesiones",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 

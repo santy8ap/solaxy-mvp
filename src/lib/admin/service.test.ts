@@ -253,4 +253,20 @@ describe("ficha de un cliente", () => {
     const { clientDetail } = await import("@/lib/admin/client-detail");
     await expect(clientDetail("no-existe", T0)).rejects.toMatchObject({ status: 404 });
   });
+
+  it("cerrar sus sesiones: deja de entrar de inmediato, queda en la bitácora y no aplica a la propia cuenta", async () => {
+    const { closeClientSessions, clientDetail } = await import("@/lib/admin/client-detail");
+    const { knownSession } = await import("@/lib/session");
+    expect(await knownSession("a1", "s-nueva", T0)).toBe(true);
+    // a1 tiene una sesión abierta y una vencida: se borran las dos y se cuenta la abierta.
+    expect(await closeClientSessions(actor, "a1")).toEqual({ closed: 1 });
+    expect(await knownSession("a1", "s-nueva", T0)).toBe(false);
+    expect((await clientDetail("a1", T0)).activeSessions).toBe(0);
+    // La de otro cliente sigue abierta.
+    expect(await knownSession("a2", "s-otra", T0)).toBe(true);
+    const [entry] = await admin.listAudit(1, { action: "cerrar_sesiones" });
+    expect(entry).toMatchObject({ targetUserId: "a1", actorUserId: "admin-test", summary: "Cerró la sesión abierta de Textiles del Valle S.A.S.: tendrá que volver a ingresar" });
+    await expect(closeClientSessions(actor, "admin-test")).rejects.toMatchObject({ status: 409 });
+    await expect(closeClientSessions(actor, "no-existe")).rejects.toMatchObject({ status: 404 });
+  });
 });
