@@ -13,6 +13,7 @@ import { buildWithdrawalMessage, verifyWalletSignature } from "@/lib/signing";
 import {
   MIN_WITHDRAWAL_COP,
   parseBankDestination,
+  type BankDestination,
 } from "@/lib/withdrawal-schema";
 import {
   noPaymentReviewSql,
@@ -26,6 +27,12 @@ import {
 
 /** Tiempo para firmar un retiro a wallet antes de que expire. */
 const SIGN_TTL_MS = 15 * 60_000;
+
+/**
+ * Una solicitud idéntica (mismo monto y misma cuenta) mientras la anterior sigue en revisión y dentro de este
+ * tiempo es un doble clic o un reintento de la red: se responde con la que ya existe, no se crea otra.
+ */
+const REPEAT_WINDOW_MS = 2 * 60_000;
 
 const withdrawalCode = () => `RET-${orderCode().slice(4)}`;
 
@@ -52,6 +59,19 @@ async function checkAmount(userId: string, raw: number, now: number) {
   return { amountCop, soldCop: Math.floor(bal.soldCop) };
 }
 
+/** El mismo retiro a la misma cuenta, pedido hace menos de REPEAT_WINDOW_MS y todavía en revisión. */
+const repeatedSql = (userId: string, amountCop: number, dest: BankDestination, now: number) => sql`
+  SELECT id FROM ledger_tx
+  WHERE user_id = ${userId} AND kind = 'retiro' AND status = 'por_aprobar' AND amount_cop = ${amountCop}
+    AND bank_name = ${dest.bank} AND bank_account_type = ${dest.accountType} AND bank_account_number = ${dest.accountNumber}
+    AND created_at > ${now - REPEAT_WINDOW_MS}
+  ORDER BY created_at DESC LIMIT 1`;
+
+async function repeatedWithdrawal(userId: string, amountCop: number, dest: BankDestination, now: number) {
+  const [row] = await db.all<{ id: string }>(repeatedSql(userId, amountCop, dest, now));
+  return row ? getWithdrawal(userId, row.id) : null;
+}
+
 /** Retiro a una cuenta bancaria. Queda de una vez en revisión: quien lo aprueba verifica que la cuenta sea de la empresa. */
 export async function createBankWithdrawal(input: {
   userId: string;
@@ -67,20 +87,28 @@ export async function createBankWithdrawal(input: {
       400,
       { fields: dest.errors },
     );
+  // Doble clic o reintento después de que la primera ya quedó guardada: se responde con esa.
+  const repeated = await repeatedWithdrawal(input.userId, Math.floor(input.amountCop), dest.value, now);
+  if (repeated) return repeated;
   const { amountCop, soldCop } = await checkAmount(
     input.userId,
     input.amountCop,
     now,
   );
   const id = withdrawalCode();
+  // Una sola sentencia: aparta el saldo y, si en el mismo instante entró la misma solicitud, no la duplica.
   const res = await db.run(sql`
     INSERT INTO ledger_tx (id, user_id, kind, status, amount_cop, asset, bank_name, bank_account_type, bank_account_number, created_at)
     SELECT ${id}, ${input.userId}, 'retiro', 'por_aprobar', ${amountCop}, 'COP', ${dest.value.bank}, ${dest.value.accountType}, ${dest.value.accountNumber}, ${now}
     WHERE ${committedSql(input.userId)} + ${amountCop} <= ${soldCop}
       AND ${noPaymentReviewSql(input.userId)}
+      AND NOT EXISTS (${repeatedSql(input.userId, amountCop, dest.value, now)})
   `);
-  if (!res.rowsAffected)
+  if (!res.rowsAffected) {
+    const twin = await repeatedWithdrawal(input.userId, amountCop, dest.value, now);
+    if (twin) return twin;
     throw new MarketError("No tienes saldo suficiente para ese retiro.", 409);
+  }
   alertWithdrawalRequested({ id, userId: input.userId, amountCop, bankName: dest.value.bank });
   return getWithdrawal(input.userId, id);
 }

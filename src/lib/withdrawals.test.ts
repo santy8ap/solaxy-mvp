@@ -26,9 +26,9 @@ beforeAll(async () => {
   withdrawals = await import("@/lib/withdrawals");
   pay = await import("@/lib/payments/test-payment");
   admin = await import("@/lib/admin/service");
-  for (const id of ["c1", "c2", "c3", "c4", "c5"]) await createUser(id);
+  for (const id of ["c1", "c2", "c3", "c4", "c5", "doble", "justo"]) await createUser(id);
   await createUser("sin-datos", { profile: false });
-  for (const id of ["c1", "c2", "c3", "c4"]) await pay.payWithTestPayment({ userId: id, planId: "p180" });
+  for (const id of ["c1", "c2", "c3", "c4", "doble", "justo"]) await pay.payWithTestPayment({ userId: id, planId: "p180" });
 }, 120_000);
 
 afterEach(() => {
@@ -89,12 +89,43 @@ describe("retiros", () => {
 
   it("dos retiros simultáneos no pueden gastar el mismo saldo", async () => {
     // c2 tiene $ 8.000.000: dos retiros de 5 millones a la vez, solo uno puede pasar.
+    // (A cuentas distintas: la misma solicitud repetida es un doble clic, que se prueba aparte.)
     const results = await Promise.allSettled([
       withdrawals.createBankWithdrawal({ userId: "c2", amountCop: 5_000_000, destination: BANK }),
-      withdrawals.createBankWithdrawal({ userId: "c2", amountCop: 5_000_000, destination: BANK }),
+      withdrawals.createBankWithdrawal({ userId: "c2", amountCop: 5_000_000, destination: { ...BANK, accountNumber: "987-654321-00" } }),
     ]);
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
     expect((await portfolio.getPortfolio("c2")).balanceCop).toBe(3_000_000);
+  });
+
+  it("un doble clic no crea dos retiros: la misma solicitud repetida devuelve la que ya está en revisión", async () => {
+    const start = Date.now();
+    const before = (await portfolio.getPortfolio("doble")).balanceCop;
+    // A la vez (doble clic) y luego una más (la red reintenta): un solo retiro, y ninguna da error.
+    const [a, b] = await Promise.all([
+      withdrawals.createBankWithdrawal({ userId: "doble", amountCop: 1_000_000, destination: BANK }),
+      withdrawals.createBankWithdrawal({ userId: "doble", amountCop: 1_000_000, destination: BANK }),
+    ]);
+    const again = await withdrawals.createBankWithdrawal({ userId: "doble", amountCop: 1_000_000, destination: BANK });
+    expect(new Set([a.id, b.id, again.id]).size).toBe(1);
+    expect((await portfolio.getPortfolio("doble")).balanceCop).toBe(before - 1_000_000);
+    // Otro monto u otra cuenta es otro retiro.
+    const other = await withdrawals.createBankWithdrawal({ userId: "doble", amountCop: 1_200_000, destination: BANK });
+    expect(other.id).not.toBe(a.id);
+    // Pasados dos minutos, repetirlo ya es una solicitud nueva.
+    vi.setSystemTime(start + 2 * 60_000 + 1);
+    const later = await withdrawals.createBankWithdrawal({ userId: "doble", amountCop: 1_000_000, destination: BANK });
+    expect(later.id).not.toBe(a.id);
+    expect((await portfolio.getPortfolio("doble")).reservedCop).toBe(3_200_000);
+    vi.setSystemTime(start);
+  });
+
+  it("si el saldo alcanza para un solo retiro, el doble clic no muestra «sin saldo»: devuelve el que se creó", async () => {
+    const { balanceCop } = await portfolio.getPortfolio("justo");
+    const amountCop = Math.floor(balanceCop);
+    const first = await withdrawals.createBankWithdrawal({ userId: "justo", amountCop, destination: BANK });
+    const second = await withdrawals.createBankWithdrawal({ userId: "justo", amountCop, destination: BANK });
+    expect(second.id).toBe(first.id);
   });
 
   it("a una wallet: hay que firmar con la wallet de destino", async () => {
