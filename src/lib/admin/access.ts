@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { ensureReady } from "@/lib/db/init";
-import { jsonError, knownUser, unauthorized, type CurrentUser } from "@/lib/session";
+import { jsonError, knownSession, unauthorized, type CurrentUser } from "@/lib/session";
 import type { AdminRole } from "./roles";
 import { adminRoleOf } from "./team";
 
@@ -25,7 +25,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   const h = await headers();
   await ensureReady();
   const s = await auth.api.getSession({ headers: h });
-  if (!s?.user || !s.session || !(await knownUser(s.user.id))) return null;
+  if (!s?.user || !s.session || !(await knownSession(s.user.id, s.session.id))) return null;
   const role = await adminRoleOf(s.user.email);
   return {
     user: { id: s.user.id, name: s.user.name, email: s.user.email, image: s.user.image ?? null },
