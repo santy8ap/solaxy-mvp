@@ -98,6 +98,7 @@ export function AdminSidebar() {
 export function AdminBottomNav() {
   const path = usePathname();
   const pending = usePending();
+  const user = useUser();
   // El menú «Más» queda abierto solo en la página donde se abrió: al navegar se cierra solo.
   const [openAt, setOpenAt] = useState<string | null>(null);
   const more = openAt === path;
@@ -128,6 +129,10 @@ export function AdminBottomNav() {
     <div ref={sheet} className="lg:hidden">
       {more && (
         <div id="admin-more" className="fixed inset-x-0 bottom-[60px] z-40 border-t border-line-strong bg-void/98 pb-2 backdrop-blur-md">
+          <p className="mx-auto max-w-[640px] truncate border-b border-line px-6 py-3 text-xs text-mute">
+            {user.email}
+            {user.adminRole && <span className="cap ml-2 !text-ink">{ADMIN_ROLE_LABEL[user.adminRole]}</span>}
+          </p>
           <ul className="mx-auto max-w-[640px]">
             {rest.map(({ href, label, icon: Icon }) => (
               <li key={href}>
@@ -182,12 +187,19 @@ export function AdminBottomNav() {
 /** En celular: la marca, el aviso de que es el admin y las salidas. */
 export function AdminMobileBar() {
   const [out, startOut] = useTransition();
+  const user = useUser();
   return (
-    <header className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
+    <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-4 lg:hidden">
       <Link href="/" aria-label={`${BRAND.name}, inicio`}>
         <Logo />
       </Link>
       <div className="flex items-center gap-2 text-sm text-mute sm:gap-4">
+        {/* En pantallas angostas no hay barra lateral: el rol va aquí, para saber con qué permisos se entró. */}
+        {user.adminRole && (
+          <span className="cap hidden !text-ink sm:inline" title={user.email}>
+            {ADMIN_ROLE_LABEL[user.adminRole]}
+          </span>
+        )}
         <Link href="/panel" className="hover:text-ink">
           Comercializador
         </Link>
