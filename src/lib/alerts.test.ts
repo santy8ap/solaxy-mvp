@@ -95,6 +95,27 @@ describe("el contenido del correo", () => {
   });
 });
 
+describe("el cuadre diario", () => {
+  const checks = [
+    { ok: false, level: "error" as const, detail: "1 pago confirmado no tiene su mes de energía." },
+    { ok: true, level: "error" as const, detail: "Ningún saldo queda en negativo." },
+    { ok: false, level: "aviso" as const, detail: "1 retiro lleva más de 3 días esperando el envío." },
+  ];
+  it("con algo que no cuadra lo dice en el asunto y lista solo lo que hay que revisar, con el enlace a Configuración", () => {
+    const a = alerts.alertMessages.integrity({ checks, errors: 1, warnings: 1 });
+    expect(a).toMatchObject({ kind: "cuadre", subject: "El cuadre diario encontró algo que no cuadra", path: "/admin/configuracion" });
+    expect(a.lines).toEqual([
+      "No cuadra: 1 pago confirmado no tiene su mes de energía.",
+      "Pendiente: 1 retiro lleva más de 3 días esperando el envío.",
+      "El detalle, con los clientes y las órdenes, está en Configuración › Estado del sistema.",
+    ]);
+  });
+  it("si solo hay pendientes viejos, el asunto es un recordatorio", () => {
+    expect(alerts.alertMessages.integrity({ checks: checks.slice(2), errors: 0, warnings: 1 }).subject).toBe("Hay un pendiente que lleva días esperando");
+    expect(alerts.alertMessages.integrity({ checks, errors: 2, warnings: 3 }).subject).toBe("El cuadre diario encontró 2 cosas que no cuadran");
+  });
+});
+
 describe("el envío con Resend", () => {
   it("un correo por destinatario, con la clave en el encabezado y el mensaje en texto y HTML", async () => {
     configure({ ALERT_EMAIL: "uno@empresa.co, dos@empresa.co" });

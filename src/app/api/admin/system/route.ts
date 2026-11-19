@@ -11,6 +11,7 @@ const JOBS = [
   { id: "reconcile-tick", label: "Conciliación de pagos con las visitas", every: "Como máximo cada 2 minutos, cuando alguien visita la página." },
   { id: "cron-payments", label: "Pasada diaria (cron de Vercel)", every: "Una vez al día: pagos pendientes, devoluciones de los últimos 180 días y mantenimiento." },
   { id: "mantenimiento", label: "Mantenimiento", every: "Como máximo cada hora: cierra órdenes abandonadas, borra sesiones vencidas y envía recordatorios." },
+  { id: "cuadre", label: "Cuadre de los números", every: "Una vez al día, con la pasada diaria: te escribe si algo no cuadra." },
 ] as const;
 
 /** Cómo está la página por dentro: versión, base de datos y la última pasada de cada tarea automática. */

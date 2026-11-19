@@ -46,7 +46,14 @@ export function alertConfig(): AlertConfig {
   };
 }
 
-export type AlertKind = "pago" | "pago_por_devolver" | "transferencia" | "retiro" | "devolucion" | "datos" | "equipo" | "falla" | "prueba";
+export type AlertKind = "pago" | "pago_por_devolver" | "transferencia" | "retiro" | "devolucion" | "datos" | "equipo" | "cuadre" | "falla" | "prueba";
+
+/** Lo que necesita la alerta del cuadre diario (sin importar el módulo del cuadre). */
+interface IntegrityLike {
+  checks: { ok: boolean; level: "error" | "aviso"; detail: string }[];
+  errors: number;
+  warnings: number;
+}
 
 export interface Alert {
   kind: AlertKind;
@@ -246,6 +253,21 @@ export const alertMessages = {
         : "Ese pago no había activado energía.",
     ],
     path: "/admin/pagos",
+  }),
+  integrity: (r: IntegrityLike): Alert => ({
+    kind: "cuadre",
+    subject: r.errors
+      ? r.errors === 1
+        ? "El cuadre diario encontró algo que no cuadra"
+        : `El cuadre diario encontró ${r.errors} cosas que no cuadran`
+      : r.warnings === 1
+        ? "Hay un pendiente que lleva días esperando"
+        : `Hay ${r.warnings} pendientes que llevan días esperando`,
+    lines: [
+      ...r.checks.filter((c) => !c.ok).map((c) => `${c.level === "error" ? "No cuadra" : "Pendiente"}: ${c.detail}`),
+      "El detalle, con los clientes y las órdenes, está en Configuración › Estado del sistema.",
+    ],
+    path: "/admin/configuracion",
   }),
   failure: (title: string, detail: string, at = Date.now()): Alert => ({
     kind: "falla",

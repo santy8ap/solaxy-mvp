@@ -85,7 +85,7 @@ function profileOf(p: typeof companyProfile.$inferSelect | undefined) {
 }
 
 /** Retiros pagados y en revisión de cada usuario. */
-async function withdrawalsByUser() {
+export async function withdrawalsByUser() {
   const rows = await db
     .select({
       userId: ledgerTx.userId,
@@ -107,7 +107,7 @@ async function withdrawalsByUser() {
  * La venta de la energía de cada cliente, redondeada hacia abajo como en su saldo. Se suma cliente por cliente
  * (no el total de una vez) para que «Se les debe» sea exactamente la suma de los saldos más los retiros por pagar.
  */
-function soldByUser(subs: readonly { userId: string }[], plans: readonly SubscriptionDTO[], solar: SolarDay, now: number) {
+export function soldByUser(subs: readonly { userId: string }[], plans: readonly SubscriptionDTO[], solar: SolarDay, now: number) {
   const byUser = new Map<string, SubscriptionDTO[]>();
   subs.forEach((s, i) => byUser.set(s.userId, [...(byUser.get(s.userId) ?? []), plans[i]]));
   return new Map([...byUser].map(([userId, list]) => [userId, Math.floor(summarize(list, solar, now).soldCop)]));

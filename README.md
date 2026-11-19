@@ -64,11 +64,12 @@ Los retiros son manuales: el administrador verifica al titular, realiza el enví
 
 ## Tareas en segundo plano
 
-`GET /api/cron/payments` hace la pasada diaria. Requiere `Authorization: Bearer CRON_SECRET`, con una clave aleatoria de al menos 32 caracteres; sin esa configuración rechaza la solicitud. Hace tres cosas:
+`GET /api/cron/payments` hace la pasada diaria. Requiere `Authorization: Bearer CRON_SECRET`, con una clave aleatoria de al menos 32 caracteres; sin esa configuración rechaza la solicitud. Hace cuatro cosas:
 
 - **Pagos cripto**: verifica en la cadena las órdenes con hash y estado `verificando`. Un arrendamiento en la base evita ejecuciones superpuestas.
 - **Mercado Pago**: consulta las órdenes cuyo aviso pudo perderse. Las que nadie ha pagado, durante 2 días; las que Mercado Pago tiene en proceso (por ejemplo, un PSE), hasta 30 días; y los pagos confirmados de los últimos 180 días, para detectar devoluciones.
 - **Mantenimiento**: cierra como canceladas las órdenes que nadie pagó (Mercado Pago a los 2 días, una cotización cripto un día después de vencer, un retiro a wallet sin firmar al día) y borra las sesiones vencidas. Cerrar no pierde dinero: si el pago llega después, la orden se reabre y se activa (o queda por reembolsar), y a una cotización cripto cancelada todavía se le puede registrar el hash.
+- **Cuadre de los números**: revisa sobre los datos reales que cada pago confirmado tenga su mes de energía y cada mes su pago, que los meses de un plan no se pisen, que ningún saldo quede en negativo (salvo una devolución por conciliar) y que la energía vendida quepa en la planta. También avisa de retiros y transferencias que esperan más de 3 días y de devoluciones sin conciliar hace más de 7. Si algo no cuadra, les escribe a los propietarios; el detalle en vivo está en **Admin → Configuración → Estado del sistema**.
 
 Cada tarea recorre las órdenes por tandas con un cursor guardado en la base: con más órdenes de las que caben en una pasada, las revisa todas por turnos y un error no deja bloqueada siempre la primera. Cada pasada tiene un presupuesto de tiempo.
 

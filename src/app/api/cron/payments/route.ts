@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { alertFailure } from "@/lib/alerts";
+import { runDailyIntegrity } from "@/lib/admin/integrity";
 import { handleError } from "@/lib/api";
 import { authorizedCron } from "@/lib/jobs/auth";
 import { claimInterval } from "@/lib/jobs/claim";
@@ -11,7 +12,7 @@ export const maxDuration = 60;
 
 /**
  * La pasada diaria (Vercel Cron, con CRON_SECRET): pagos cripto en verificación, Mercado Pago pendiente,
- * devoluciones de los últimos 180 días y el mantenimiento (órdenes abandonadas y sesiones vencidas).
+ * devoluciones de los últimos 180 días, el mantenimiento (órdenes abandonadas y sesiones vencidas) y el cuadre.
  */
 export async function GET(request: Request) {
   await connection();
@@ -35,7 +36,12 @@ export async function GET(request: Request) {
       alertFailure("mantenimiento", "el mantenimiento automático", String(error));
       return { error: "falló" as const };
     });
-    return Response.json({ crypto, mercadopago, housekeeping }, { headers });
+    // Al final, el cuadre de los números sobre lo que ya quedó conciliado.
+    const integrity = await runDailyIntegrity().catch((error) => {
+      alertFailure("cuadre", "el cuadre diario", String(error));
+      return { error: "falló" as const };
+    });
+    return Response.json({ crypto, mercadopago, housekeeping, integrity }, { headers });
   } catch (error) {
     return handleError(error);
   }
