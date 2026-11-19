@@ -122,8 +122,16 @@ export function paymentFiltersFrom(params: URLSearchParams) {
     method: metodo && METHOD_IDS.includes(metodo) ? metodo : ("todos" as const),
     query: (params.get("q") ?? "").slice(0, 80),
     userId: params.get("cliente")?.slice(0, 80) || undefined,
+    limit: pageLimit(params.get("limite")),
   };
 }
+
+/** Cuántos pagos trae la lista: de a 200 («Ver más»), hasta 2.000. Para todos, la exportación CSV. */
+export const PAYMENTS_PAGE = 200;
+const pageLimit = (raw: string | null) => {
+  const n = Math.floor(Number(raw));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 2_000) : PAYMENTS_PAGE;
+};
 
 /**
  * Pagos de mensualidades (confirmados, en proceso o fallidos) por cualquier medio.

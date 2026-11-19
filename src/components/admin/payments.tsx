@@ -376,6 +376,9 @@ function PaymentRow({ p, listUrl }: { p: AdminPaymentRow; listUrl: string }) {
 }
 
 const FILTER_IDS = new Set<string>(FILTERS.map((f) => f.id));
+/** Pagos por tanda y el máximo en pantalla (iguales a los del servidor). */
+const PAGE = 200;
+const MAX_LIST = 2_000;
 const METHOD_IDS = new Set<string>(["todos", "mercadopago", "crypto", "transferencia", "manual", "demo"]);
 
 export function AdminPayments() {
@@ -392,7 +395,8 @@ export function AdminPayments() {
   const [query, setQuery] = useState(() => params.get("q") ?? "");
   const [search, setSearch] = useState(() => params.get("q") ?? "");
   const [client, setClient] = useState(() => params.get("cliente") ?? "");
-  const qs = new URLSearchParams({ estado: filter, metodo: method, ...(search && { q: search }), ...(client && { cliente: client }) }).toString();
+  const [limit, setLimit] = useState(PAGE);
+  const qs = new URLSearchParams({ estado: filter, metodo: method, ...(search && { q: search }), ...(client && { cliente: client }), ...(limit > PAGE && { limite: String(limit) }) }).toString();
   const url = `/api/admin/payments?${qs}`;
   const { data, loading, error } = useJson<PaymentsResponse>(url, {
     refreshMs: 10_000,
@@ -536,7 +540,7 @@ export function AdminPayments() {
         )}
         {data && (
           <p className="num mt-4 text-sm text-mute">
-            {payments.length === 200 ? "Los 200 más recientes" : `${payments.length} ${payments.length === 1 ? "pago" : "pagos"}`} · confirmados {formatCop(confirmedCop)}
+            {payments.length === limit ? `Los ${formatNumber(limit)} más recientes` : `${payments.length} ${payments.length === 1 ? "pago" : "pagos"}`} · confirmados {formatCop(confirmedCop)}
           </p>
         )}
         {error && <ErrorNote className="mt-6">{error}</ErrorNote>}
@@ -545,6 +549,14 @@ export function AdminPayments() {
             <PaymentRow key={p.id} p={p} listUrl={url} />
           ))}
         </ul>
+        {payments.length === limit && limit < MAX_LIST && (
+          <button type="button" className="btn btn-ghost mt-8" disabled={loading} onClick={() => setLimit((l) => Math.min(MAX_LIST, l + PAGE))}>
+            Ver más pagos
+          </button>
+        )}
+        {payments.length === MAX_LIST && (
+          <p className="mt-6 text-sm text-mute">Para ver más atrás, busca por cliente, orden o referencia, o exporta la lista en CSV.</p>
+        )}
         {!loading && !error && payments.length === 0 && (
           <p className="py-10 text-mute">
             {search || client ? "Ningún pago coincide con esa búsqueda." : "No hay pagos en esta lista. Aparecen aquí apenas un comercializador empieza a pagar."}

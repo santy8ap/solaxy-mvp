@@ -84,6 +84,21 @@ afterEach(() => {
   vi.stubEnv("DEMO_MODE", "");
 });
 
+describe("filtros de la lista de Pagos", () => {
+  it("trae de a 200 pagos y, con «Ver más», hasta 2.000; un valor raro vuelve a 200", () => {
+    const limit = (q: string) => payments.paymentFiltersFrom(new URLSearchParams(q)).limit;
+    expect(limit("")).toBe(200);
+    expect(limit("limite=400")).toBe(400);
+    expect(limit("limite=99999")).toBe(2_000);
+    expect(limit("limite=-5")).toBe(200);
+    expect(limit("limite=abc")).toBe(200);
+  });
+
+  it("un estado o un medio que no existe se ignora", () => {
+    expect(payments.paymentFiltersFrom(new URLSearchParams("estado=inventado&metodo=efectivo&q=XGE-1"))).toMatchObject({ status: "todos", method: "todos", query: "XGE-1" });
+  });
+});
+
 describe("sección Pagos del admin", () => {
   it("lista los pagos con su método, estado, empresa y plan", async () => {
     const o = await mp.createMercadoPagoOrder({ userId: "p1", email: "a@b.co", planId: "p180" }, { fetch: mpFetch });
