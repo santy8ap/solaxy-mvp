@@ -174,7 +174,23 @@ describe("retiros", () => {
   it("el admin ve la cuenta completa y la empresa; el usuario solo los últimos 4 dígitos", async () => {
     const list = await admin.listWithdrawals();
     const row = list.find((w) => w.userId === "c1");
-    expect(row).toMatchObject({ bankAccountNumber: "12345678901", bankAccountLast4: "8901", companyName: "Empresa c1", nit: "900123456-8" });
+    expect(row).toMatchObject({ bankAccountNumber: "12345678901", bankAccountLast4: "8901", companyName: "Empresa c1", nit: "900123456-8", customerId: "900123456-8" });
+  });
+
+  it("la exportación para la contabilidad trae la cuenta completa, el NIT y la referencia del envío, sin la del rechazado", async () => {
+    const { withdrawalsCsv } = await import("@/lib/admin/withdrawals-export");
+    const { csvLine } = await import("@/lib/csv");
+    const csv = withdrawalsCsv(await admin.listWithdrawals({ limit: 10_000 }));
+    expect(csv.startsWith("\ufeff")).toBe(true);
+    const lines = csv.slice(1).split("\r\n").filter(Boolean);
+    expect(lines[0]).toBe(csvLine(["Solicitado (Colombia)", "Pagado o rechazado (Colombia)", "Retiro", "Cliente", "Titular", "NIT o documento", "Correo", "Destino", "Cuenta o wallet", "Estado", "Monto COP", "Monto en cripto", "Referencia del envío", "Nota"]).trimEnd());
+    const paid = lines.find((l) => l.includes("COMPROBANTE-778899"))!;
+    expect(paid).toContain('"Empresa c4";"Laura Gómez";"900123456-8";"c4@empresa.co";"Bancolombia · Cuenta de ahorros";"12345678901"');
+    expect(paid).toContain('"2000000"');
+    const rejected = lines.find((l) => l.includes("nombre de la empresa"))!;
+    expect(rejected).toContain('"1000000";"";""');
+    // Todos los retiros de la base, no solo los 200 de la pantalla.
+    expect(lines.length - 1).toBe((await admin.listWithdrawals({ limit: 10_000 })).length);
   });
 });
 

@@ -198,7 +198,15 @@ export function AdminWithdrawals() {
 
   return (
     <>
-      <AdminTopbar title="Retiros" subtitle="Cada retiro espera aquí con el saldo apartado. Haces el envío desde el banco o la wallet de la empresa y registras su referencia." />
+      <AdminTopbar
+        title="Retiros"
+        subtitle="Cada retiro espera aquí con el saldo apartado. Haces el envío desde el banco o la wallet de la empresa y registras su referencia."
+        action={
+          <a href="/api/admin/withdrawals/export" className="link text-sm" download>
+            Exportar todos los retiros (CSV)
+          </a>
+        }
+      />
       {error && <ErrorNote className="mb-8">{error}</ErrorNote>}
 
       <section aria-labelledby="pending-title">

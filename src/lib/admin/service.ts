@@ -359,7 +359,7 @@ export async function closeSubscription(
 /* ───────────── Retiros ───────────── */
 
 /** Los retiros para el admin: primero todos los que esperan el envío, después los ya revisados más recientes. */
-export async function listWithdrawals() {
+export async function listWithdrawals({ limit = 200 }: { limit?: number } = {}) {
   await readSettings();
   const rows = await db
     .select({
@@ -369,6 +369,8 @@ export async function listWithdrawals() {
       fullName: companyProfile.fullName,
       companyName: companyProfile.companyName,
       nit: companyProfile.nit,
+      docType: companyProfile.docType,
+      docNumber: companyProfile.docNumber,
     })
     .from(ledgerTx)
     .innerJoin(user, eq(user.id, ledgerTx.userId))
@@ -381,7 +383,7 @@ export async function listWithdrawals() {
     )
     // Un retiro por pagar nunca se queda por fuera de la lista, por antiguo que sea.
     .orderBy(sql`case when ${ledgerTx.status} = 'por_aprobar' then 0 else 1 end`, desc(ledgerTx.createdAt))
-    .limit(200);
+    .limit(Math.min(Math.max(limit, 1), 10_000));
   return rows.map((r) => ({
     ...toTxDTO(r.tx),
     userId: r.tx.userId,
@@ -390,6 +392,7 @@ export async function listWithdrawals() {
     fullName: r.fullName ?? null,
     companyName: r.companyName ?? null,
     nit: r.nit ?? null,
+    customerId: r.nit || (r.docNumber ? `${r.docType ?? ""} ${r.docNumber}`.trim() : null),
     // Quien paga necesita la cuenta completa (el usuario solo ve los últimos 4 dígitos).
     bankAccountNumber: r.tx.bankAccountNumber ?? null,
     signed: !!r.tx.signature,
