@@ -1,7 +1,7 @@
 import { formatAsset, formatNumber, shortAddress } from "@/lib/format";
 import type { TxDTO } from "@/lib/portfolio";
 import { paymentMethodLabel as methodName } from "@/lib/labels";
-import { accountTypeLabel } from "@/lib/withdrawal-schema";
+import { accountTypeLabel, isPhoneWallet } from "@/lib/withdrawal-schema";
 
 /** Hash de una transacción EVM (los comprobantes bancarios de un retiro no lo son). */
 export const isEvmHash = (h: string | null | undefined): h is string => !!h && /^0x[0-9a-fA-F]{64}$/.test(h);
@@ -32,7 +32,10 @@ export function txTitle(t: TxDTO) {
 export function txDetail(t: TxDTO) {
   if ((t.status === "fallida" || t.status === "rechazada" || t.status === "por_reembolsar" || t.status === "reembolsada") && t.note) return t.note;
   if (t.kind === "retiro") {
-    if (t.bankName) return `${t.bankName}, ${accountTypeLabel(t.bankAccountType).toLowerCase()} terminada en ${t.bankAccountLast4 ?? "····"}`;
+    if (t.bankName)
+      return isPhoneWallet(t.bankName)
+        ? `${t.bankName}, celular terminado en ${t.bankAccountLast4 ?? "····"}`
+        : `${t.bankName}, ${accountTypeLabel(t.bankAccountType).toLowerCase()} terminada en ${t.bankAccountLast4 ?? "····"}`;
     const amount = t.assetAmount != null && t.asset && t.asset !== "COP" ? `${formatAsset(t.assetAmount, t.asset)} a ` : "";
     return `${amount}${t.walletName ?? "wallet"} ${shortAddress(t.walletAddress)}`;
   }

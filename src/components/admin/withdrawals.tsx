@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAppConfig } from "@/lib/client/use-app-config";
 import { postJson, refetch, useJson } from "@/lib/client/use-json";
 import { formatAsset, formatCop, formatDateTime } from "@/lib/format";
-import { accountTypeLabel } from "@/lib/withdrawal-schema";
+import { accountKindLabel } from "@/lib/withdrawal-schema";
 import { isEvmHash } from "@/components/panel/tx-meta";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { Status } from "@/components/ui/status";
@@ -85,7 +85,7 @@ function PendingWithdrawal({ w, realMoney }: { w: AdminWithdrawal; realMoney: bo
             <>
               <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
                 <Datum label="Banco">{w.bankName}</Datum>
-                <Datum label="Tipo de cuenta">{accountTypeLabel(w.bankAccountType)}</Datum>
+                <Datum label="Tipo de cuenta">{accountKindLabel(w.bankName, w.bankAccountType)}</Datum>
                 <Datum label="Número de cuenta">{w.bankAccountNumber ? <CopyValue value={w.bankAccountNumber} label="Número de cuenta" /> : "Sin registrar"}</Datum>
               </dl>
               <p className="mt-5 max-w-[62ch] text-sm leading-relaxed text-fog">
@@ -169,7 +169,7 @@ function ReviewedWithdrawal({ w }: { w: AdminWithdrawal }) {
           </Link>
         </p>
         <p className="mt-1 break-words text-sm leading-relaxed text-mute">
-          {w.bankName ? `${w.bankName}, ${accountTypeLabel(w.bankAccountType).toLowerCase()} ${w.bankAccountNumber ?? ""}` : `${w.walletName ?? "Wallet"} ${w.walletAddress ?? ""}`}
+          {w.bankName ? `${w.bankName}, ${accountKindLabel(w.bankName, w.bankAccountType).toLowerCase()} ${w.bankAccountNumber ?? ""}` : `${w.walletName ?? "Wallet"} ${w.walletAddress ?? ""}`}
         </p>
         {paid && w.txHash && (
           <p className="num mt-1 break-all text-xs text-dim">

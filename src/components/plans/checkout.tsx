@@ -12,7 +12,7 @@ import { formatCop, shortAddress } from "@/lib/format";
 import type { TxDTO } from "@/lib/portfolio";
 import { buildPayerProofMessage } from "@/lib/signing";
 import { useWallet } from "@/lib/wallet/context";
-import { accountTypeLabel } from "@/lib/withdrawal-schema";
+import { accountTypeLabel, isPhoneWallet } from "@/lib/withdrawal-schema";
 import { useUser } from "@/components/panel/user-context";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
@@ -510,8 +510,8 @@ function TransferPay({ request, onClose, onBusy }: PayProps) {
       </p>
       <dl className="mt-5 border-t border-line-strong">
         <AccountDatum label="Banco" value={a.bank} />
-        <AccountDatum label="Tipo de cuenta" value={accountTypeLabel(a.accountType)} />
-        <AccountDatum label="Número de cuenta" value={a.accountNumber} copy={a.accountNumber} />
+        {!isPhoneWallet(a.bank) && <AccountDatum label="Tipo de cuenta" value={accountTypeLabel(a.accountType)} />}
+        <AccountDatum label={isPhoneWallet(a.bank) ? `Celular de ${a.bank}` : "Número de cuenta"} value={a.accountNumber} copy={a.accountNumber} />
         <AccountDatum label="Titular" value={a.holder} />
         <AccountDatum label="NIT o documento" value={a.holderId} copy={a.holderId} />
         <AccountDatum label="Valor exacto" value={formatCop(info.amountCop)} copy={String(info.amountCop)} />

@@ -2,7 +2,7 @@ import "server-only";
 import { csvLine } from "@/lib/csv";
 import { formatDateTime } from "@/lib/format";
 import { txStatusLabel } from "@/lib/labels";
-import { accountTypeLabel } from "@/lib/withdrawal-schema";
+import { accountKindLabel } from "@/lib/withdrawal-schema";
 import type { listWithdrawals } from "./service";
 
 type Row = Awaited<ReturnType<typeof listWithdrawals>>[number];
@@ -21,7 +21,7 @@ export function withdrawalsCsv(rows: readonly Row[]) {
       w.fullName,
       w.customerId,
       w.userEmail,
-      w.bankName ? `${w.bankName} · ${accountTypeLabel(w.bankAccountType)}` : `Wallet${w.walletName ? ` (${w.walletName})` : ""}`,
+      w.bankName ? `${w.bankName} · ${accountKindLabel(w.bankName, w.bankAccountType)}` : `Wallet${w.walletName ? ` (${w.walletName})` : ""}`,
       w.bankAccountNumber ?? w.walletAddress,
       txStatusLabel(w.status),
       w.amountCop,

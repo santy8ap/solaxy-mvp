@@ -17,7 +17,7 @@ import { toTxDTO, type TxDTO } from "@/lib/portfolio";
 import { requireCompleteProfile } from "@/lib/profile";
 import { safeText } from "@/lib/security/text";
 import { transferReference } from "@/lib/transfer-reference";
-import { BANKS } from "@/lib/withdrawal-schema";
+import { BANKS, accountKindLabel, accountNumberError, isPhoneWallet, normalizeAccountNumber } from "@/lib/withdrawal-schema";
 import { payLog } from "./log";
 import { bankReferenceOwner } from "./bank-reference";
 import { assertExpectedPayment, type ExpectedPayment } from "./plan-target";
@@ -30,18 +30,32 @@ import { assertExpectedPayment, type ExpectedPayment } from "./plan-target";
 
 const SETTING_ID = "transfer";
 
-export const TransferAccountInput = z.object({
-  bank: z.enum(BANKS),
-  accountType: z.enum(["ahorros", "corriente"]),
-  accountNumber: z
-    .string()
-    .max(40)
-    .transform((v) => v.replace(/[\s.-]/g, ""))
-    .refine((v) => /^\d{6,20}$/.test(v), "Escribe el número de la cuenta, solo con dígitos (entre 6 y 20)."),
+const ACCOUNT_TYPE = z.enum(["ahorros", "corriente"]);
+const holderFields = {
   holder: safeText(120, { min: 3, label: "El titular" }),
   holderId: safeText(30, { min: 5, label: "El NIT o documento del titular" }),
-});
-export type TransferAccount = z.infer<typeof TransferAccountInput>;
+};
+
+/**
+ * Lo que guarda el admin. En Nequi y Daviplata el número es el celular (10 dígitos) y no hay tipo de cuenta;
+ * en un banco, el tipo es obligatorio y el número tiene entre 6 y 20 dígitos.
+ */
+export const TransferAccountInput = z
+  .object({ bank: z.enum(BANKS), accountType: ACCOUNT_TYPE.optional(), accountNumber: z.string().max(40), ...holderFields })
+  .superRefine((v, ctx) => {
+    const error = accountNumberError(v.bank, normalizeAccountNumber(v.bank, v.accountNumber));
+    if (error) ctx.addIssue({ code: "custom", message: error, path: ["accountNumber"] });
+    if (!isPhoneWallet(v.bank) && !v.accountType) ctx.addIssue({ code: "custom", message: "Elige si la cuenta es de ahorros o corriente.", path: ["accountType"] });
+  })
+  .transform((v) => ({
+    ...v,
+    accountType: isPhoneWallet(v.bank) ? ("ahorros" as const) : v.accountType!,
+    accountNumber: normalizeAccountNumber(v.bank, v.accountNumber),
+  }));
+export type TransferAccount = z.output<typeof TransferAccountInput>;
+
+/** Una cuenta guardada con las reglas de antes (p. ej. Nequi con número de cuenta): se sigue mostrando. */
+const StoredTransferAccount = z.object({ bank: z.enum(BANKS), accountType: ACCOUNT_TYPE, accountNumber: z.string().regex(/^\d{6,20}$/), ...holderFields });
 
 const receiptField = safeText(60, { min: 4, label: "El número del comprobante" });
 const bankReferenceField = safeText(120, { min: 4, label: "La referencia del banco" });
@@ -58,8 +72,11 @@ export async function getTransferAccount(): Promise<TransferAccount | null> {
   const [row] = await db.select().from(serviceSetting).where(eq(serviceSetting.id, SETTING_ID));
   if (!row) return null;
   try {
-    const parsed = TransferAccountInput.safeParse(JSON.parse(row.value));
-    return parsed.success ? parsed.data : null;
+    const value: unknown = JSON.parse(row.value);
+    const parsed = TransferAccountInput.safeParse(value);
+    if (parsed.success) return parsed.data;
+    const stored = StoredTransferAccount.safeParse(value);
+    return stored.success ? stored.data : null;
   } catch {
     return null;
   }
@@ -73,7 +90,8 @@ export async function saveTransferAccount(actor: Actor, input: unknown): Promise
     .insert(serviceSetting)
     .values({ id: SETTING_ID, value: JSON.stringify(data), updatedAt: now })
     .onConflictDoUpdate({ target: serviceSetting.id, set: { value: JSON.stringify(data), updatedAt: now } });
-  await audit(actor, "config_transferencia", `Actualizó la cuenta para transferencias: ${data.bank}, cuenta ${data.accountType} terminada en ${data.accountNumber.slice(-4)}`, {
+  const kind = isPhoneWallet(data.bank) ? "celular terminado" : `${accountKindLabel(data.bank, data.accountType).toLowerCase()} terminada`;
+  await audit(actor, "config_transferencia", `Actualizó la cuenta para transferencias: ${data.bank}, ${kind} en ${data.accountNumber.slice(-4)}`, {
     bank: data.bank,
     accountType: data.accountType,
     last4: data.accountNumber.slice(-4),

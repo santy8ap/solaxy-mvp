@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { goToLoginIfSignedOut, refetch, SESSION_CLOSED, useJson } from "@/lib/client/use-json";
-import { BANKS, BANK_ACCOUNT_TYPES } from "@/lib/withdrawal-schema";
+import { BANKS, BANK_ACCOUNT_TYPES, accountFieldsFor, isPhoneWallet } from "@/lib/withdrawal-schema";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 
@@ -44,6 +44,8 @@ function AccountForm({ initial }: { initial: TransferAccount | null }) {
   const [holderId, setHolderId] = useState(initial?.holderId ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Nequi y Daviplata: el celular, sin tipo de cuenta.
+  const fields = accountFieldsFor(bank);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,19 +85,21 @@ function AccountForm({ initial }: { initial: TransferAccount | null }) {
           </select>
         )}
       </Field>
-      <Field label="Tipo de cuenta">
-        {(id, aria) => (
-          <select id={id} {...aria} value={accountType} onChange={(e) => setAccountType(e.target.value)} className="field">
-            {BANK_ACCOUNT_TYPES.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
-      <Field label="Número de cuenta" hint="Solo los dígitos; los espacios y guiones se quitan al guardar.">
-        {(id, aria) => <input id={id} {...aria} value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} inputMode="numeric" maxLength={40} autoComplete="off" className="field num" />}
+      {fields.needsType && (
+        <Field label="Tipo de cuenta">
+          {(id, aria) => (
+            <select id={id} {...aria} value={accountType} onChange={(e) => setAccountType(e.target.value)} className="field">
+              {BANK_ACCOUNT_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+      )}
+      <Field label={fields.numberLabel} hint={fields.numberHint}>
+        {(id, aria) => <input id={id} {...aria} value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} inputMode={fields.inputMode} maxLength={40} autoComplete="off" className="field num" />}
       </Field>
       <Field label="NIT o documento del titular">
         {(id, aria) => <input id={id} {...aria} value={holderId} onChange={(e) => setHolderId(e.target.value)} maxLength={30} autoComplete="off" className="field num" />}
@@ -103,6 +107,12 @@ function AccountForm({ initial }: { initial: TransferAccount | null }) {
       <Field label="Titular de la cuenta" hint="El nombre exacto con el que el banco muestra la cuenta." className="sm:col-span-2">
         {(id, aria) => <input id={id} {...aria} value={holder} onChange={(e) => setHolder(e.target.value)} maxLength={120} autoComplete="off" className="field" />}
       </Field>
+      {isPhoneWallet(bank) && (
+        <p className="border-l-2 border-ink pl-4 text-sm leading-relaxed text-fog sm:col-span-2" role="note">
+          {bank} tiene topes de lo que una cuenta puede recibir al mes, y las mensualidades de los planes son altas. Confirma con {bank} el tope de tu cuenta; para recibir
+          pagos de empresas suele convenir una cuenta de ahorros o corriente a nombre de la empresa.
+        </p>
+      )}
       {error && <ErrorNote className="sm:col-span-2">{error}</ErrorNote>}
       <div className="sm:col-span-2">
         <button type="submit" className="btn btn-solid" disabled={busy || !bank || !accountNumber.trim() || holder.trim().length < 3 || holderId.trim().length < 5}>

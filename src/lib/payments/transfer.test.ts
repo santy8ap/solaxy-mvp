@@ -51,6 +51,32 @@ describe("datos de la cuenta para transferencias", () => {
     await expect(transfer.saveTransferAccount(admin, { ...ACCOUNT, accountNumber: "12" })).rejects.toThrow();
     await expect(transfer.saveTransferAccount(admin, { ...ACCOUNT, holder: "<b>Empresa</b>" })).rejects.toThrow();
   });
+
+  it("Nequi o Daviplata: se guarda el celular, sin tipo de cuenta, y la bitácora lo nombra así", async () => {
+    const nequi = await transfer.saveTransferAccount(admin, { bank: "Nequi", accountNumber: "+57 301 441 2962", holder: "Laura Gómez", holderId: "CC 1036123456" });
+    expect(nequi).toMatchObject({ bank: "Nequi", accountType: "ahorros", accountNumber: "3014412962" });
+    const [log] = await dbMod.db
+      .select()
+      .from(schema.adminAudit)
+      .where(drizzle.eq(schema.adminAudit.action, "config_transferencia"))
+      .orderBy(drizzle.desc(schema.adminAudit.createdAt), drizzle.desc(drizzle.sql`rowid`))
+      .limit(1);
+    expect(log.summary).toBe("Actualizó la cuenta para transferencias: Nequi, celular terminado en 2962");
+    await expect(transfer.saveTransferAccount(admin, { bank: "Nequi", accountNumber: "12345678", holder: "Laura Gómez", holderId: "CC 1036123456" })).rejects.toThrow(/celular de la cuenta Nequi/);
+    // Un banco sí necesita el tipo de cuenta.
+    await expect(transfer.saveTransferAccount(admin, { ...ACCOUNT, accountType: undefined })).rejects.toThrow(/ahorros o corriente/);
+    await transfer.saveTransferAccount(admin, ACCOUNT);
+  });
+
+  it("una cuenta guardada con las reglas de antes se sigue leyendo (no desaparece la opción de transferir)", async () => {
+    // Nequi con número de cuenta y tipo «corriente», como se podía guardar antes.
+    await dbMod.db
+      .update(schema.serviceSetting)
+      .set({ value: JSON.stringify({ bank: "Nequi", accountType: "corriente", accountNumber: "12345678", holder: "Laura Gómez", holderId: "CC 1036123456" }) })
+      .where(drizzle.eq(schema.serviceSetting.id, "transfer"));
+    expect(await transfer.getTransferAccount()).toMatchObject({ bank: "Nequi", accountNumber: "12345678" });
+    await transfer.saveTransferAccount(admin, ACCOUNT);
+  });
 });
 
 describe("la empresa ve los datos y reporta su transferencia", () => {

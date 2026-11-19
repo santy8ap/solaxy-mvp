@@ -6,7 +6,7 @@ import { goToLoginIfSignedOut, invalidateJson, refetch, SESSION_CLOSED } from "@
 import { formatCop, formatNumber, shortAddress } from "@/lib/format";
 import type { ProfileDTO } from "@/lib/profile";
 import { useWallet } from "@/lib/wallet/context";
-import { BANKS, BANK_ACCOUNT_TYPES, MIN_WITHDRAWAL_COP, parseBankDestination, type BankField } from "@/lib/withdrawal-schema";
+import { BANKS, BANK_ACCOUNT_TYPES, MIN_WITHDRAWAL_COP, accountFieldsFor, parseBankDestination, type BankField } from "@/lib/withdrawal-schema";
 import { ErrorNote, Field } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "@/components/ui/toast";
@@ -161,19 +161,26 @@ export function WithdrawDialog({ open, onClose, balanceCop, profile }: { open: b
                   </select>
                 )}
               </Field>
-              <Field label="Tipo de cuenta" error={fieldErrors.accountType}>
-                {(id, aria) => (
-                  <select id={id} {...aria} value={bank.accountType} onChange={(e) => setBank({ ...bank, accountType: e.target.value })} className="field">
-                    {BANK_ACCOUNT_TYPES.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Número de la cuenta" error={fieldErrors.accountNumber} className="sm:col-span-2" hint={profile.companyName && profile.nit ? `La cuenta debe estar a nombre de ${profile.companyName} (NIT ${profile.nit}).` : `La cuenta debe estar a nombre de ${profile.fullName} (${profile.docType} ${profile.docNumber}).`}>
-                {(id, aria) => <input id={id} {...aria} inputMode="numeric" autoComplete="off" value={bank.accountNumber} onChange={(e) => setBank({ ...bank, accountNumber: e.target.value })} className="field num" />}
+              {accountFieldsFor(bank.bank).needsType && (
+                <Field label="Tipo de cuenta" error={fieldErrors.accountType}>
+                  {(id, aria) => (
+                    <select id={id} {...aria} value={bank.accountType} onChange={(e) => setBank({ ...bank, accountType: e.target.value })} className="field">
+                      {BANK_ACCOUNT_TYPES.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+              )}
+              <Field
+                label={accountFieldsFor(bank.bank).needsType ? "Número de la cuenta" : accountFieldsFor(bank.bank).numberLabel}
+                error={fieldErrors.accountNumber}
+                className="sm:col-span-2"
+                hint={`${profile.companyName && profile.nit ? `La cuenta debe estar a nombre de ${profile.companyName} (NIT ${profile.nit}).` : `La cuenta debe estar a nombre de ${profile.fullName} (${profile.docType} ${profile.docNumber}).`}${accountFieldsFor(bank.bank).needsType ? "" : " Escribe el celular de la cuenta: 10 dígitos."}`}
+              >
+                {(id, aria) => <input id={id} {...aria} inputMode={accountFieldsFor(bank.bank).inputMode} autoComplete="off" value={bank.accountNumber} onChange={(e) => setBank({ ...bank, accountNumber: e.target.value })} className="field num" />}
               </Field>
             </div>
           ) : (
